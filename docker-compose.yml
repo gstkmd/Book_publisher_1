@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+    environment:
+      - MONGODB_URL=mongodb://mongo:27017/book_publisher
+      - DB_NAME=book_publisher
+      - SECRET_KEY=supersecretkey
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - mongo
+      - redis
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.core.celery_app worker --loglevel=info
+    volumes:
+      - ./backend/app:/app/app
+    environment:
+      - MONGODB_URL=mongodb://mongo:27017/book_publisher
+      - DB_NAME=book_publisher
+      - SECRET_KEY=supersecretkey
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - mongo
+      - redis
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+
+volumes:
+  mongo_data:
