@@ -175,7 +175,7 @@ export default function ContentVersionsPage() {
                                             const oldLines = oldText.split(/[\n.!?]+/).filter(l => l.trim());
                                             const newLines = newText.split(/[\n.!?]+/).filter(l => l.trim());
 
-                                            const changes: JSX.Element[] = [];
+                                            const changes: any[] = [];
                                             const maxLen = Math.max(oldLines.length, newLines.length);
 
                                             for (let i = 0; i < maxLen; i++) {
