@@ -1,10 +1,11 @@
 [phases.setup]
-nixPkgs = ["python311", "poetry"]
+nixPkgs = ["poetry"]
 
 [phases.install]
 cmds = [
+    "python --version",
     "poetry export -f requirements.txt --output requirements.txt --without-hashes",
-    "python -m pip install -r requirements.txt --break-system-packages"
+    "python -m pip install uvicorn[standard] -r requirements.txt --break-system-packages"
 ]
 
 [start]
