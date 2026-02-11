@@ -17,7 +17,13 @@ def read_user_me(
     """
     Get current user.
     """
-    return current_user
+    return UserSchema(
+        id=str(current_user.id),
+        email=current_user.email,
+        full_name=current_user.full_name,
+        role=current_user.role,
+        is_active=current_user.is_active
+    )
 
 @router.post("/", response_model=UserSchema)
 async def create_user(
