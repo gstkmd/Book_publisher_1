@@ -293,21 +293,18 @@ export default function ContentLibrary() {
                     </table>
                 </div>
             )}
+            {selectedContent && (
+                <ShareContentModal
+                    contentId={selectedContent._id}
+                    contentTitle={selectedContent.title}
+                    isOpen={shareModalOpen}
+                    onClose={() => {
+                        setShareModalOpen(false);
+                        setSelectedContent(null);
+                    }}
+                    onSuccess={handleShareSuccess}
+                />
+            )}
         </div>
-        {
-        selectedContent && (
-            <ShareContentModal
-                contentId={selectedContent._id}
-                contentTitle={selectedContent.title}
-                isOpen={shareModalOpen}
-                onClose={() => {
-                    setShareModalOpen(false);
-                    setSelectedContent(null);
-                }}
-                onSuccess={handleShareSuccess}
-            />
-        )
-    }
-        </div >
     );
 }
