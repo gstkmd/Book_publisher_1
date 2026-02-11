@@ -21,8 +21,9 @@ httpx = "^0.25.0"
 weasyprint = "^60.0"
 EbookLib = "^0.17.1"
 celery = "^5.3.6"
+mcp = "^1.20.0"
 
-mcp = "^0.1.0"
+
 fastapi-sso = "^0.7.0"
 google-api-python-client = "^2.100.0"
 google-auth-httplib2 = "^0.1.0"
