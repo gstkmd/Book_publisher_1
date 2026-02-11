@@ -12,22 +12,9 @@ class Settings(BaseSettings):
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
     # e.g: '["http://localhost", "http://localhost:4200", "http://localhost:3000", \
     # "http://localhost:8080", "https://localhost", "https://localhost:4200", \
-    # "https://localhost:3000", "https://localhost:8080", "http://local.dockertoolbox.tiangolo.com"]'
-    # Use List[str] to prevent URL validation after the validator
-    BACKEND_CORS_ORIGINS: List[str] = []
-
-    @validator("BACKEND_CORS_ORIGINS", pre=True)
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
-        if isinstance(v, str):
-            # Handle empty or whitespace-only strings
-            if not v or not v.strip():
-                return []
-            # Handle comma-separated values
-            if not v.startswith("["):
-                return [i.strip() for i in v.split(",") if i.strip()]
-        if isinstance(v, list):
-            return v
-        raise ValueError(v)
+    # Can be a single URL (string) or comma-separated URLs
+    # Example: "https://example.com" or "https://example.com,https://another.com"
+    BACKEND_CORS_ORIGINS: str = ""
 
     MONGODB_URL: str = Field(..., validation_alias="MONGO_URI") # Required, supports MONGO_URI env var
     DB_NAME: str = "Book_publisher"  # Match existing database case
