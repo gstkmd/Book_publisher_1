@@ -32,7 +32,11 @@ export default function ContentLibrary() {
         try {
             setLoading(true);
             setError(null);
+            console.log('Fetching content with token:', token ? 'present' : 'missing');
             const data = await api.get('/generic/content', token!);
+            console.log('Received data:', data);
+            console.log('Is array:', Array.isArray(data));
+            console.log('Data length:', Array.isArray(data) ? data.length : 'not an array');
             setContents(Array.isArray(data) ? data : []);
         } catch (err: any) {
             console.error('Failed to fetch content:', err);
