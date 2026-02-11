@@ -2,7 +2,11 @@
 nixPkgs = ["python311", "poetry"]
 
 [phases.install]
-cmds = ["poetry config virtualenvs.in-project true", "poetry install --no-root --no-interaction"]
+cmds = [
+    "poetry export -f requirements.txt --output requirements.txt --without-hashes",
+    "python -m venv .venv",
+    ".venv/bin/pip install -r requirements.txt"
+]
 
 [start]
 cmd = ".venv/bin/uvicorn app.main:app --host 0.0.0.0 --port $PORT"
