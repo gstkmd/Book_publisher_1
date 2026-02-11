@@ -8,7 +8,8 @@ router = APIRouter()
 @router.get("/me", response_model=Organization)
 async def get_my_organization(current_user: User = Depends(get_current_user)):
     if not current_user.organization_id:
-        raise HTTPException(status_code=404, detail="User not part of any organization")
+        # Return None - frontend should handle this gracefully
+        return None
     
     org = await Organization.get(current_user.organization_id)
     if not org:
@@ -42,7 +43,8 @@ async def update_organization(
 @router.get("/members", response_model=List[User])
 async def get_organization_members(current_user: User = Depends(get_current_user)):
     if not current_user.organization_id:
-        raise HTTPException(status_code=404, detail="User not part of any organization")
+        # Return empty list for users without organization
+        return []
     
     members = await User.find(User.organization_id == current_user.organization_id).to_list()
     return members
