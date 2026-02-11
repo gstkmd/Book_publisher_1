@@ -22,7 +22,7 @@ class Settings(BaseSettings):
             return v
         raise ValueError(v)
 
-    MONGODB_URL: str = "mongodb://mongo:27017/book_publisher" # Default docker, override with Atlas URI
+    MONGODB_URL: str # Required, set via env var (e.g., in docker-compose or Railway)
     DB_NAME: str = "edu_publishing"
     
     # Storage (Wasabi/S3)

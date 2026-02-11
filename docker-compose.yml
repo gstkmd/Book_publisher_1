@@ -10,13 +10,11 @@ services:
     volumes:
       - ./backend/app:/app/app
     environment:
-      - MONGODB_URL=${MONGO_URI:-mongodb://mongo:27017/book_publisher}
+      - MONGODB_URL=${MONGO_URI}
       - DB_NAME=${DB_NAME:-book_publisher}
       - SECRET_KEY=supersecretkey
       - CELERY_BROKER_URL=redis://redis:6379/0
     depends_on:
-      mongo:
-        condition: service_healthy
       redis:
         condition: service_started
     networks:
@@ -30,29 +28,13 @@ services:
     volumes:
       - ./backend/app:/app/app
     environment:
-      - MONGODB_URL=${MONGO_URI:-mongodb://mongo:27017/book_publisher}
+      - MONGODB_URL=${MONGO_URI}
       - DB_NAME=${DB_NAME:-book_publisher}
       - SECRET_KEY=supersecretkey
       - CELERY_BROKER_URL=redis://redis:6379/0
     depends_on:
-      mongo:
-        condition: service_healthy
       redis:
         condition: service_started
-    networks:
-      - app_network
-
-  mongo:
-    image: mongo:latest
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-    healthcheck:
-      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - app_network
 
@@ -79,6 +61,3 @@ services:
 networks:
   app_network:
     driver: bridge
-
-volumes:
-  mongo_data:
