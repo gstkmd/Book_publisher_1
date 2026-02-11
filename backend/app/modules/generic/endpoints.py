@@ -156,21 +156,76 @@ async def get_content_comments(id: str):
     return await Comment.find(Comment.content_id.id == id).to_list()
 
 # --- Tasks ---
-@router.post("/tasks", response_model=Task)
-async def create_task(task: Task):
-    # task.organization_id = current_user.organization_id
+from app.modules.generic.schemas import TaskCreate, TaskSchema
+from app.api.deps import get_current_user
+from app.modules.core.models import User
+from fastapi import Depends
+
+@router.post("/tasks", response_model=TaskSchema)
+async def create_task(
+    task_in: TaskCreate,
+    current_user: User = Depends(get_current_user)
+):
+    # Create task with proper user association
+    task = Task(
+        title=task_in.title,
+        description=task_in.description,
+        status=task_in.status,
+        due_date=task_in.due_date,
+        created_by=current_user.id,
+        organization_id=current_user.organization_id
+    )
+    
+    # Handle optional fields
+    if task_in.content_id:
+        from bson import ObjectId
+        task.content_id = ObjectId(task_in.content_id)
+    if task_in.assignee:
+        from bson import ObjectId
+        task.assignee = ObjectId(task_in.assignee)
+    
     await task.create()
     
     # Notify Assignee (Email stub)
     if task.assignee:
         pass # sending_email_service.send_assignment_email(...)
 
-    return task
+    # Return with properly serialized ObjectIds
+    return TaskSchema(
+        id=str(task.id),
+        title=task.title,
+        description=task.description,
+        status=task.status,
+        due_date=task.due_date,
+        content_id=str(task.content_id) if task.content_id else None,
+        assignee=str(task.assignee) if task.assignee else None,
+        created_by=str(task.created_by) if task.created_by else None,
+        organization_id=task.organization_id,
+        created_at=task.created_at
+    )
 
-@router.get("/tasks", response_model=List[Task])
-async def get_tasks():
-    # Filter by org_id and current_user in real app
-    return await Task.find_all().to_list()
+@router.get("/tasks", response_model=list[TaskSchema])
+async def get_tasks(current_user: User = Depends(get_current_user)):
+    # Filter by org_id in real app
+    tasks = await Task.find_all().to_list()
+    
+    # Convert to schemas with serialized ObjectIds
+    return [
+        TaskSchema(
+            id=str(task.id),
+            title=task.title,
+            description=task.description,
+            status=task.status,
+            due_date=task.due_date,
+            content_id=str(task.content_id) if task.content_id else None,
+            assignee=str(task.assignee) if task.assignee else None,
+            created_by=str(task.created_by) if task.created_by else None,
+            organization_id=task.organization_id,
+            created_at=task.created_at
+        )
+        for task in tasks
+    ]
+
 
 @router.get("/content/{id}/export")
 async def export_content(id: str, format: str = "pdf"):

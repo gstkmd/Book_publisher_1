@@ -49,8 +49,14 @@ async def get_organization_members(current_user: User = Depends(get_current_user
 
 @router.get("/stats")
 async def get_organization_stats(current_user: User = Depends(get_current_user)):
+    # Return default stats if user is not part of an organization yet
     if not current_user.organization_id:
-        raise HTTPException(status_code=404, detail="User not part of any organization")
+        return {
+            "members": 1,  # Just the current user
+            "content_items": 0,
+            "storage_used_mb": 0,
+            "plan_limit_mb": 1024  # 1GB free tier
+        }
 
     # 1. Member Count
     member_count = await User.find(User.organization_id == current_user.organization_id).count()
@@ -70,3 +76,4 @@ async def get_organization_stats(current_user: User = Depends(get_current_user))
         "storage_used_mb": storage_used_mb,
         "plan_limit_mb": 1024 # 1GB free tier
     }
+
