@@ -172,6 +172,51 @@ async def create_comment(comment: Comment):
 async def get_content_comments(id: str):
     return await Comment.find(Comment.content_id.id == id).to_list()
 
+# --- Content Sharing ---
+from pydantic import BaseModel
+from typing import List, Optional
+from datetime import datetime
+
+class ShareContentRequest(BaseModel):
+    user_ids: List[str]
+    message: Optional[str] = "Please review this content"
+    due_date: Optional[datetime] = None
+
+@router.post("/content/{id}/share")
+async def share_content(
+    id: str,
+    share_data: ShareContentRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Share content with team members by creating tasks"""
+    content = await Content.get(id)
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found")
+    
+    from bson import ObjectId
+    created_tasks = []
+    
+    for user_id in share_data.user_ids:
+        task = Task(
+            title=f"Review: {content.title}",
+            description=share_data.message,
+            content_id=ObjectId(id),
+            assignee=ObjectId(user_id),
+            organization_id=current_user.organization_id,
+            status="pending",
+            due_date=share_data.due_date,
+            created_by=current_user.id
+        )
+        await task.create()
+        created_tasks.append(str(task.id))
+    
+    return {
+        "success": True,
+        "message": f"Content shared with {len(share_data.user_ids)} team member(s)",
+        "task_ids": created_tasks
+    }
+
+
 # --- Tasks ---
 from app.modules.generic.schemas import TaskCreate, TaskSchema
 from app.api.deps import get_current_user

@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import ShareContentModal from '@/components/ShareContentModal';
 
 export default function ContentLibrary() {
     const { token, user, isLoading: authLoading } = useAuth();
@@ -14,6 +15,8 @@ export default function ContentLibrary() {
     const [showMenu, setShowMenu] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [shareModalOpen, setShareModalOpen] = useState(false);
+    const [selectedContent, setSelectedContent] = useState<any>(null);
 
     useEffect(() => {
         if (token) {
@@ -90,12 +93,22 @@ export default function ContentLibrary() {
     const handleExport = (contentId: string, format: 'pdf' | 'docx' = 'pdf') => {
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-            // Backend endpoint is /generic/content/{id}/export
-            window.open(`${apiUrl}/generic/content/${contentId}/export?format=${format}`, '_blank');
+            // Updated to match corrected backend endpoint
+            window.open(`${apiUrl}/generic/export_content/${contentId}?format=${format}`, '_blank');
         } catch (err: any) {
             console.error(err);
             alert('Failed to export: ' + (err.message || 'Unknown error'));
         }
+    };
+
+    const handleShareClick = (content: any) => {
+        setSelectedContent(content);
+        setShareModalOpen(true);
+    };
+
+    const handleShareSuccess = () => {
+        // Optionally refresh content or show notification
+        console.log('Content shared successfully');
     };
 
     const filteredContent = contents.filter(c => {
@@ -261,6 +274,10 @@ export default function ContentLibrary() {
                                                 >Publish</button>
                                             )}
                                             <button
+                                                onClick={() => handleShareClick(c)}
+                                                className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                                            >Share</button>
+                                            <button
                                                 onClick={() => handleExport(c._id, 'pdf')}
                                                 className="text-gray-600 hover:text-gray-800 text-sm"
                                             >Export</button>
@@ -277,5 +294,20 @@ export default function ContentLibrary() {
                 </div>
             )}
         </div>
+        {
+        selectedContent && (
+            <ShareContentModal
+                contentId={selectedContent._id}
+                contentTitle={selectedContent.title}
+                isOpen={shareModalOpen}
+                onClose={() => {
+                    setShareModalOpen(false);
+                    setSelectedContent(null);
+                }}
+                onSuccess={handleShareSuccess}
+            />
+        )
+    }
+        </div >
     );
 }
