@@ -17,9 +17,14 @@ class Settings(BaseSettings):
 
     @validator("BACKEND_CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
-        elif isinstance(v, (list, str)):
+        if isinstance(v, str):
+            # Handle empty or whitespace-only strings
+            if not v or not v.strip():
+                return []
+            # Handle comma-separated values
+            if not v.startswith("["):
+                return [i.strip() for i in v.split(",") if i.strip()]
+        if isinstance(v, (list, str)):
             return v
         raise ValueError(v)
 
