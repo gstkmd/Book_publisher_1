@@ -1,0 +1,123 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { useParams } from 'next/navigation';
+import { api } from '@/lib/api';
+import Link from 'next/link';
+
+export default function ContentVersionsPage() {
+    const { token } = useAuth();
+    const params = useParams();
+    const contentId = params.id as string;
+    const [content, setContent] = useState<any>(null);
+    const [versions, setVersions] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (token && contentId) {
+            fetchContent();
+            fetchVersions();
+        }
+    }, [token, contentId]);
+
+    const fetchContent = async () => {
+        try {
+            const data = await api.get(`/generic/content/${contentId}`, token!);
+            setContent(data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const fetchVersions = async () => {
+        try {
+            const data = await api.get(`/generic/content/${contentId}/versions`, token!);
+            setVersions(data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleRestore = async (versionId: string) => {
+        if (!confirm('Restore this version?')) return;
+        try {
+            await api.post(`/generic/content/${contentId}/restore/${versionId}`, {}, token!);
+            alert('Version restored!');
+            fetchContent();
+            fetchVersions();
+        } catch (err) {
+            console.error(err);
+            alert('Failed to restore version');
+        }
+    };
+
+    if (!content) {
+        return <div className="container mx-auto p-8">Loading...</div>;
+    }
+
+    return (
+        <div className="container mx-auto p-8">
+            <div className="mb-6">
+                <Link href="/dashboard/library" className="text-blue-600 hover:underline mb-4 inline-block">
+                    ← Back to Library
+                </Link>
+                <h1 className="text-3xl font-bold">{content.title}</h1>
+                <p className="text-gray-600">Version History</p>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+                <h2 className="text-xl font-bold mb-4">Current Version</h2>
+                <div className="prose max-w-none">
+                    {content.body?.ops ? (
+                        <div>Rich content preview</div>
+                    ) : (
+                        <div className="text-gray-600">No content body</div>
+                    )}
+                </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-bold mb-4">Version History ({versions.length})</h2>
+
+                <div className="space-y-4">
+                    {versions.map((version, index) => (
+                        <div key={version._id} className="border rounded p-4 hover:bg-gray-50">
+                            <div className="flex justify-between items-start mb-2">
+                                <div>
+                                    <div className="font-bold">
+                                        Version {version.version_number}
+                                        {index === 0 && (
+                                            <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                                                Current
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                        {new Date(version.created_at).toLocaleString()}
+                                    </div>
+                                </div>
+                                {index !== 0 && (
+                                    <button
+                                        onClick={() => handleRestore(version._id)}
+                                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                                    >
+                                        Restore
+                                    </button>
+                                )}
+                            </div>
+                            <div className="text-sm text-gray-700">
+                                <strong>Title:</strong> {version.title}
+                            </div>
+                        </div>
+                    ))}
+
+                    {versions.length === 0 && (
+                        <div className="text-center text-gray-500 py-8">
+                            No version history available
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
