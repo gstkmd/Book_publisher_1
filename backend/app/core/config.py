@@ -30,7 +30,7 @@ class Settings(BaseSettings):
         raise ValueError(v)
 
     MONGODB_URL: str = Field(..., validation_alias="MONGO_URI") # Required, supports MONGO_URI env var
-    DB_NAME: str = "edu_publishing"
+    DB_NAME: str = "Book_publisher"  # Match existing database case
     
     # Storage (Wasabi/S3)
     S3_ENDPOINT_URL: str = "https://s3.wasabisys.com"
