@@ -17,6 +17,15 @@ export default function ContentLibrary() {
         if (token) fetchContent();
     }, [token]);
 
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = () => setShowMenu(null);
+        if (showMenu) {
+            document.addEventListener('click', handleClickOutside);
+            return () => document.removeEventListener('click', handleClickOutside);
+        }
+    }, [showMenu]);
+
     const fetchContent = async () => {
         try {
             const data = await api.get('/generic/content', token!);
@@ -29,6 +38,10 @@ export default function ContentLibrary() {
 
         try {
             const content = contents.find(c => c._id === contentId);
+            if (!content) {
+                alert('Content not found');
+                return;
+            }
             await api.put(`/generic/content/${contentId}`, {
                 ...content,
                 status: 'published'
