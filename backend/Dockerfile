@@ -18,9 +18,9 @@ ENV PATH="/root/.local/bin:$PATH"
 # Copy dependency files
 COPY pyproject.toml poetry.lock* ./
 
-# Install Python dependencies
+# Install Python dependencies (production only)
 RUN poetry config virtualenvs.create false && \
-    poetry install --no-interaction --no-ansi --no-root --no-dev
+    poetry install --no-interaction --no-ansi --no-root --only main
 
 # Stage 2: Runtime - Minimal image
 FROM python:3.11-slim
