@@ -26,6 +26,9 @@ class User(Document):
 
     class Settings:
         name = "users"
+        # Enable proper JSON serialization of ObjectId
+        use_state_management = True
+        validate_on_save = True
 
 class WebhookSubscription(Document):
     url: str

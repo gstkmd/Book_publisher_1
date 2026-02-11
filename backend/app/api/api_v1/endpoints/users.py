@@ -42,4 +42,12 @@ async def create_user(
         is_active=True,
     )
     await user.create()
-    return user
+    
+    # Convert to dict to ensure proper serialization of ObjectId
+    return UserSchema(
+        id=str(user.id),
+        email=user.email,
+        full_name=user.full_name,
+        role=user.role,
+        is_active=user.is_active
+    )
