@@ -1,11 +1,13 @@
 from typing import Optional
 from pydantic import BaseModel, EmailStr
 
+from app.modules.core.models import UserRole
+
 class UserBase(BaseModel):
     email: Optional[EmailStr] = None
     is_active: Optional[bool] = True
     full_name: Optional[str] = None
-    role: Optional[str] = "user"
+    role: Optional[UserRole] = UserRole.USER
 
 class UserCreate(UserBase):
     email: EmailStr

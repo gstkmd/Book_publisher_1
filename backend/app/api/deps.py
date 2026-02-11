@@ -5,7 +5,7 @@ from jose import jwt
 from pydantic import ValidationError
 from app.core import security
 from app.core.config import settings
-from app.modules.core.models import User
+from app.modules.core.models import User, UserRole
 
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/access-token")
 
@@ -32,7 +32,7 @@ async def get_current_user(token: str = Depends(reusable_oauth2)) -> User:
     return user
 
 async def get_current_active_superuser(current_user: User = Depends(get_current_user)) -> User:
-    if current_user.role != "admin":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=400, detail="The user doesn't have enough privileges"
         )

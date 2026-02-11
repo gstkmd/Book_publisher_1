@@ -69,8 +69,13 @@ export default function SignupPage() {
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500"
                         >
                             <option value="user">Reader/Student</option>
-                            <option value="author">Author</option>
                             <option value="teacher">Teacher</option>
+                            <option value="author">Author</option>
+                            <option value="illustrator">Illustrator</option>
+                            <option value="reviewer">Reviewer</option>
+                            <option value="section_editor">Section Editor</option>
+                            <option value="editor_in_chief">Editor-in-Chief</option>
+                            <option value="admin">Administrator</option>
                         </select>
                     </div>
                     <div>

@@ -3,12 +3,24 @@ from beanie import Document
 from pydantic import EmailStr
 from datetime import datetime
 
+from enum import Enum
+
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    EDITOR_IN_CHIEF = "editor_in_chief"
+    SECTION_EDITOR = "section_editor"
+    AUTHOR = "author"
+    REVIEWER = "reviewer"
+    ILLUSTRATOR = "illustrator"
+    TEACHER = "teacher"
+    USER = "user" # Basic consumer
+
 class User(Document):
     email: EmailStr
     hashed_password: str
     full_name: Optional[str] = None
     organization_id: Optional[str] = None # Link to Organization
-    role: str = "user" # user, admin, editor, teacher
+    role: UserRole = UserRole.USER
     is_active: bool = True
     created_at: datetime = datetime.utcnow()
 

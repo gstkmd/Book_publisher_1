@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 interface User {
     email: string;
     full_name?: string;
-    role: string;
+    role: 'admin' | 'editor_in_chief' | 'section_editor' | 'author' | 'reviewer' | 'illustrator' | 'teacher' | 'user';
 }
 
 interface AuthContextType {
