@@ -2,8 +2,9 @@ from fastapi import APIRouter
 
 from app.modules.generic import endpoints as generic_endpoints
 from app.modules.educational import endpoints as edu_endpoints
-from app.modules.generic import endpoints as generic_endpoints
 from app.modules.core import endpoints as core_endpoints
+from app.api.api_v1.endpoints.users import router as users_router
+from app.api.api_v1.endpoints.auth import router as auth_router
 
 api_router = APIRouter()
 api_router.include_router(users_router, prefix="/users", tags=["users"])
