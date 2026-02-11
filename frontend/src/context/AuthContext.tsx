@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.setItem('token', newToken);
         setToken(newToken);
         api.get('/users/me', newToken).then((userData) => setUser(userData));
-        router.push('/');
+        router.push('/dashboard');
     };
 
     const logout = () => {
