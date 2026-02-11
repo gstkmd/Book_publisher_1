@@ -125,6 +125,15 @@ async def update_content(id: str, content_in: Content):
 
     return content
 
+@router.delete("/content/{id}")
+async def delete_content(id: str):
+    content = await Content.get(id)
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found")
+    
+    await content.delete()
+    return {"message": "Content deleted successfully"}
+
 @router.get("/content/{id}/versions", response_model=List[ContentVersion])
 async def get_content_versions(id: str):
     content = await Content.get(id)
