@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import Link from 'next/link';
 
 interface Task {
     _id: string;
@@ -10,11 +11,16 @@ interface Task {
     description?: string;
     status: string;
     due_date?: string;
-    assignee?: any; // In real app, proper User type
+    assignee?: any;
+    content_id?: any;
+}
+
+interface TaskWithComments extends Task {
+    unresolvedComments?: number;
 }
 
 export const TaskManager = () => {
-    const [tasks, setTasks] = useState<Task[]>([]);
+    const [tasks, setTasks] = useState<TaskWithComments[]>([]);
     const [newTaskTitle, setNewTaskTitle] = useState('');
     const { token } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -27,7 +33,27 @@ export const TaskManager = () => {
         if (!token) return;
         try {
             const data = await api.get('/generic/tasks', token);
-            setTasks(data);
+
+            // Fetch comment stats for each task with content
+            const tasksWithComments = await Promise.all(
+                data.map(async (task: Task) => {
+                    if (task.content_id) {
+                        try {
+                            const contentId = typeof task.content_id === 'string'
+                                ? task.content_id
+                                : task.content_id._id || task.content_id.id;
+
+                            const stats = await api.get(`/generic/content/${contentId}/comments/stats`, token);
+                            return { ...task, unresolvedComments: stats.unresolved };
+                        } catch (err) {
+                            return task;
+                        }
+                    }
+                    return task;
+                })
+            );
+
+            setTasks(tasksWithComments);
         } catch (err) {
             console.error(err);
         }
@@ -49,6 +75,12 @@ export const TaskManager = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const getContentId = (task: Task): string | null => {
+        if (!task.content_id) return null;
+        if (typeof task.content_id === 'string') return task.content_id;
+        return task.content_id._id || task.content_id.id || null;
     };
 
     return (
@@ -76,17 +108,45 @@ export const TaskManager = () => {
             {/* Task List */}
             <div className="space-y-2">
                 {tasks.length === 0 && <p className="text-gray-500">No tasks assigned.</p>}
-                {tasks.map(task => (
-                    <div key={task._id} className="flex items-center justify-between p-3 border rounded hover:bg-gray-50">
-                        <div>
-                            <div className="font-semibold">{task.title}</div>
-                            <div className="text-sm text-gray-500">Status: {task.status}</div>
+                {tasks.map(task => {
+                    const contentId = getContentId(task);
+                    return (
+                        <div key={task._id} className="flex items-center justify-between p-4 border rounded hover:bg-gray-50">
+                            <div className="flex-1">
+                                <div className="font-semibold">{task.title}</div>
+                                {task.description && (
+                                    <div className="text-sm text-gray-600 mt-1">{task.description}</div>
+                                )}
+                                <div className="flex items-center gap-3 mt-2">
+                                    <span className={`text-xs px-2 py-1 rounded ${task.status === 'completed'
+                                            ? 'bg-green-100 text-green-700'
+                                            : task.status === 'in_progress'
+                                                ? 'bg-blue-100 text-blue-700'
+                                                : 'bg-gray-100 text-gray-700'
+                                        }`}>
+                                        {task.status}
+                                    </span>
+                                    {task.unresolvedComments !== undefined && task.unresolvedComments > 0 && (
+                                        <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded">
+                                            {task.unresolvedComments} unresolved comment{task.unresolvedComments !== 1 ? 's' : ''}
+                                        </span>
+                                    )}
+                                    {contentId && (
+                                        <Link
+                                            href={`/dashboard/library/${contentId}/review`}
+                                            className="text-xs text-teal-600 hover:text-teal-800 underline"
+                                        >
+                                            → Review Content
+                                        </Link>
+                                    )}
+                                </div>
+                            </div>
+                            <span className="text-xs text-gray-400 ml-4">
+                                {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No Due Date'}
+                            </span>
                         </div>
-                        <span className="text-xs text-gray-400">
-                            {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No Due Date'}
-                        </span>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );

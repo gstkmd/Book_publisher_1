@@ -174,6 +174,51 @@ async def create_comment(comment: Comment):
 async def get_content_comments(id: str):
     return await Comment.find(Comment.content_id.id == id).to_list()
 
+@router.patch("/comments/{id}/resolve")
+async def toggle_comment_resolution(
+    id: str,
+    resolved: bool,
+    current_user: User = Depends(get_current_user)
+):
+    """Toggle comment resolution status"""
+    comment = await Comment.get(id)
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    
+    comment.resolved = resolved
+    await comment.save()
+    return comment
+
+@router.get("/content/{id}/comments/stats")
+async def get_comment_stats(id: str):
+    """Get comment statistics for content"""
+    comments = await Comment.find(Comment.content_id.id == id).to_list()
+    total = len(comments)
+    unresolved = len([c for c in comments if not c.resolved])
+    resolved = total - unresolved
+    
+    return {
+        "total": total,
+        "unresolved": unresolved,
+        "resolved": resolved
+    }
+
+@router.get("/tasks/{id}/comment-stats")
+async def get_task_comment_stats(id: str):
+    """Get comment statistics for task's linked content"""
+    task = await Task.get(id)
+    if not task or not task.content_id:
+        return {"unresolved_count": 0, "can_auto_complete": True}
+    
+    stats = await get_comment_stats(str(task.content_id.id))
+    can_auto_complete = stats["unresolved"] == 0
+    
+    return {
+        "content_id": str(task.content_id.id),
+        "unresolved_count": stats["unresolved"],
+        "can_auto_complete": can_auto_complete
+    }
+
 # --- Content Sharing ---
 
 class ShareContentRequest(BaseModel):
