@@ -159,9 +159,24 @@ async def restore_version(id: str, version_id: str):
     return {"message": f"Restored to version {version.version_number}"}
 
 # --- Comments ---
-@router.post("/comments", response_model=Comment)
-async def create_comment(comment: Comment):
-    # comment.organization_id = current_user.organization_id
+
+class CreateCommentRequest(BaseModel):
+    content_id: str
+    text: str
+    author: str
+    selection_range: Optional[Dict] = None
+    resolved: bool = False
+
+@router.post("/comments")
+async def create_comment(req: CreateCommentRequest):
+    """Create comment with proper Link references"""
+    comment = Comment(
+        content_id=req.content_id,
+        text=req.text,
+        author=req.author,
+        selection_range=req.selection_range,
+        resolved=req.resolved
+    )
     await comment.create()
     
     # Broadcast comment

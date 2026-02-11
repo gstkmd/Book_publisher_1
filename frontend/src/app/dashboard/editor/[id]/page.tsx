@@ -82,6 +82,7 @@ export default function EditorEditPage() {
             fetchComments();
         } catch (error) {
             console.error('Error adding comment:', error);
+            alert('Failed to add comment. Please try again.');
         }
     };
 
@@ -308,8 +309,8 @@ export default function EditorEditPage() {
                                     <button
                                         onClick={() => toggleResolve(comment._id, comment.resolved)}
                                         className={`text-xs px-2 py-1 rounded ${comment.resolved
-                                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                             }`}
                                     >
                                         {comment.resolved ? '✓ Resolved' : 'Resolve'}
