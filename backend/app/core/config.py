@@ -1,5 +1,6 @@
+
 from typing import List, Union
-from pydantic import AnyHttpUrl, validator
+from pydantic import AnyHttpUrl, validator, Field
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -22,7 +23,7 @@ class Settings(BaseSettings):
             return v
         raise ValueError(v)
 
-    MONGODB_URL: str # Required, set via env var (e.g., in docker-compose or Railway)
+    MONGODB_URL: str = Field(..., validation_alias="MONGO_URI") # Required, supports MONGO_URI env var
     DB_NAME: str = "edu_publishing"
     
     # Storage (Wasabi/S3)
