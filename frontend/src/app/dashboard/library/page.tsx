@@ -267,6 +267,10 @@ export default function ContentLibrary() {
                                                 href={`/dashboard/editor/${c._id}`}
                                                 className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                                             >Edit</Link>
+                                            <Link
+                                                href={`/dashboard/library/${c._id}/versions`}
+                                                className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                                            >Versions</Link>
                                             {c.status === 'draft' && (
                                                 <button
                                                     onClick={() => handlePublish(c._id)}
