@@ -85,7 +85,8 @@ export default function ContentLibrary() {
     const handleExport = (contentId: string, format: 'pdf' | 'docx' = 'pdf') => {
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-            window.open(`${apiUrl}/generic/export_content/${contentId}?format=${format}`, '_blank');
+            // Backend endpoint is /generic/content/{id}/export
+            window.open(`${apiUrl}/generic/content/${contentId}/export?format=${format}`, '_blank');
         } catch (err: any) {
             console.error(err);
             alert('Failed to export: ' + (err.message || 'Unknown error'));
