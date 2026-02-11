@@ -1,13 +1,15 @@
 [build]
 builder = "nixpacks"
 
-[deploy]
-startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+[build]
+builder = "nixpacks"
 
 [[services]]
 name = "backend"
 root = "backend"
+startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
 
 [[services]]
 name = "frontend"
 root = "frontend"
+startCommand = "npm start" # Adjust if you use a different command like 'npm run dev' or 'npm run start'
