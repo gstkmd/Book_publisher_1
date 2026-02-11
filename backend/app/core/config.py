@@ -13,10 +13,11 @@ class Settings(BaseSettings):
     # e.g: '["http://localhost", "http://localhost:4200", "http://localhost:3000", \
     # "http://localhost:8080", "https://localhost", "https://localhost:4200", \
     # "https://localhost:3000", "https://localhost:8080", "http://local.dockertoolbox.tiangolo.com"]'
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+    # Use Union to prevent JSON parsing before validator
+    BACKEND_CORS_ORIGINS: Union[str, List[AnyHttpUrl]] = []
 
     @validator("BACKEND_CORS_ORIGINS", pre=True)
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
         if isinstance(v, str):
             # Handle empty or whitespace-only strings
             if not v or not v.strip():
@@ -24,7 +25,7 @@ class Settings(BaseSettings):
             # Handle comma-separated values
             if not v.startswith("["):
                 return [i.strip() for i in v.split(",") if i.strip()]
-        if isinstance(v, (list, str)):
+        if isinstance(v, list):
             return v
         raise ValueError(v)
 
