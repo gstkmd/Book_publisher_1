@@ -27,7 +27,9 @@ async def create_user(
     """
     Create new user.
     """
-    user = await User.find_one(User.email == user_in.email)
+    # Normalize email to lowercase for case-insensitive lookups
+    email_lower = user_in.email.lower()
+    user = await User.find_one(User.email == email_lower)
     if user:
         raise HTTPException(
             status_code=400,
@@ -35,7 +37,7 @@ async def create_user(
         )
     
     user = User(
-        email=user_in.email,
+        email=email_lower,
         hashed_password=security.get_password_hash(user_in.password),
         full_name=user_in.full_name,
         role=user_in.role,
