@@ -6,18 +6,23 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function ContentLibrary() {
-    const { token, user } = useAuth();
+    const { token, user, isLoading: authLoading } = useAuth();
     const router = useRouter();
     const [contents, setContents] = useState<any[]>([]);
     const [view, setView] = useState<'grid' | 'list'>('list');
     const [filter, setFilter] = useState('all');
     const [showMenu, setShowMenu] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (token) fetchContent();
-    }, [token]);
+        if (token) {
+            fetchContent();
+        } else if (!authLoading) {
+            // Auth loaded but no token - redirect to login
+            setLoading(false);
+        }
+    }, [token, authLoading]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -127,6 +132,17 @@ export default function ContentLibrary() {
             return 'N/A';
         }
     };
+
+    // Show loading while auth is initializing
+    if (authLoading) {
+        return (
+            <div className="container mx-auto py-8 px-4">
+                <div className="flex items-center justify-center min-h-[400px]">
+                    <div className="text-gray-500">Initializing...</div>
+                </div>
+            </div>
+        );
+    }
 
     if (loading) {
         return (
