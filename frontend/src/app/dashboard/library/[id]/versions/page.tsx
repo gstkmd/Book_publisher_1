@@ -106,8 +106,8 @@ export default function ContentVersionsPage() {
                                 setSelectedVersions([]);
                             }}
                             className={`px-4 py-2 rounded text-sm font-medium ${compareMode
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                                 }`}
                         >
                             {compareMode ? 'Exit Compare' : 'Compare Versions'}
@@ -150,16 +150,60 @@ export default function ContentVersionsPage() {
                             </div>
                             {JSON.stringify(older.body) !== JSON.stringify(newer.body) && (
                                 <div className="mt-3 pt-3 border-t border-blue-200">
-                                    <div className="text-xs text-gray-600 mb-2">Content body has changes</div>
-                                    <div className="grid grid-cols-2 gap-4 text-xs">
-                                        <div className="bg-red-50 p-2 rounded max-h-32 overflow-auto">
-                                            <div className="font-semibold text-red-700 mb-1">Old:</div>
-                                            <pre className="whitespace-pre-wrap">{JSON.stringify(older.body, null, 2)}</pre>
-                                        </div>
-                                        <div className="bg-green-50 p-2 rounded max-h-32 overflow-auto">
-                                            <div className="font-semibold text-green-700 mb-1">New:</div>
-                                            <pre className="whitespace-pre-wrap">{JSON.stringify(newer.body, null, 2)}</pre>
-                                        </div>
+                                    <div className="text-xs text-gray-600 mb-2">Content Changes</div>
+                                    <div className="bg-gray-50 p-3 rounded text-xs font-mono max-h-96 overflow-auto">
+                                        {(() => {
+                                            // Extract text content from Rich Text JSON
+                                            const extractText = (body: any): string => {
+                                                if (!body) return '';
+                                                if (typeof body === 'string') return body;
+                                                if (body.content && Array.isArray(body.content)) {
+                                                    return body.content.map((node: any) => {
+                                                        if (node.type === 'text') return node.text || '';
+                                                        if (node.content) return extractText(node);
+                                                        if (node.text) return node.text;
+                                                        return '';
+                                                    }).join('');
+                                                }
+                                                return JSON.stringify(body);
+                                            };
+
+                                            const oldText = extractText(older.body);
+                                            const newText = extractText(newer.body);
+
+                                            // Simple line-by-line diff
+                                            const oldLines = oldText.split(/[\n.!?]+/).filter(l => l.trim());
+                                            const newLines = newText.split(/[\n.!?]+/).filter(l => l.trim());
+
+                                            const changes: JSX.Element[] = [];
+                                            const maxLen = Math.max(oldLines.length, newLines.length);
+
+                                            for (let i = 0; i < maxLen; i++) {
+                                                const oldLine = oldLines[i]?.trim() || '';
+                                                const newLine = newLines[i]?.trim() || '';
+
+                                                if (oldLine !== newLine) {
+                                                    if (oldLine && !newLines.includes(oldLine)) {
+                                                        changes.push(
+                                                            <div key={`old-${i}`} className="bg-red-100 border-l-4 border-red-500 p-2 my-1">
+                                                                <span className="text-red-700">- {oldLine}</span>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    if (newLine && !oldLines.includes(newLine)) {
+                                                        changes.push(
+                                                            <div key={`new-${i}`} className="bg-green-100 border-l-4 border-green-500 p-2 my-1">
+                                                                <span className="text-green-700">+ {newLine}</span>
+                                                            </div>
+                                                        );
+                                                    }
+                                                }
+                                            }
+
+                                            return changes.length > 0 ? changes : (
+                                                <div className="text-gray-500 italic">Minor formatting changes only</div>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             )}
@@ -172,8 +216,8 @@ export default function ContentVersionsPage() {
                         <div
                             key={version._id}
                             className={`border rounded p-4 cursor-pointer transition ${compareMode && selectedVersions.includes(version._id)
-                                    ? 'bg-blue-50 border-blue-400'
-                                    : 'hover:bg-gray-50'
+                                ? 'bg-blue-50 border-blue-400'
+                                : 'hover:bg-gray-50'
                                 }`}
                             onClick={() => compareMode && handleVersionSelect(version._id)}
                         >
