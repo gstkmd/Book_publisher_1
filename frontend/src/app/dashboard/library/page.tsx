@@ -12,6 +12,8 @@ export default function ContentLibrary() {
     const [view, setView] = useState<'grid' | 'list'>('list');
     const [filter, setFilter] = useState('all');
     const [showMenu, setShowMenu] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (token) fetchContent();
@@ -28,9 +30,17 @@ export default function ContentLibrary() {
 
     const fetchContent = async () => {
         try {
+            setLoading(true);
+            setError(null);
             const data = await api.get('/generic/content', token!);
-            setContents(data);
-        } catch (err) { console.error(err); }
+            setContents(Array.isArray(data) ? data : []);
+        } catch (err: any) {
+            console.error('Failed to fetch content:', err);
+            setError(err.message || 'Failed to load content');
+            setContents([]);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handlePublish = async (contentId: string) => {
@@ -48,7 +58,7 @@ export default function ContentLibrary() {
             }, token!);
 
             alert('Content published successfully!');
-            fetchContent(); // Refresh list
+            fetchContent();
         } catch (err: any) {
             console.error(err);
             alert('Failed to publish: ' + (err.message || 'Unknown error'));
@@ -61,16 +71,17 @@ export default function ContentLibrary() {
         try {
             await api.delete(`/generic/content/${contentId}`, token!);
             alert('Content deleted successfully!');
-            fetchContent(); // Refresh list
+            fetchContent();
         } catch (err: any) {
             console.error(err);
             alert('Failed to delete: ' + (err.message || 'Unknown error'));
         }
     };
 
-    const handleExport = async (contentId: string, format: 'pdf' | 'docx' = 'pdf') => {
+    const handleExport = (contentId: string, format: 'pdf' | 'docx' = 'pdf') => {
         try {
-            window.open(`${process.env.NEXT_PUBLIC_API_URL}/generic/export_content/${contentId}?format=${format}`, '_blank');
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+            window.open(`${apiUrl}/generic/export_content/${contentId}?format=${format}`, '_blank');
         } catch (err: any) {
             console.error(err);
             alert('Failed to export: ' + (err.message || 'Unknown error'));
@@ -78,28 +89,66 @@ export default function ContentLibrary() {
     };
 
     const filteredContent = contents.filter(c => {
+        if (!c) return false;
         if (filter === 'all') return true;
         return c.status === filter;
     });
 
-    const getStatusBadge = (status: string) => {
-        const colors = {
+    const getStatusBadge = (status?: string) => {
+        const st = status || 'draft';
+        const colors: Record<string, string> = {
             draft: 'bg-yellow-100 text-yellow-800',
             published: 'bg-green-100 text-green-800',
             archived: 'bg-gray-100 text-gray-800'
         };
-        return colors[status as keyof typeof colors] || colors.draft;
+        return colors[st] || colors.draft;
     };
 
-    const getTypeLabel = (type: string) => {
+    const getTypeLabel = (type?: string) => {
         const labels: Record<string, string> = {
             article: 'Article',
             book_chapter: 'Chapter',
             lesson: 'Lesson',
             resource: 'Activity'
         };
-        return labels[type] || type;
+        return labels[type || 'article'] || type || 'Article';
     };
+
+    const formatDate = (dateStr?: string | Date) => {
+        if (!dateStr) return 'N/A';
+        try {
+            return new Date(dateStr).toLocaleDateString();
+        } catch {
+            return 'N/A';
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="container mx-auto py-8 px-4">
+                <div className="flex items-center justify-center min-h-[400px]">
+                    <div className="text-gray-500">Loading content...</div>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="container mx-auto py-8 px-4">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
+                    <h3 className="font-bold mb-2">Error Loading Content</h3>
+                    <p>{error}</p>
+                    <button
+                        onClick={() => fetchContent()}
+                        className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="container mx-auto py-8 px-4">
@@ -148,59 +197,8 @@ export default function ContentLibrary() {
                 </div>
             )}
 
-            {/* Grid View */}
-            {view === 'grid' && (
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {filteredContent.map(c => (
-                        <div key={c._id} className="bg-white rounded-lg shadow-sm border hover:shadow-md transition">
-                            <div className="h-32 bg-gradient-to-br from-blue-100 to-purple-100 rounded-t-lg flex items-center justify-center text-gray-400">
-                                {c.cover_image ? <img src={c.cover_image} className="h-full w-full object-cover rounded-t-lg" alt={c.title} /> : '📄'}
-                            </div>
-                            <div className="p-4">
-                                <div className="flex items-start justify-between mb-2">
-                                    <h3 className="font-bold text-lg truncate flex-1">{c.title}</h3>
-                                    <div className="relative">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setShowMenu(showMenu === c._id ? null : c._id);
-                                            }}
-                                            className="text-gray-400 hover:text-gray-600 p-1"
-                                        >⋮</button>
-                                        {showMenu === c._id && (
-                                            <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border z-10" onClick={(e) => e.stopPropagation()}>
-                                                <Link href={`/dashboard/editor/${c._id}`} className="block px-4 py-2 hover:bg-gray-50 text-sm">✏️ Edit</Link>
-                                                {c.status === 'draft' && (
-                                                    <button onClick={() => handlePublish(c._id)} className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">📤 Publish</button>
-                                                )}
-                                                <Link href={`/dashboard/library/${c._id}/versions`} className="block px-4 py-2 hover:bg-gray-50 text-sm">🕐 Versions</Link>
-                                                <button onClick={() => handleExport(c._id, 'pdf')} className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">📥 Export PDF</button>
-                                                <button onClick={() => handleExport(c._id, 'docx')} className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">📥 Export Word</button>
-                                                <button onClick={() => handleDelete(c._id)} className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm text-red-600">🗑️ Delete</button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusBadge(c.status || 'draft')}`}>
-                                        {c.status || 'draft'}
-                                    </span>
-                                    <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                                        {getTypeLabel(c.type)}
-                                    </span>
-                                </div>
-                                <div className="text-xs text-gray-500 space-y-1">
-                                    <div>📅 {new Date(c.created_at).toLocaleDateString()}</div>
-                                    <div className="truncate">👤 {c.author || 'Unknown'}</div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
             {/* List View */}
-            {view === 'list' && (
+            {view === 'list' && filteredContent.length > 0 && (
                 <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
                     <table className="w-full">
                         <thead className="bg-gray-50 border-b">
@@ -208,31 +206,29 @@ export default function ContentLibrary() {
                                 <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Title</th>
                                 <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Type</th>
                                 <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Status</th>
-                                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Author</th>
                                 <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Last Updated</th>
                                 <th className="text-right px-6 py-3 text-sm font-semibold text-gray-700">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredContent.map(c => (
-                                <tr key={c._id} className="border-b hover:bg-gray-50 transition">
+                            {filteredContent.map((c) => (
+                                <tr key={c._id || Math.random()} className="border-b hover:bg-gray-50 transition">
                                     <td className="px-6 py-4">
-                                        <div className="font-medium text-gray-900">{c.title}</div>
+                                        <div className="font-medium text-gray-900">{c.title || 'Untitled'}</div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className="text-sm text-gray-600">{getTypeLabel(c.type)}</span>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${getStatusBadge(c.status || 'draft')}`}>
+                                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${getStatusBadge(c.status)}`}>
                                             {c.status || 'draft'}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-gray-600">{c.author || 'Unknown'}</td>
                                     <td className="px-6 py-4 text-sm text-gray-600">
-                                        {new Date(c.updated_at || c.created_at).toLocaleDateString()}
+                                        {formatDate(c.updated_at || c.created_at)}
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
+                                        <div className="flex items-center justify-end gap-3">
                                             <Link
                                                 href={`/dashboard/editor/${c._id}`}
                                                 className="text-blue-600 hover:text-blue-800 text-sm font-medium"
@@ -243,26 +239,14 @@ export default function ContentLibrary() {
                                                     className="text-green-600 hover:text-green-800 text-sm font-medium"
                                                 >Publish</button>
                                             )}
-                                            <Link
-                                                href={`/dashboard/library/${c._id}/versions`}
+                                            <button
+                                                onClick={() => handleExport(c._id, 'pdf')}
                                                 className="text-gray-600 hover:text-gray-800 text-sm"
-                                            >Versions</Link>
-                                            <div className="relative">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setShowMenu(showMenu === c._id ? null : c._id);
-                                                    }}
-                                                    className="text-gray-400 hover:text-gray-600 px-2"
-                                                >&#x22ee;</button>
-                                                {showMenu === c._id && (
-                                                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border z-10" onClick={(e) => e.stopPropagation()}>
-                                                        <button onClick={() => handleExport(c._id, 'pdf')} className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">📥 Export PDF</button>
-                                                        <button onClick={() => handleExport(c._id, 'docx')} className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">📥 Export Word</button>
-                                                        <button onClick={() => handleDelete(c._id)} className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm text-red-600">🗑️ Delete</button>
-                                                    </div>
-                                                )}
-                                            </div>
+                                            >Export</button>
+                                            <button
+                                                onClick={() => handleDelete(c._id)}
+                                                className="text-red-600 hover:text-red-800 text-sm"
+                                            >Delete</button>
                                         </div>
                                     </td>
                                 </tr>
