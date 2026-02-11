@@ -5,4 +5,4 @@ nixPkgs = ["python311", "poetry"]
 cmds = ["python -m venv .venv", ". .venv/bin/activate", "poetry install --no-root --no-interaction"]
 
 [start]
-cmd = ". .venv/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+cmd = "poetry run uvicorn app.main:app --host 0.0.0.0 --port $PORT"
