@@ -161,11 +161,14 @@ export default function ContentLibrary() {
                                     <h3 className="font-bold text-lg truncate flex-1">{c.title}</h3>
                                     <div className="relative">
                                         <button
-                                            onClick={() => setShowMenu(showMenu === c._id ? null : c._id)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShowMenu(showMenu === c._id ? null : c._id);
+                                            }}
                                             className="text-gray-400 hover:text-gray-600 p-1"
                                         >⋮</button>
                                         {showMenu === c._id && (
-                                            <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border z-10">
+                                            <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border z-10" onClick={(e) => e.stopPropagation()}>
                                                 <Link href={`/dashboard/editor/${c._id}`} className="block px-4 py-2 hover:bg-gray-50 text-sm">✏️ Edit</Link>
                                                 {c.status === 'draft' && (
                                                     <button onClick={() => handlePublish(c._id)} className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">📤 Publish</button>
@@ -246,11 +249,14 @@ export default function ContentLibrary() {
                                             >Versions</Link>
                                             <div className="relative">
                                                 <button
-                                                    onClick={() => setShowMenu(showMenu === c._id ? null : c._id)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setShowMenu(showMenu === c._id ? null : c._id);
+                                                    }}
                                                     className="text-gray-400 hover:text-gray-600 px-2"
-                                                >⋮</button>
+                                                >&#x22ee;</button>
                                                 {showMenu === c._id && (
-                                                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border z-10">
+                                                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border z-10" onClick={(e) => e.stopPropagation()}>
                                                         <button onClick={() => handleExport(c._id, 'pdf')} className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">📥 Export PDF</button>
                                                         <button onClick={() => handleExport(c._id, 'docx')} className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">📥 Export Word</button>
                                                         <button onClick={() => handleDelete(c._id)} className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm text-red-600">🗑️ Delete</button>
