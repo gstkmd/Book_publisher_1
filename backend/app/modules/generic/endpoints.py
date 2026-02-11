@@ -67,6 +67,14 @@ async def websocket_endpoint(websocket: WebSocket, document_id: str):
 async def read_contents():
     return await Content.find_all().to_list()
 
+@router.get("/content/{id}", response_model=Content)
+async def get_content(id: str):
+    content = await Content.get(id)
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found")
+    return content
+
+
 @router.post("/content", response_model=Content)
 async def create_content(content: Content):
     # In a real app, we would get current_user here to set the organization_id
