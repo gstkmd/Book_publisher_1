@@ -1,8 +1,10 @@
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form, Depends
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 from app.modules.generic.models import Content, ContentVersion, Comment, Task
+from app.modules.core.models import User
+from app.api.deps import get_current_user
 from app.modules.generic.websockets import manager
 from app.core.storage import s3_client
 
@@ -173,9 +175,6 @@ async def get_content_comments(id: str):
     return await Comment.find(Comment.content_id.id == id).to_list()
 
 # --- Content Sharing ---
-from pydantic import BaseModel
-from typing import List, Optional
-from datetime import datetime
 
 class ShareContentRequest(BaseModel):
     user_ids: List[str]
@@ -219,9 +218,6 @@ async def share_content(
 
 # --- Tasks ---
 from app.modules.generic.schemas import TaskCreate, TaskSchema
-from app.api.deps import get_current_user
-from app.modules.core.models import User
-from fastapi import Depends
 
 @router.post("/tasks", response_model=TaskSchema)
 async def create_task(
