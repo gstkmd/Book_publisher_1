@@ -244,7 +244,7 @@ async def get_tasks(current_user: User = Depends(get_current_user)):
     ]
 
 
-@router.get("/content/{id}/export")
+@router.get("/export_content/{id}")
 async def export_content(id: str, format: str = "pdf"):
     from fastapi.responses import Response
     from app.modules.generic.publishing import publishing_service
