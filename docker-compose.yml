@@ -10,8 +10,8 @@ services:
     volumes:
       - ./backend/app:/app/app
     environment:
-      - MONGODB_URL=mongodb://mongo:27017/book_publisher
-      - DB_NAME=book_publisher
+      - MONGODB_URL=${MONGODB_URL:-mongodb://mongo:27017/book_publisher}
+      - DB_NAME=${DB_NAME:-book_publisher}
       - SECRET_KEY=supersecretkey
       - CELERY_BROKER_URL=redis://redis:6379/0
     depends_on:
@@ -26,8 +26,8 @@ services:
     volumes:
       - ./backend/app:/app/app
     environment:
-      - MONGODB_URL=mongodb://mongo:27017/book_publisher
-      - DB_NAME=book_publisher
+      - MONGODB_URL=${MONGODB_URL:-mongodb://mongo:27017/book_publisher}
+      - DB_NAME=${DB_NAME:-book_publisher}
       - SECRET_KEY=supersecretkey
       - CELERY_BROKER_URL=redis://redis:6379/0
     depends_on:

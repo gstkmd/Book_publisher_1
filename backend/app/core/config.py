@@ -22,7 +22,7 @@ class Settings(BaseSettings):
             return v
         raise ValueError(v)
 
-    MONGODB_URL: str = "mongodb://localhost:27017" # Default local, override with Atlas URI
+    MONGODB_URL: str = "mongodb://mongo:27017/book_publisher" # Default docker, override with Atlas URI
     DB_NAME: str = "edu_publishing"
     
     # Storage (Wasabi/S3)
