@@ -106,7 +106,7 @@ export default function ReviewContentPage() {
         // Sort by position
         highlights.sort((a, b) => a.from - b.from);
 
-        let result: JSX.Element[] = [];
+        let result: any[] = [];
         let lastIndex = 0;
 
         highlights.forEach((highlight, idx) => {
