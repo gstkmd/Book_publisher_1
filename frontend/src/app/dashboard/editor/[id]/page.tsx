@@ -14,6 +14,7 @@ export default function EditorEditPage() {
     const [title, setTitle] = useState('');
     const [type, setType] = useState('article');
     const [content, setContent] = useState('');
+    const [author, setAuthor] = useState('');
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
 
@@ -36,6 +37,7 @@ export default function EditorEditPage() {
             setTitle(data.title || '');
             setType(data.type || 'article');
             setContent(data.body?.text || '');
+            setAuthor(data.author || user?.id || '');
         } catch (err: any) {
             console.error(err);
             alert('Failed to load content: ' + (err.message || 'Unknown error'));
@@ -60,6 +62,8 @@ export default function EditorEditPage() {
                 body: { text: content },
                 type,
                 status: 'draft',
+                author: author || user?.id,
+                organization_id: user?.organization_id || null
             }, token!);
 
             alert('Content updated successfully!');
@@ -88,6 +92,8 @@ export default function EditorEditPage() {
                 body: { text: content },
                 type,
                 status: 'published',
+                author: author || user?.id,
+                organization_id: user?.organization_id || null
             }, token!);
 
             alert('Content published successfully!');
