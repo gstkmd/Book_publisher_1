@@ -45,7 +45,7 @@ export default function ReviewContentPage() {
 
     const fetchContent = async () => {
         try {
-            const data = await api.get(`/generic/content/${id}`, token);
+            const data = await api.get(`/generic/content/${id}`, token || undefined);
             setContent(data);
         } catch (error) {
             console.error('Error fetching content:', error);
@@ -56,7 +56,7 @@ export default function ReviewContentPage() {
 
     const fetchComments = async () => {
         try {
-            const data = await api.get(`/generic/content/${id}/comments`, token);
+            const data = await api.get(`/generic/content/${id}/comments`, token || undefined);
             setComments(data);
         } catch (error) {
             console.error('Error fetching comments:', error);
@@ -65,7 +65,7 @@ export default function ReviewContentPage() {
 
     const toggleResolve = async (commentId: string, currentResolved: boolean) => {
         try {
-            await api.patch(`/generic/comments/${commentId}/resolve?resolved=${!currentResolved}`, {}, token);
+            await api.patch(`/generic/comments/${commentId}/resolve?resolved=${!currentResolved}`, {}, token || undefined);
             fetchComments(); // Refresh
         } catch (error) {
             console.error('Error toggling resolution:', error);
@@ -120,8 +120,8 @@ export default function ReviewContentPage() {
                 <mark
                     key={`highlight-${idx}`}
                     className={`cursor-pointer ${highlight.resolved
-                            ? 'bg-green-200 opacity-50'
-                            : 'bg-yellow-300'
+                        ? 'bg-green-200 opacity-50'
+                        : 'bg-yellow-300'
                         } ${selectedCommentId === highlight.commentId ? 'ring-2 ring-blue-500' : ''}`}
                     onClick={() => {
                         setSelectedCommentId(highlight.commentId);
@@ -218,8 +218,8 @@ export default function ReviewContentPage() {
                                 <button
                                     onClick={() => setFilter('all')}
                                     className={`px-3 py-1 rounded ${filter === 'all'
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-gray-100 hover:bg-gray-200'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-100 hover:bg-gray-200'
                                         }`}
                                 >
                                     All ({stats.total})
@@ -227,8 +227,8 @@ export default function ReviewContentPage() {
                                 <button
                                     onClick={() => setFilter('unresolved')}
                                     className={`px-3 py-1 rounded ${filter === 'unresolved'
-                                            ? 'bg-yellow-600 text-white'
-                                            : 'bg-gray-100 hover:bg-gray-200'
+                                        ? 'bg-yellow-600 text-white'
+                                        : 'bg-gray-100 hover:bg-gray-200'
                                         }`}
                                 >
                                     Unresolved ({stats.unresolved})
@@ -236,8 +236,8 @@ export default function ReviewContentPage() {
                                 <button
                                     onClick={() => setFilter('resolved')}
                                     className={`px-3 py-1 rounded ${filter === 'resolved'
-                                            ? 'bg-green-600 text-white'
-                                            : 'bg-gray-100 hover:bg-gray-200'
+                                        ? 'bg-green-600 text-white'
+                                        : 'bg-gray-100 hover:bg-gray-200'
                                         }`}
                                 >
                                     Resolved ({stats.resolved})
@@ -256,8 +256,8 @@ export default function ReviewContentPage() {
                                     key={comment._id}
                                     id={`comment-${comment._id}`}
                                     className={`border rounded p-3 ${selectedCommentId === comment._id
-                                            ? 'border-blue-500 bg-blue-50'
-                                            : 'border-gray-200'
+                                        ? 'border-blue-500 bg-blue-50'
+                                        : 'border-gray-200'
                                         } ${comment.resolved ? 'opacity-60' : ''}`}
                                 >
                                     <div className="flex items-start justify-between mb-2">
@@ -267,8 +267,8 @@ export default function ReviewContentPage() {
                                         <button
                                             onClick={() => toggleResolve(comment._id, comment.resolved)}
                                             className={`text-xs px-2 py-1 rounded ${comment.resolved
-                                                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                                 }`}
                                         >
                                             {comment.resolved ? '✓ Resolved' : 'Mark Resolved'}
