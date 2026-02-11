@@ -15,8 +15,10 @@ services:
       - SECRET_KEY=supersecretkey
       - CELERY_BROKER_URL=redis://redis:6379/0
     depends_on:
-      - mongo
-      - redis
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   worker:
     build:
@@ -31,8 +33,10 @@ services:
       - SECRET_KEY=supersecretkey
       - CELERY_BROKER_URL=redis://redis:6379/0
     depends_on:
-      - mongo
-      - redis
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   mongo:
     image: mongo:latest
@@ -40,6 +44,11 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
