@@ -6,8 +6,13 @@ from app.modules.core.models import User, WebhookSubscription, Organization
 from app.modules.generic.models import Content, ContentVersion, Comment, Task
 from app.modules.educational.models import Standard, Assessment, LessonPlan
 
+import certifi
+
 async def init_db():
-    client = AsyncIOMotorClient(settings.MONGODB_URL)
+    client = AsyncIOMotorClient(
+        settings.MONGODB_URL,
+        tlsCAFile=certifi.where()
+    )
     await init_beanie(
         database=client[settings.DB_NAME],
         document_models=[User, Content, ContentVersion, Standard, Assessment, LessonPlan, WebhookSubscription, Organization, Comment, Task]
