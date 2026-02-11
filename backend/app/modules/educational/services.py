@@ -1,5 +1,5 @@
-from typing import List, Dict
-from app.modules.educational.models import Standard
+from typing import List, Dict, Any
+from app.modules.educational.models import Standard, LessonPlan
 
 class StandardsService:
     async def ingest_standards_json(self, standards_data: List[Dict]) -> List[Standard]:
@@ -31,4 +31,20 @@ class StandardsService:
             ]
         }).to_list()
 
+class LessonPlanService:
+    async def generate_plan(self, content: Any, standard: Standard) -> LessonPlan:
+        """
+        Generates a lesson plan for the given content and standard.
+        """
+        # Mock implementation
+        plan = LessonPlan(
+            title=f"Lesson Plan for {content.title}",
+            content_id=str(content.id),
+            standard_id=str(standard.id),
+            plan_content=f"Generated lesson plan based on standard {standard.code}."
+        )
+        await plan.create()
+        return plan
+
 standards_service = StandardsService()
+lesson_plan_service = LessonPlanService()

@@ -43,5 +43,16 @@ class Assessment(Document):
     created_at: datetime = datetime.utcnow()
     is_published: bool = False
 
+
     class Settings:
         name = "assessments"
+
+class LessonPlan(Document):
+    title: str
+    content_id: str
+    standard_id: str
+    plan_content: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = "lesson_plans"
