@@ -170,18 +170,20 @@ class CreateCommentRequest(BaseModel):
 @router.post("/comments")
 async def create_comment(req: CreateCommentRequest):
     """Create comment with proper Link references"""
+    from bson import ObjectId
+    
     comment = Comment(
-        content_id=req.content_id,
+        content_id=ObjectId(req.content_id),
         text=req.text,
-        author=req.author,
+        author=ObjectId(req.author),
         selection_range=req.selection_range,
         resolved=req.resolved
     )
     await comment.create()
     
-    # Broadcast comment
+    # Broadcast comment - use ref.id to get the ObjectId from Link
     if comment.content_id:
-         await manager.broadcast(f"New Comment: {comment.text}", str(comment.content_id.id))
+         await manager.broadcast(f"New Comment: {comment.text}", str(comment.content_id.ref.id))
 
     return comment
 
@@ -225,11 +227,11 @@ async def get_task_comment_stats(id: str):
     if not task or not task.content_id:
         return {"unresolved_count": 0, "can_auto_complete": True}
     
-    stats = await get_comment_stats(str(task.content_id.id))
+    stats = await get_comment_stats(str(task.content_id.ref.id))
     can_auto_complete = stats["unresolved"] == 0
     
     return {
-        "content_id": str(task.content_id.id),
+        "content_id": str(task.content_id.ref.id),
         "unresolved_count": stats["unresolved"],
         "can_auto_complete": can_auto_complete
     }
@@ -315,9 +317,9 @@ async def create_task(
         description=task.description,
         status=task.status,
         due_date=task.due_date,
-        content_id=str(task.content_id) if task.content_id else None,
-        assignee=str(task.assignee) if task.assignee else None,
-        created_by=str(task.created_by) if task.created_by else None,
+        content_id=str(task.content_id.ref.id) if task.content_id else None,
+        assignee=str(task.assignee.ref.id) if task.assignee else None,
+        created_by=str(task.created_by.ref.id) if task.created_by else None,
         organization_id=task.organization_id,
         created_at=task.created_at
     )
@@ -335,9 +337,9 @@ async def get_tasks(current_user: User = Depends(get_current_user)):
             description=task.description,
             status=task.status,
             due_date=task.due_date,
-            content_id=str(task.content_id) if task.content_id else None,
-            assignee=str(task.assignee) if task.assignee else None,
-            created_by=str(task.created_by) if task.created_by else None,
+            content_id=str(task.content_id.ref.id) if task.content_id else None,
+            assignee=str(task.assignee.ref.id) if task.assignee else None,
+            created_by=str(task.created_by.ref.id) if task.created_by else None,
             organization_id=task.organization_id,
             created_at=task.created_at
         )
