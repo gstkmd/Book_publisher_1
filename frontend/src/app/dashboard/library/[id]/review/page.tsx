@@ -54,6 +54,7 @@ export default function ReviewContentPage() {
     const fetchContent = async () => {
         try {
             const data = await api.get(`/generic/content/${id}`, token || undefined);
+            console.log('Fetched Content Body:', data.body);
             setContent(data);
         } catch (error) {
             console.error('Error fetching content:', error);
@@ -82,7 +83,19 @@ export default function ReviewContentPage() {
 
     const extractTextFromRichText = (body: any): string => {
         if (!body) return '';
-        if (typeof body === 'string') return body;
+        if (typeof body === 'string') {
+            try {
+                // Try parsing string as JSON just in case it's a stringified JSON
+                const parsed = JSON.parse(body);
+                return extractTextFromRichText(parsed);
+            } catch {
+                return body;
+            }
+        }
+        // Direct text property (Simple Editor)
+        if (body.text && typeof body.text === 'string') return body.text;
+
+        // ProseMirror structured content
         if (body.content && Array.isArray(body.content)) {
             return body.content.map((node: any) => {
                 if (node.type === 'text') return node.text || '';
@@ -91,6 +104,8 @@ export default function ReviewContentPage() {
                 return '';
             }).join('');
         }
+
+        // Fallback
         return JSON.stringify(body);
     };
 
