@@ -11,6 +11,37 @@ class InviteRequest(BaseModel):
     email: EmailStr
     full_name: Optional[str] = None
     password: Optional[str] = None
+    role: Optional[str] = "user"
+
+class CreateOrgRequest(BaseModel):
+    name: str
+    slug: str
+
+@router.post("/", response_model=Organization)
+async def create_organization(
+    org_in: CreateOrgRequest,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.organization_id:
+        raise HTTPException(status_code=400, detail="User already belongs to an organization")
+    
+    # Check slug uniqueness
+    existing = await Organization.find_one(Organization.slug == org_in.slug)
+    if existing:
+        raise HTTPException(status_code=400, detail="Organization slug already exists")
+    
+    org = Organization(
+        name=org_in.name,
+        slug=org_in.slug,
+        plan="free"
+    )
+    await org.create()
+    
+    current_user.organization_id = org.id
+    current_user.role = "admin" # First user becomes admin
+    await current_user.save()
+    
+    return org
 
 @router.get("/me", response_model=Organization)
 async def get_my_organization(current_user: User = Depends(get_current_user)):
@@ -71,6 +102,8 @@ async def invite_member(
                 raise HTTPException(status_code=400, detail="User is already in another organization")
         
         user_to_invite.organization_id = current_user.organization_id
+        if invite.role:
+            user_to_invite.role = invite.role
         await user_to_invite.save()
         return {"message": f"Added existing user {user_to_invite.email} to organization"}
     
@@ -84,7 +117,7 @@ async def invite_member(
             hashed_password=get_password_hash(invite.password),
             full_name=invite.full_name or invite.email.split('@')[0],
             organization_id=current_user.organization_id,
-            role="user", # Default role
+            role=invite.role or "user", 
             is_active=True
         )
         await new_user.create()

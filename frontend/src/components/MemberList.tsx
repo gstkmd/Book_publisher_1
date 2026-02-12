@@ -12,6 +12,7 @@ export const MemberList = () => {
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviteName, setInviteName] = useState('');
     const [invitePassword, setInvitePassword] = useState('');
+    const [inviteRole, setInviteRole] = useState('user');
     const [inviting, setInviting] = useState(false);
 
     useEffect(() => {
@@ -32,13 +33,15 @@ export const MemberList = () => {
             await api.post('/organizations/invite', {
                 email: inviteEmail,
                 full_name: inviteName,
-                password: invitePassword
+                password: invitePassword,
+                role: inviteRole
             }, token!);
             alert('Member added successfully!');
             setShowInvite(false);
             setInviteEmail('');
             setInviteName('');
             setInvitePassword('');
+            setInviteRole('user');
             fetchMembers();
         } catch (err: any) {
             alert(err.message || 'Failed to invite member');
@@ -100,6 +103,24 @@ export const MemberList = () => {
                                     onChange={(e) => setInvitePassword(e.target.value)}
                                 />
                             </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Role</label>
+                            <select
+                                className="w-full p-2 border rounded text-sm bg-white"
+                                value={inviteRole}
+                                onChange={(e) => setInviteRole(e.target.value)}
+                            >
+                                <option value="user">User (Basic)</option>
+                                <option value="author">Author</option>
+                                <option value="section_editor">Section Editor</option>
+                                <option value="editor_in_chief">Editor in Chief</option>
+                                <option value="reviewer">Reviewer</option>
+                                <option value="illustrator">Illustrator</option>
+                                <option value="teacher">Teacher</option>
+                                <option value="admin">Admin</option>
+                            </select>
                         </div>
 
                         <div className="flex gap-2 pt-2">
