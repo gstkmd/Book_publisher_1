@@ -1,9 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.modules.core.models import User, Organization
 from app.api.deps import get_current_user
-from typing import List
+from typing import List, Optional
+from pydantic import BaseModel, EmailStr
+from app.core.security import get_password_hash
 
 router = APIRouter()
+
+class InviteRequest(BaseModel):
+    email: EmailStr
+    full_name: Optional[str] = None
+    password: Optional[str] = None
 
 @router.get("/me", response_model=Organization)
 async def get_my_organization(current_user: User = Depends(get_current_user)):
@@ -38,7 +45,50 @@ async def update_organization(
         org.slug = update_data["slug"]
     
     await org.save()
+    await org.save()
     return org
+
+@router.post("/invite")
+async def invite_member(
+    invite: InviteRequest,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "admin": 
+        raise HTTPException(status_code=403, detail="Only admins can invite members")
+
+    if not current_user.organization_id:
+        raise HTTPException(status_code=404, detail="Create an organization first")
+
+    # Check if user exists
+    user_to_invite = await User.find_one(User.email == invite.email.lower())
+    
+    if user_to_invite:
+        # Existing user logic
+        if user_to_invite.organization_id:
+            if user_to_invite.organization_id == current_user.organization_id:
+                raise HTTPException(status_code=400, detail="User is already in this organization")
+            else:
+                raise HTTPException(status_code=400, detail="User is already in another organization")
+        
+        user_to_invite.organization_id = current_user.organization_id
+        await user_to_invite.save()
+        return {"message": f"Added existing user {user_to_invite.email} to organization"}
+    
+    else:
+        # Create NEW user (Manual Provisioning)
+        if not invite.password:
+             raise HTTPException(status_code=400, detail="Password is required to create a new user")
+        
+        new_user = User(
+            email=invite.email.lower(),
+            hashed_password=get_password_hash(invite.password),
+            full_name=invite.full_name or invite.email.split('@')[0],
+            organization_id=current_user.organization_id,
+            role="user", # Default role
+            is_active=True
+        )
+        await new_user.create()
+        return {"message": f"Created new user {new_user.email} and added to organization"}
 
 @router.get("/members", response_model=List[User])
 async def get_organization_members(current_user: User = Depends(get_current_user)):
