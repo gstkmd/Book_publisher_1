@@ -24,7 +24,11 @@ export const OrgSettings = () => {
         try {
             const data = await api.get('/organizations/me', token!);
             setOrg(data);
-            setName(data.name);
+            if (data) {
+                setName(data.name);
+            } else {
+                setOrg(null);
+            }
         } catch (err: any) {
             console.error(err);
             // Check if 404 (No Org)
