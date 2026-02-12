@@ -7,7 +7,8 @@ import { api } from '@/lib/api';
 import Link from 'next/link';
 
 interface Comment {
-    _id: string;
+    id?: string;
+    _id?: string;
     text: string;
     selection_range?: { from: number; to: number };
     author: any;
@@ -298,7 +299,7 @@ export default function EditorEditPage() {
                         )}
                         {comments.map((comment) => (
                             <div
-                                key={comment._id}
+                                key={comment.id || comment._id}
                                 className={`border rounded p-3 ${comment.resolved ? 'opacity-60 bg-green-50' : 'bg-white'
                                     }`}
                             >
@@ -307,7 +308,7 @@ export default function EditorEditPage() {
                                         {new Date(comment.created_at).toLocaleString()}
                                     </div>
                                     <button
-                                        onClick={() => toggleResolve(comment._id, comment.resolved)}
+                                        onClick={() => toggleResolve((comment.id || comment._id)!, comment.resolved)}
                                         className={`text-xs px-2 py-1 rounded ${comment.resolved
                                             ? 'bg-green-100 text-green-700 hover:bg-green-200'
                                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
