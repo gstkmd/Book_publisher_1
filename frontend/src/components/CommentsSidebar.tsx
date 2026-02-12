@@ -5,7 +5,8 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 
 interface Comment {
-    _id: string;
+    id?: string;
+    _id?: string;
     text: string;
     author: any; // In real app, User type
     created_at: string;
@@ -41,7 +42,13 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({ documentId, ws
         if (!token) return;
         try {
             const data = await api.get(`/generic/content/${documentId}/comments`, token);
-            setComments(data);
+            console.log('Fetched Comments:', data);
+            if (Array.isArray(data)) {
+                setComments(data);
+            } else {
+                console.error('Comments data is not an array:', data);
+                setComments([]);
+            }
         } catch (err) {
             console.error(err);
         }
@@ -73,7 +80,7 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({ documentId, ws
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {comments.length === 0 && <p className="text-gray-400 italic text-sm">No comments yet.</p>}
                 {comments.map((c) => (
-                    <div key={c._id} className="bg-white p-3 rounded shadow-sm border text-sm">
+                    <div key={c.id || c._id} className="bg-white p-3 rounded shadow-sm border text-sm">
                         <p className="mb-2">{c.text}</p>
                         <div className="text-xs text-gray-400 flex justify-between">
                             <span>{new Date(c.created_at).toLocaleString()}</span>
