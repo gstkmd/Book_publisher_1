@@ -9,6 +9,7 @@ export const OrgSettings = () => {
     const [org, setOrg] = useState<any>(null);
     const [name, setName] = useState('');
     const [loading, setLoading] = useState(true); // Start true
+    const [error, setError] = useState(''); // NEW: Error state
 
     // Create Mode
     const [createName, setCreateName] = useState('');
@@ -24,9 +25,16 @@ export const OrgSettings = () => {
             const data = await api.get('/organizations/me', token!);
             setOrg(data);
             setName(data.name);
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            // If 404/null, allows user to create
+            // Check if 404 (No Org)
+            if (err.message && err.message.includes('404')) {
+                setOrg(null); // Valid "No Org" state
+            } else {
+                // If it's a fetch error or 500
+                setError(err.message || 'Failed to load organization.');
+                // Do NOT setOrg(null) if we aren't sure
+            }
         } finally {
             setLoading(false);
         }
@@ -60,6 +68,19 @@ export const OrgSettings = () => {
     };
 
     if (loading) return <div>Loading Organization...</div>;
+
+    if (error) return (
+        <div className="bg-red-50 p-6 rounded-lg shadow mb-6 border-l-4 border-red-500">
+            <h3 className="text-lg font-bold text-red-700 mb-2">Error Loading Organization</h3>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+                onClick={() => { setError(''); setLoading(true); fetchOrg(); }}
+                className="bg-red-100 text-red-700 px-4 py-2 rounded hover:bg-red-200"
+            >
+                Retry
+            </button>
+        </div>
+    );
 
     if (!org) return (
         <div className="bg-white p-6 rounded-lg shadow mb-6 border-l-4 border-yellow-400">

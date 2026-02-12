@@ -9,7 +9,7 @@ export const api = {
             headers['Authorization'] = `Bearer ${token}`;
         }
         const res = await fetch(`${API_URL}${endpoint}`, { headers });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
         return res.json();
     },
 
@@ -26,7 +26,7 @@ export const api = {
             headers,
             body: isFormData ? body : JSON.stringify(body),
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
         return res.json();
     },
 
@@ -43,7 +43,7 @@ export const api = {
             headers,
             body: isFormData ? body : JSON.stringify(body),
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
         return res.json();
     },
 
@@ -59,7 +59,7 @@ export const api = {
             headers,
             body: JSON.stringify(body),
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
         return res.json();
     },
 
@@ -74,7 +74,7 @@ export const api = {
             method: 'DELETE',
             headers,
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
         return res.json();
     },
 };
