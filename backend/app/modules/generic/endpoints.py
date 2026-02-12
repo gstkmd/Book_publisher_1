@@ -189,7 +189,16 @@ async def create_comment(req: CreateCommentRequest):
 
 @router.get("/content/{id}/comments", response_model=List[Comment])
 async def get_content_comments(id: str):
-    return await Comment.find(Comment.content_id.id == id).to_list()
+    from bson import ObjectId
+    try:
+        oid = ObjectId(id)
+        # Try finding by explicit ObjectId linkage
+        comments = await Comment.find(Comment.content_id.id == oid).to_list()
+        print(f"DEBUG: Fetching comments for content {id}. Found {len(comments)}")
+        return comments
+    except Exception as e:
+        print(f"DEBUG: Error fetching comments: {e}")
+        return []
 
 @router.patch("/comments/{id}/resolve")
 async def toggle_comment_resolution(
