@@ -216,14 +216,14 @@ export default function ReviewContentPage() {
             result.push(
                 <mark
                     key={`highlight-${idx}`}
-                    className={`cursor-pointer ${highlight.resolved
-                        ? 'bg-green-200 opacity-50'
-                        : 'bg-yellow-300'
-                        } ${selectedCommentId === highlight.commentId ? 'ring-2 ring-blue-500' : ''}`}
+                    id={`highlight-${highlight.commentId}`}
+                    className={`cursor-pointer transition-colors duration-200 ${highlight.resolved ? 'bg-green-200 opacity-50' : 'bg-yellow-300'
+                        } ${selectedCommentId === highlight.commentId ? 'ring-2 ring-blue-500 bg-yellow-400' : ''}`}
                     onClick={() => {
                         setSelectedCommentId(highlight.commentId);
-                        document.getElementById(`comment-${highlight.commentId}`)?.scrollIntoView({ behavior: 'smooth' });
+                        document.getElementById(`comment-${highlight.commentId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }}
+                    onMouseEnter={() => setSelectedCommentId(highlight.commentId)}
                     title="Click to view comment"
                 >
                     {text.substring(highlight.from, highlight.to)}
@@ -241,7 +241,14 @@ export default function ReviewContentPage() {
         return result;
     };
 
-    const filteredComments = comments.filter(c => {
+    // Sort comments by position
+    const sortedComments = [...comments].sort((a, b) => {
+        const fromA = a.selection_range?.from || Infinity;
+        const fromB = b.selection_range?.from || Infinity;
+        return fromA - fromB;
+    });
+
+    const filteredComments = sortedComments.filter(c => {
         if (filter === 'all') return true;
         if (filter === 'resolved') return c.resolved;
         if (filter === 'unresolved') return !c.resolved;
@@ -407,9 +414,17 @@ export default function ReviewContentPage() {
                                 <div
                                     key={comment.id || comment._id}
                                     id={`comment-${comment.id || comment._id}`}
-                                    className={`border rounded p-3 ${selectedCommentId === (comment.id || comment._id)
-                                        ? 'border-blue-500 bg-blue-50'
-                                        : 'border-gray-200'
+                                    onClick={() => {
+                                        setSelectedCommentId(comment.id || comment._id!);
+                                        const el = document.getElementById(`highlight-${comment.id || comment._id}`);
+                                        if (el) {
+                                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        }
+                                    }}
+                                    onMouseEnter={() => setSelectedCommentId(comment.id || comment._id!)}
+                                    className={`border rounded p-3 cursor-pointer transition-all duration-200 ${selectedCommentId === (comment.id || comment._id)
+                                            ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-400'
+                                            : 'border-gray-200 hover:border-blue-300'
                                         } ${comment.resolved ? 'opacity-60' : ''}`}
                                 >
                                     <div className="flex items-start justify-between mb-2">
