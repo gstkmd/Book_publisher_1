@@ -192,15 +192,30 @@ async def get_content_comments(id: str):
     from bson import ObjectId
     try:
         oid = ObjectId(id)
-        # Handle both DBRef (standard Beanie Link) and raw ObjectId (hybrid storage)
-        comments = await Comment.find({
-            "$or": [
-                {"content_id": oid},
-                {"content_id.$id": oid}
-            ]
-        }).to_list()
-        print(f"DEBUG: Fetching comments for content {id}. Found {len(comments)}")
-        return comments
+        # Fallback to manual filtering to ensure correctness
+        all_comments = await Comment.find_all().to_list()
+        filtered_comments = []
+        for c in all_comments:
+            c_content_id = None
+            # Check if it's a Link or direct ObjectId
+            if hasattr(c.content_id, 'ref') and hasattr(c.content_id.ref, 'id'):
+                 # It's a standard Beanie Link
+                 c_content_id = str(c.content_id.ref.id)
+            elif hasattr(c.content_id, 'id'):
+                 # It might be a direct object or another Link form
+                 c_content_id = str(c.content_id.id)
+            elif isinstance(c.content_id, ObjectId):
+                 # It's a raw ObjectId
+                 c_content_id = str(c.content_id)
+            else:
+                 # Try casting to string as last resort
+                 c_content_id = str(c.content_id)
+            
+            if c_content_id == id:
+                filtered_comments.append(c)
+                
+        print(f"DEBUG: Manually filtered comments for content {id}. Found {len(filtered_comments)} out of {len(all_comments)}")
+        return filtered_comments
     except Exception as e:
         print(f"DEBUG: Error fetching comments: {e}")
         return []
