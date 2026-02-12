@@ -26,7 +26,7 @@ interface Content {
 }
 
 export default function ReviewContentPage() {
-    const { token } = useAuth();
+    const { token, user } = useAuth();
     const params = useParams();
     const router = useRouter();
     const id = params.id as string;
@@ -134,14 +134,19 @@ export default function ReviewContentPage() {
     const handleInlineCommentSubmit = async () => {
         if (!newCommentText.trim() || !selection) return;
         setPostingComment(true);
+
+        const payload = {
+            content_id: id,
+            text: newCommentText,
+            selection_range: { from: selection.from, to: selection.to },
+            author: user?.id,
+            resolved: false
+        };
+
+        console.log("Submitting Comment Payload:", payload);
+
         try {
-            await api.post('/generic/comments', {
-                content_id: id,
-                text: newCommentText,
-                selection_range: { from: selection.from, to: selection.to },
-                author: useAuth().user?.id, // Assuming user context is available
-                resolved: false
-            }, token || undefined);
+            await api.post('/generic/comments', payload, token || undefined);
 
             setNewCommentText('');
             setShowCommentInput(false);
@@ -149,9 +154,15 @@ export default function ReviewContentPage() {
             fetchComments();
             // Clear selection
             window.getSelection()?.removeAllRanges();
-        } catch (err) {
-            console.error(err);
-            alert('Failed to post comment');
+        } catch (err: any) {
+            console.error("Comment Post Error:", err);
+            let msg = 'Failed to post comment';
+            if (err.response) {
+                msg += `: ${err.response.status} - ${JSON.stringify(err.response.data)}`;
+            } else if (err.message) {
+                msg += `: ${err.message}`;
+            }
+            alert(msg);
         } finally {
             setPostingComment(false);
         }
