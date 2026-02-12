@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 
 export const OrgSettings = () => {
+    // Trigger build fix
     const { token } = useAuth();
     const [org, setOrg] = useState<any>(null);
     const [name, setName] = useState('');
