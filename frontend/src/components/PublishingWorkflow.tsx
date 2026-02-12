@@ -1,19 +1,44 @@
 'use client';
-import React, { useState } from 'react';
-
-// Mock Data
-const initialTasks = [
-    { id: '1', title: 'Chapter 1 Draft', status: 'draft' },
-    { id: '2', title: 'Chapter 2 Review', status: 'review' },
-    { id: '3', title: 'Glossary', status: 'approved' },
-];
+import React, { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 export const PublishingWorkflow = () => {
-    const [tasks, setTasks] = useState(initialTasks);
+    const { token } = useAuth();
+    const [tasks, setTasks] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const onDrop = (e: React.DragEvent, newStatus: string) => {
+    useEffect(() => {
+        if (token) {
+            fetchContent();
+        }
+    }, [token]);
+
+    const fetchContent = async () => {
+        try {
+            setLoading(true);
+            const data = await api.get('/generic/content', token!);
+            setTasks(data);
+        } catch (err) {
+            console.error('Failed to fetch content:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const onDrop = async (e: React.DragEvent, newStatus: string) => {
         const id = e.dataTransfer.getData('id');
+
+        // Optimistic update
         setTasks(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
+
+        try {
+            await api.patch(`/generic/content/${id}/status`, { status: newStatus }, token!);
+        } catch (err) {
+            console.error('Failed to update status:', err);
+            // Revert on failure
+            fetchContent();
+        }
     };
 
     const onDragStart = (e: React.DragEvent, id: string) => {
@@ -40,9 +65,11 @@ export const PublishingWorkflow = () => {
         </div>
     );
 
+    if (loading) return <div className="p-8 text-center text-gray-500">Loading workflow...</div>;
+
     return (
-        <div className="bg-white p-6 rounded shadow mb-8">
-            <h2 className="text-xl font-bold mb-6">Publishing Workflow</h2>
+        <div className="p-6 rounded shadow mb-8">
+            <h2 className="text-xl font-bold mb-6">Workflow Board</h2>
             <div className="flex">
                 <Column title="Drafting" status="draft" color="border-gray-400" />
                 <Column title="In Review" status="review" color="border-yellow-400" />

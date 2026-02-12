@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form, Depends
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form, Depends, Body
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 from datetime import datetime
@@ -66,8 +66,8 @@ async def websocket_endpoint(websocket: WebSocket, document_id: str):
         await manager.broadcast("User left the chat", document_id)
 
 @router.get("/content", response_model=List[Content])
-async def read_contents():
-    return await Content.find_all().to_list()
+async def read_contents(current_user: User = Depends(get_current_user)):
+    return await Content.find(Content.organization_id == current_user.organization_id).to_list()
 
 @router.get("/content/{id}", response_model=Content)
 async def get_content(id: str):
@@ -78,9 +78,8 @@ async def get_content(id: str):
 
 
 @router.post("/content", response_model=Content)
-async def create_content(content: Content):
-    # In a real app, we would get current_user here to set the organization_id
-    # content.organization_id = current_user.organization_id
+async def create_content(content: Content, current_user: User = Depends(get_current_user)):
+    content.organization_id = current_user.organization_id
     await content.create()
     # Create initial version
     version = ContentVersion(
@@ -162,6 +161,55 @@ async def restore_version(id: str, version_id: str):
     
     # Create a restoration version? Optional but good practice.
     return {"message": f"Restored to version {version.version_number}"}
+
+@router.patch("/content/{id}/status", response_model=Content)
+async def update_content_status(
+    id: str, 
+    status: str = Body(..., embed=True),
+    current_user: User = Depends(get_current_user)
+):
+    """Update only the status of a content item"""
+    content = await Content.get(id)
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found")
+        
+    content.status = status
+    content.updated_at = datetime.utcnow()
+    await content.save()
+    
+    # Create new version to track the status change
+    count = await ContentVersion.find(ContentVersion.content_id.id == content.id).count()
+    version = ContentVersion(
+        content_id=content.id,
+        version_number=count + 1,
+        title=content.title,
+        body=content.body,
+        created_by=content.author
+    )
+    await version.create()
+    
+    return content
+
+@router.get("/workflow/stats")
+async def get_workflow_stats(current_user: User = Depends(get_current_user)):
+    """Get counts of content by status for the current organization"""
+    from app.modules.generic.models import Content
+    
+    # Base filter by organization
+    base_query = Content.find(Content.organization_id == current_user.organization_id)
+    
+    # Aggregate counts
+    draft_count = await base_query.find(Content.status == "draft").count()
+    review_count = await base_query.find(Content.status == "review").count()
+    approved_count = await base_query.find(Content.status == "approved").count()
+    published_count = await base_query.find(Content.status == "published").count()
+    
+    return {
+        "draft": draft_count,
+        "review": review_count,
+        "approved": approved_count,
+        "published": published_count
+    }
 
 # --- Comments ---
 

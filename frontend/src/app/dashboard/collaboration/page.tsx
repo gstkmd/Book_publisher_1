@@ -10,11 +10,18 @@ export default function CollaborationPage() {
     const { token } = useAuth();
     const [tasks, setTasks] = useState<any[]>([]);
     const [comments, setComments] = useState<any[]>([]);
+    const [workflowStats, setWorkflowStats] = useState({
+        draft: 0,
+        review: 0,
+        approved: 0,
+        published: 0
+    });
     const [activeTab, setActiveTab] = useState<'tasks' | 'comments' | 'workflow'>('tasks');
 
     useEffect(() => {
         if (token) {
             fetchTasks();
+            fetchWorkflowStats();
         }
     }, [token]);
 
@@ -24,6 +31,15 @@ export default function CollaborationPage() {
             setTasks(data);
         } catch (err) {
             console.error(err);
+        }
+    };
+
+    const fetchWorkflowStats = async () => {
+        try {
+            const data = await api.get('/generic/workflow/stats', token!);
+            setWorkflowStats(data);
+        } catch (err) {
+            console.error('Failed to fetch workflow stats:', err);
         }
     };
 
@@ -40,8 +56,8 @@ export default function CollaborationPage() {
                     <button
                         onClick={() => setActiveTab('tasks')}
                         className={`px-4 py-2 border-b-2 transition ${activeTab === 'tasks'
-                                ? 'border-blue-600 text-blue-600 font-semibold'
-                                : 'border-transparent text-gray-600 hover:text-gray-900'
+                            ? 'border-blue-600 text-blue-600 font-semibold'
+                            : 'border-transparent text-gray-600 hover:text-gray-900'
                             }`}
                     >
                         📌 Tasks
@@ -49,8 +65,8 @@ export default function CollaborationPage() {
                     <button
                         onClick={() => setActiveTab('comments')}
                         className={`px-4 py-2 border-b-2 transition ${activeTab === 'comments'
-                                ? 'border-blue-600 text-blue-600 font-semibold'
-                                : 'border-transparent text-gray-600 hover:text-gray-900'
+                            ? 'border-blue-600 text-blue-600 font-semibold'
+                            : 'border-transparent text-gray-600 hover:text-gray-900'
                             }`}
                     >
                         💬 Comments
@@ -58,8 +74,8 @@ export default function CollaborationPage() {
                     <button
                         onClick={() => setActiveTab('workflow')}
                         className={`px-4 py-2 border-b-2 transition ${activeTab === 'workflow'
-                                ? 'border-blue-600 text-blue-600 font-semibold'
-                                : 'border-transparent text-gray-600 hover:text-gray-900'
+                            ? 'border-blue-600 text-blue-600 font-semibold'
+                            : 'border-transparent text-gray-600 hover:text-gray-900'
                             }`}
                     >
                         🔄 Workflow
@@ -91,8 +107,8 @@ export default function CollaborationPage() {
                                         )}
                                     </div>
                                     <span className={`px-2 py-1 text-xs rounded ${task.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                            task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                                'bg-gray-100 text-gray-800'
+                                        task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                            'bg-gray-100 text-gray-800'
                                         }`}>
                                         {task.status}
                                     </span>
@@ -133,22 +149,28 @@ export default function CollaborationPage() {
                 <div className="bg-white rounded-lg shadow p-6">
                     <h2 className="text-xl font-bold mb-6">Publishing Workflow</h2>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                         <div className="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded">
                             <div className="text-sm text-yellow-700 font-semibold mb-2">DRAFT</div>
-                            <div className="text-2xl font-bold">12</div>
+                            <div className="text-2xl font-bold">{workflowStats.draft}</div>
                             <div className="text-sm text-gray-600">Items in draft</div>
                         </div>
 
                         <div className="border-l-4 border-blue-500 bg-blue-50 p-4 rounded">
                             <div className="text-sm text-blue-700 font-semibold mb-2">REVIEW</div>
-                            <div className="text-2xl font-bold">5</div>
+                            <div className="text-2xl font-bold">{workflowStats.review}</div>
                             <div className="text-sm text-gray-600">Under review</div>
                         </div>
 
                         <div className="border-l-4 border-green-500 bg-green-50 p-4 rounded">
-                            <div className="text-sm text-green-700 font-semibold mb-2">PUBLISHED</div>
-                            <div className="text-2xl font-bold">28</div>
+                            <div className="text-sm text-green-700 font-semibold mb-2">APPROVED</div>
+                            <div className="text-2xl font-bold">{workflowStats.approved}</div>
+                            <div className="text-sm text-gray-600">Approved items</div>
+                        </div>
+
+                        <div className="border-l-4 border-indigo-500 bg-indigo-50 p-4 rounded">
+                            <div className="text-sm text-indigo-700 font-semibold mb-2">PUBLISHED</div>
+                            <div className="text-2xl font-bold">{workflowStats.published}</div>
                             <div className="text-sm text-gray-600">Published items</div>
                         </div>
                     </div>
