@@ -42,7 +42,7 @@ export default function ShareContentModal({
     const fetchUsers = async () => {
         try {
             // Fetch organization users
-            const data = await api.get('/users', token!);
+            const data = await api.get('/organizations/members', token!);
             setUsers(Array.isArray(data) ? data : []);
         } catch (err: any) {
             console.error('Failed to fetch users:', err);
