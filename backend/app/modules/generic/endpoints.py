@@ -106,7 +106,12 @@ async def update_content(id: str, content_in: Content):
     
     # Update fields
     content.title = content_in.title
+    content.slug = content_in.slug
     content.body = content_in.body
+    content.type = content_in.type
+    content.status = content_in.status
+    if content_in.organization_id:
+        content.organization_id = content_in.organization_id
     content.updated_at = datetime.utcnow()
     await content.save()
 
