@@ -16,6 +16,8 @@ interface Comment {
     created_at: string;
 }
 
+import { ReviewDisplay } from '@/components/ReviewDisplay';
+
 export default function EditorEditPage() {
     const { user, isLoading, token } = useAuth();
     const router = useRouter();
@@ -169,24 +171,19 @@ export default function EditorEditPage() {
     return (
         <div className="flex min-h-screen bg-gray-50">
             {/* Main Editor Area */}
-            <div className={`flex-1 transition-all ${showComments ? 'mr-96' : ''}`}>
-                <div className="container mx-auto p-8">
+            {/* Main Editor Area */}
+            <div className={`flex-1 transition-all duration-300 overflow-y-auto ${showComments ? 'w-1/2' : 'w-full'}`}>
+                <div className={`container mx-auto p-8 ${showComments ? 'max-w-none' : ''}`}>
                     <div className="flex items-center justify-between mb-8">
                         <h1 className="text-3xl font-bold">Edit Content</h1>
                         <div className="flex items-center gap-3">
-                            <Link
-                                href={`/dashboard/library/${contentId}/review`}
-                                className="text-sm px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700"
-                            >
-                                📖 Review Mode
-                            </Link>
                             <button
                                 onClick={() => setShowComments(!showComments)}
-                                className="relative text-sm px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                                className={`text-sm px-4 py-2 text-white rounded transition-colors ${showComments ? 'bg-purple-700' : 'bg-purple-600 hover:bg-purple-700'}`}
                             >
-                                💬 Comments
+                                {showComments ? 'Hide Comments' : 'Show Comments & Review'}
                                 {unresolvedCount > 0 && (
-                                    <span className="absolute -top-2 -right-2 bg-yellow-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center">
+                                    <span className="ml-2 bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full">
                                         {unresolvedCount}
                                     </span>
                                 )}
@@ -254,75 +251,10 @@ export default function EditorEditPage() {
                 </div>
             </div>
 
-            {/* Comments Sidebar */}
+            {/* Review / Comments Split Panel */}
             {showComments && (
-                <div className="fixed right-0 top-0 h-screen w-96 bg-white shadow-2xl border-l overflow-y-auto z-50">
-                    <div className="p-4 border-b bg-purple-50 sticky top-0">
-                        <div className="flex items-center justify-between mb-2">
-                            <h2 className="font-bold text-lg">💬 Comments</h2>
-                            <button
-                                onClick={() => setShowComments(false)}
-                                className="text-gray-500 hover:text-gray-700 text-xl"
-                            >
-                                ×
-                            </button>
-                        </div>
-                        <div className="text-sm text-gray-600">
-                            {unresolvedCount} unresolved · {comments.length} total
-                        </div>
-                    </div>
-
-                    {/* Add Comment */}
-                    <div className="p-4 border-b bg-gray-50">
-                        <textarea
-                            className="w-full p-2 border rounded text-sm"
-                            placeholder="Add a comment..."
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            rows={3}
-                        />
-                        <button
-                            onClick={handleAddComment}
-                            disabled={!newComment.trim()}
-                            className="mt-2 w-full bg-purple-600 text-white px-4 py-2 rounded text-sm hover:bg-purple-700 disabled:opacity-50"
-                        >
-                            Post Comment
-                        </button>
-                    </div>
-
-                    {/* Comments List */}
-                    <div className="p-4 space-y-3">
-                        {comments.length === 0 && (
-                            <p className="text-gray-400 italic text-sm text-center py-8">
-                                No comments yet
-                            </p>
-                        )}
-                        {comments.map((comment) => (
-                            <div
-                                key={comment.id || comment._id}
-                                className={`border rounded p-3 ${comment.resolved ? 'opacity-60 bg-green-50' : 'bg-white'
-                                    }`}
-                            >
-                                <div className="flex items-start justify-between mb-2">
-                                    <div className="text-xs text-gray-600">
-                                        {new Date(comment.created_at).toLocaleString()}
-                                    </div>
-                                    <button
-                                        onClick={() => toggleResolve((comment.id || comment._id)!, comment.resolved)}
-                                        className={`text-xs px-2 py-1 rounded ${comment.resolved
-                                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                            }`}
-                                    >
-                                        {comment.resolved ? '✓ Resolved' : 'Resolve'}
-                                    </button>
-                                </div>
-                                <p className={`text-sm ${comment.resolved ? 'line-through' : ''}`}>
-                                    {comment.text}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
+                <div className="w-1/2 h-full border-l shadow-2xl z-40 bg-white">
+                    <ReviewDisplay contentId={contentId} onClose={() => setShowComments(false)} />
                 </div>
             )}
         </div>
