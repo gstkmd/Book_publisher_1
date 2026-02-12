@@ -192,8 +192,13 @@ async def get_content_comments(id: str):
     from bson import ObjectId
     try:
         oid = ObjectId(id)
-        # Try finding by explicit ObjectId linkage
-        comments = await Comment.find(Comment.content_id.id == oid).to_list()
+        # Handle both DBRef (standard Beanie Link) and raw ObjectId (hybrid storage)
+        comments = await Comment.find({
+            "$or": [
+                {"content_id": oid},
+                {"content_id.$id": oid}
+            ]
+        }).to_list()
         print(f"DEBUG: Fetching comments for content {id}. Found {len(comments)}")
         return comments
     except Exception as e:
