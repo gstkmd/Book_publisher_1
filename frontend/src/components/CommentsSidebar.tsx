@@ -76,6 +76,12 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({ documentId, ws
         <div className="w-80 border-l bg-gray-50 flex flex-col h-full bg-white shadow-lg">
             <div className="p-4 border-b font-bold text-lg bg-gray-100">Comments</div>
 
+            {/* Debug UI - Remove after fixing */}
+            <div className="p-2 bg-yellow-100 text-xs text-black overflow-auto max-h-32">
+                <strong>Debug Info:</strong>
+                <pre>{JSON.stringify({ count: comments.length, data: comments }, null, 2)}</pre>
+            </div>
+
             {/* List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {comments.length === 0 && <p className="text-gray-400 italic text-sm">No comments yet.</p>}

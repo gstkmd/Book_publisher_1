@@ -24,7 +24,7 @@ class PublishingService:
             </head>
             <body>
                 <h1>{content.title}</h1>
-                <p><i>By Author (ID: {content.author.id})</i></p>
+                <p><i>By Author (ID: {content.author.ref.id})</i></p>
                 <hr/>
                 {body_html}
             </body>
@@ -48,7 +48,7 @@ class PublishingService:
         book.set_identifier(str(content.id))
         book.set_title(content.title)
         book.set_language('en')
-        book.add_author(f"User {content.author.id}")
+        book.add_author(f"User {content.author.ref.id}")
         
         # Create chapter
         c1 = epub.EpubHtml(title='Content', file_name='content.xhtml', lang='en')
