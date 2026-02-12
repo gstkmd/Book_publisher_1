@@ -43,7 +43,7 @@ async def create_organization(
     
     return org
 
-@router.get("/me", response_model=Organization)
+@router.get("/me", response_model=Optional[Organization])
 async def get_my_organization(current_user: User = Depends(get_current_user)):
     if not current_user.organization_id:
         # Return None - frontend should handle this gracefully
