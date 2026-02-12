@@ -37,7 +37,7 @@ async def create_organization(
     )
     await org.create()
     
-    current_user.organization_id = org.id
+    current_user.organization_id = str(org.id)
     current_user.role = "admin" # First user becomes admin
     await current_user.save()
     
