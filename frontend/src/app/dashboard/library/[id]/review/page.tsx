@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import Link from 'next/link';
 
 interface Comment {
-    _id: string;
+    id?: string;
+    _id?: string;
     text: string;
     selection_range?: { from: number; to: number };
     author: any;
@@ -35,6 +36,13 @@ export default function ReviewContentPage() {
     const [filter, setFilter] = useState<'all' | 'unresolved' | 'resolved'>('unresolved');
     const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+
+    // Inline Comment State
+    const contentRef = useRef<HTMLDivElement>(null);
+    const [selection, setSelection] = useState<{ from: number; to: number; rect: DOMRect } | null>(null);
+    const [showCommentInput, setShowCommentInput] = useState(false);
+    const [newCommentText, setNewCommentText] = useState('');
+    const [postingComment, setPostingComment] = useState(false);
 
     useEffect(() => {
         if (token && id) {
@@ -86,6 +94,69 @@ export default function ReviewContentPage() {
         return JSON.stringify(body);
     };
 
+    // Helper to map DOM node offset to global text offset
+    const getGlobalOffset = (root: Node, targetNode: Node, targetOffset: number): number => {
+        let offset = 0;
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        let currentNode = walker.nextNode();
+
+        while (currentNode) {
+            if (currentNode === targetNode) {
+                return offset + targetOffset;
+            }
+            offset += currentNode.textContent?.length || 0;
+            currentNode = walker.nextNode();
+        }
+        return -1; // Not found
+    };
+
+    const handleTextSelection = () => {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+            if (!showCommentInput) setSelection(null);
+            return;
+        }
+
+        const range = sel.getRangeAt(0);
+        if (!contentRef.current?.contains(range.commonAncestorContainer)) return;
+
+        const start = getGlobalOffset(contentRef.current, range.startContainer, range.startOffset);
+        const end = getGlobalOffset(contentRef.current, range.endContainer, range.endOffset);
+
+        if (start !== -1 && end !== -1 && end > start) {
+            const rect = range.getBoundingClientRect();
+            // Store relative to viewport, or adjust if needed.
+            // For floating UI, absolute positioning based on rect is fine.
+            setSelection({ from: start, to: end, rect });
+        }
+    };
+
+    const handleInlineCommentSubmit = async () => {
+        if (!newCommentText.trim() || !selection) return;
+        setPostingComment(true);
+        try {
+            await api.post('/generic/comments', {
+                content_id: id,
+                text: newCommentText,
+                selection_range: { from: selection.from, to: selection.to },
+                author: useAuth().user?.id, // Assuming user context is available
+                resolved: false
+            }, token || undefined);
+
+            setNewCommentText('');
+            setShowCommentInput(false);
+            setSelection(null);
+            fetchComments();
+            // Clear selection
+            window.getSelection()?.removeAllRanges();
+        } catch (err) {
+            console.error(err);
+            alert('Failed to post comment');
+        } finally {
+            setPostingComment(false);
+        }
+    };
+
     const renderContentWithHighlights = () => {
         if (!content) return null;
 
@@ -97,7 +168,7 @@ export default function ReviewContentPage() {
                 highlights.push({
                     from: comment.selection_range.from,
                     to: comment.selection_range.to,
-                    commentId: comment._id,
+                    commentId: comment.id || comment._id!,
                     resolved: comment.resolved
                 });
             }
@@ -205,9 +276,64 @@ export default function ReviewContentPage() {
                         <div className="text-sm text-gray-500 mb-6">
                             Last updated: {new Date(content.updated_at).toLocaleString()}
                         </div>
-                        <div className="prose max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap">
+                        <div
+                            ref={contentRef}
+                            className="prose max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap relative"
+                            onMouseUp={handleTextSelection}
+                        >
                             {renderContentWithHighlights()}
                         </div>
+
+                        {/* Floating Comment Button / Input */}
+                        {selection && (
+                            <div
+                                style={{
+                                    position: 'fixed',
+                                    top: selection.rect.top - (showCommentInput ? 120 : 40),
+                                    left: selection.rect.left + (selection.rect.width / 2) - 20,
+                                    zIndex: 50
+                                }}
+                                className="transform -translate-x-1/2"
+                            >
+                                {!showCommentInput ? (
+                                    <button
+                                        onClick={() => setShowCommentInput(true)}
+                                        className="bg-purple-600 text-white p-2 rounded-full shadow-lg hover:bg-purple-700 transition transform hover:scale-110"
+                                        title="Add Comment"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                                        </svg>
+                                    </button>
+                                ) : (
+                                    <div className="bg-white p-3 rounded-lg shadow-xl border w-64 animate-fade-in-up">
+                                        <textarea
+                                            autoFocus
+                                            className="w-full text-sm border rounded p-2 mb-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                            rows={2}
+                                            placeholder="Comment on this text..."
+                                            value={newCommentText}
+                                            onChange={(e) => setNewCommentText(e.target.value)}
+                                        />
+                                        <div className="flex justify-end gap-2">
+                                            <button
+                                                onClick={() => { setShowCommentInput(false); setSelection(null); }}
+                                                className="text-xs text-gray-500 hover:text-gray-700"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={handleInlineCommentSubmit}
+                                                disabled={postingComment}
+                                                className="text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 disabled:opacity-50"
+                                            >
+                                                {postingComment ? '...' : 'Post'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Comments Sidebar */}
@@ -253,9 +379,9 @@ export default function ReviewContentPage() {
                             )}
                             {filteredComments.map((comment) => (
                                 <div
-                                    key={comment._id}
-                                    id={`comment-${comment._id}`}
-                                    className={`border rounded p-3 ${selectedCommentId === comment._id
+                                    key={comment.id || comment._id}
+                                    id={`comment-${comment.id || comment._id}`}
+                                    className={`border rounded p-3 ${selectedCommentId === (comment.id || comment._id)
                                         ? 'border-blue-500 bg-blue-50'
                                         : 'border-gray-200'
                                         } ${comment.resolved ? 'opacity-60' : ''}`}
@@ -265,7 +391,7 @@ export default function ReviewContentPage() {
                                             {new Date(comment.created_at).toLocaleString()}
                                         </div>
                                         <button
-                                            onClick={() => toggleResolve(comment._id, comment.resolved)}
+                                            onClick={() => toggleResolve((comment.id || comment._id)!, comment.resolved)}
                                             className={`text-xs px-2 py-1 rounded ${comment.resolved
                                                 ? 'bg-green-100 text-green-700 hover:bg-green-200'
                                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
