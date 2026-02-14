@@ -90,6 +90,12 @@ export default function DashboardPage() {
                         <p className="text-gray-600">Configure your account and preferences</p>
                     </Link>
 
+                    {/* Monitoring - NEW */}
+                    <Link href="/dashboard/monitoring" className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition border-2 border-emerald-100">
+                        <h2 className="text-xl font-semibold text-gray-900 mb-2">🛡️ Monitoring</h2>
+                        <p className="text-gray-600">Employee activity, productivity, and live tracking</p>
+                    </Link>
+
                     {/* Admin (only for admins) */}
                     {user.role === 'admin' && (
                         <Link href="/dashboard/admin" className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition border-2 border-purple-200">
