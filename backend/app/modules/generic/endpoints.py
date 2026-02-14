@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, Up
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 from datetime import datetime
-from app.modules.generic.models import Content, ContentVersion, Comment, Task
+from app.modules.generic.models import Content, ContentVersion, Comment, Task, TaskComment
 from app.modules.core.models import User
 from app.api.deps import get_current_user, get_current_active_superuser
 from app.modules.generic.websockets import manager
@@ -383,7 +383,7 @@ async def share_content(
 
 
 # --- Tasks ---
-from app.modules.generic.schemas import TaskCreate, TaskSchema
+from app.modules.generic.schemas import TaskCreate, TaskSchema, TaskCommentCreate, TaskCommentSchema
 
 @router.post("/tasks", response_model=TaskSchema)
 async def create_task(
@@ -400,6 +400,10 @@ async def create_task(
         stage=task_in.stage,
         tags=task_in.tags or [],
         due_date=task_in.due_date,
+        start_date=task_in.start_date,
+        time_estimate=task_in.time_estimate,
+        track_time=task_in.track_time or 0,
+        custom_fields=task_in.custom_fields or {},
         created_by=current_user.id,
         assigner=current_user.id,
         organization_id=current_user.organization_id,
@@ -432,6 +436,10 @@ async def create_task(
         stage=task.stage,
         tags=task.tags,
         due_date=task.due_date,
+        start_date=task.start_date,
+        time_estimate=task.time_estimate,
+        track_time=task.track_time,
+        custom_fields=task.custom_fields,
         content_id=str(task.content_id.ref.id) if task.content_id else None,
         assignee=str(task.assignee.ref.id) if task.assignee else None,
         assignee_name=assignee_name,
@@ -469,6 +477,10 @@ async def get_tasks(current_user: User = Depends(get_current_user)):
             stage=task.stage,
             tags=task.tags,
             due_date=task.due_date,
+            start_date=task.start_date,
+            time_estimate=task.time_estimate,
+            track_time=task.track_time,
+            custom_fields=task.custom_fields,
             content_id=str(task.content_id.ref.id) if task.content_id else None,
             assignee=str(task.assignee.ref.id) if task.assignee else None,
             assignee_name=assignee_name,
@@ -501,6 +513,10 @@ async def update_task(
     task.stage = task_in.stage
     task.tags = task_in.tags or []
     task.due_date = task_in.due_date
+    task.start_date = task_in.start_date
+    task.time_estimate = task_in.time_estimate
+    task.track_time = task_in.track_time or 0
+    task.custom_fields = task_in.custom_fields or {}
     task.updated_at = datetime.utcnow()
     
     # Handle Links
@@ -525,6 +541,10 @@ async def update_task(
         stage=task.stage,
         tags=task.tags,
         due_date=task.due_date,
+        start_date=task.start_date,
+        time_estimate=task.time_estimate,
+        track_time=task.track_time,
+        custom_fields=task.custom_fields,
         content_id=str(task.content_id.ref.id) if task.content_id else None,
         assignee=str(task.assignee.ref.id) if task.assignee else None,
         assigner=str(task.assigner.ref.id) if task.assigner else None,
@@ -533,6 +553,58 @@ async def update_task(
         created_at=task.created_at,
         updated_at=task.updated_at
     )
+
+@router.post("/tasks/{id}/comments", response_model=TaskCommentSchema)
+async def create_task_comment(
+    id: str,
+    comment_in: TaskCommentBase,
+    current_user: User = Depends(get_current_user)
+):
+    from bson import ObjectId
+    task = await Task.get(id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    comment = TaskComment(
+        task_id=ObjectId(id),
+        text=comment_in.text,
+        author=current_user.id,
+        organization_id=current_user.organization_id
+    )
+    await comment.create()
+    
+    return TaskCommentSchema(
+        id=str(comment.id),
+        task_id=str(id),
+        text=comment.text,
+        author=str(current_user.id),
+        author_name=current_user.full_name,
+        created_at=comment.created_at
+    )
+
+@router.get("/tasks/{id}/comments", response_model=List[TaskCommentSchema])
+async def get_task_comments(id: str, current_user: User = Depends(get_current_user)):
+    from bson import ObjectId
+    comments = await TaskComment.find(
+        TaskComment.task_id.id == ObjectId(id),
+        TaskComment.organization_id == current_user.organization_id
+    ).to_list()
+    
+    results = []
+    for c in comments:
+        author_name = "Unknown User"
+        u = await User.get(str(c.author.ref.id))
+        if u: author_name = u.full_name
+        
+        results.append(TaskCommentSchema(
+            id=str(c.id),
+            task_id=str(id),
+            text=c.text,
+            author=str(c.author.ref.id),
+            author_name=author_name,
+            created_at=c.created_at
+        ))
+    return results
 
 
 @router.get("/export_content/{id}")

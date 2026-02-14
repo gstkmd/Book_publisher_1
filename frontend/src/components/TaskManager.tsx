@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
+import { TaskDetail } from './TaskDetail';
 
 interface Task {
     id: string;
@@ -229,67 +230,13 @@ export const TaskManager = () => {
                 })}
             </div>
 
-            {/* Quick Edit Modal (Simplified side panel style) */}
+            {/* Task Detail View */}
             {editingTask && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
-                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden p-6 animate-in fade-in zoom-in duration-200">
-                        <div className="flex justify-between items-start mb-6">
-                            <h3 className="text-xl font-black text-gray-900 tracking-tight">Update Task</h3>
-                            <button onClick={() => setEditingTask(null)} className="text-gray-400 hover:text-gray-600">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                        </div>
-
-                        <div className="space-y-6">
-                            <div>
-                                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Priority</label>
-                                <div className="flex gap-2">
-                                    {['low', 'medium', 'high', 'urgent'].map(p => (
-                                        <button
-                                            key={p}
-                                            onClick={() => handleUpdateTask(editingTask, { priority: p as any })}
-                                            className={`flex-1 py-2 rounded-lg text-xs font-bold capitalize transition-all border-2 ${editingTask.priority === p ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-100 hover:border-gray-200 text-gray-500'}`}
-                                        >
-                                            {p}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Workflow Stage</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {['To Do', 'In Progress', 'Review', 'Done'].map(s => (
-                                        <button
-                                            key={s}
-                                            onClick={() => handleUpdateTask(editingTask, { stage: s })}
-                                            className={`py-2 rounded-lg text-xs font-bold transition-all border-2 ${editingTask.stage === s ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-100 hover:border-gray-200 text-gray-500'}`}
-                                        >
-                                            {s}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Due Date</label>
-                                <input
-                                    type="date"
-                                    defaultValue={editingTask.due_date ? new Date(editingTask.due_date).toISOString().split('T')[0] : ''}
-                                    onChange={(e) => handleUpdateTask(editingTask, { due_date: e.target.value })}
-                                    className="w-full p-2 border-2 border-gray-100 rounded-lg text-sm font-medium focus:border-indigo-600 transition-colors"
-                                />
-                            </div>
-
-                            <button
-                                onClick={() => handleUpdateTask(editingTask, { status: editingTask.status === 'completed' ? 'pending' : 'completed' })}
-                                className={`w-full py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${editingTask.status === 'completed' ? 'bg-green-100 text-green-700 border-2 border-green-200' : 'bg-gray-100 text-gray-700 border-2 border-transparent hover:bg-gray-200'}`}
-                            >
-                                {editingTask.status === 'completed' ? '✓ Completed' : 'Mark as Completed'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <TaskDetail
+                    taskId={editingTask.id}
+                    onClose={() => setEditingTask(null)}
+                    onUpdate={fetchTasks}
+                />
             )}
         </div>
     );

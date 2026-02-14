@@ -55,9 +55,23 @@ class Task(Document):
     stage: str = "To Do" # To Do, In Progress, Review, Done
     tags: List[str] = []
     due_date: Optional[datetime] = None
+    start_date: Optional[datetime] = None
+    time_estimate: Optional[str] = None
+    track_time: Optional[int] = 0 # In seconds
+    custom_fields: Dict[str, str] = {}
     created_by: Link[User]
     created_at: datetime = datetime.utcnow()
     updated_at: datetime = datetime.utcnow()
 
     class Settings:
         name = "tasks"
+
+class TaskComment(Document):
+    task_id: Link[Task]
+    text: str
+    author: Link[User]
+    organization_id: Optional[str] = None
+    created_at: datetime = datetime.utcnow()
+
+    class Settings:
+        name = "task_comments"
