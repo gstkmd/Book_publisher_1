@@ -6,9 +6,10 @@ interface MetricCardProps {
     icon: string;
     description?: string;
     color?: string;
+    onClick?: () => void;
 }
 
-export function MetricCard({ title, value, icon, description, color = 'blue' }: MetricCardProps) {
+export function MetricCard({ title, value, icon, description, color = 'blue', onClick }: MetricCardProps) {
     const colorClasses: Record<string, string> = {
         blue: 'text-blue-600 bg-blue-100 border-blue-200',
         green: 'text-green-600 bg-green-100 border-green-200',
@@ -19,7 +20,10 @@ export function MetricCard({ title, value, icon, description, color = 'blue' }: 
     const activeColor = colorClasses[color] || colorClasses.blue;
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+        <div
+            onClick={onClick}
+            className={`bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all ${onClick ? 'cursor-pointer hover:border-blue-300' : ''}`}
+        >
             <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 rounded-lg border ${activeColor}`}>
                     <span className="text-2xl">{icon}</span>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { MetricCard } from '@/components/monitoring/MetricCard';
@@ -20,6 +20,9 @@ export default function MonitoringDashboardPage() {
     const [screenshots, setScreenshots] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const agentsSectionRef = useRef<HTMLDivElement>(null);
+    const screenshotsSectionRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (token) {
@@ -44,6 +47,10 @@ export default function MonitoringDashboardPage() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const scrollToSection = (ref: React.RefObject<HTMLDivElement>) => {
+        ref.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
     if (isLoading) {
@@ -88,6 +95,7 @@ export default function MonitoringDashboardPage() {
                     icon="👥"
                     color="blue"
                     description="Online now"
+                    onClick={() => scrollToSection(agentsSectionRef)}
                 />
                 <MetricCard
                     title="Screenshots"
@@ -95,6 +103,7 @@ export default function MonitoringDashboardPage() {
                     icon="📸"
                     color="green"
                     description="Last 24h"
+                    onClick={() => scrollToSection(screenshotsSectionRef)}
                 />
                 <MetricCard
                     title="Active Minutes"
@@ -115,7 +124,7 @@ export default function MonitoringDashboardPage() {
             {/* Content Area */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Agent List - Takes 2/3 space */}
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-2" ref={agentsSectionRef}>
                     <AgentList agents={agents} />
                 </div>
 
@@ -137,7 +146,9 @@ export default function MonitoringDashboardPage() {
             </div>
 
             {/* Screenshot Gallery */}
-            <ScreenshotGallery screenshots={screenshots} apiUrl={API_BASE.replace('/api/v1', '/api/v1')} />
+            <div ref={screenshotsSectionRef}>
+                <ScreenshotGallery screenshots={screenshots} apiUrl={API_BASE.replace('/api/v1', '/api/v1')} />
+            </div>
         </div>
     );
 }
