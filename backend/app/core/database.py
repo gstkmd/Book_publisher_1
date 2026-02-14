@@ -1,9 +1,8 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
 from app.core.config import settings
-from app.core.config import settings
 from app.modules.core.models import User, WebhookSubscription, Organization
-from app.modules.generic.models import Content, ContentVersion, Comment, Task
+from app.modules.generic.models import Content, ContentVersion, Comment, Task, TaskComment, ActivityLog, Notification
 from app.modules.generic.rights_models import License, Contract
 from app.modules.educational.models import Standard, Assessment, LessonPlan
 
@@ -19,6 +18,7 @@ async def init_db():
         document_models=[
             User, Content, ContentVersion, Standard, Assessment, 
             LessonPlan, WebhookSubscription, Organization, Comment, 
-            Task, License, Contract
+            Task, TaskComment, ActivityLog, Notification,
+            License, Contract
         ]
     )

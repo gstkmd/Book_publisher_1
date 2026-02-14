@@ -95,4 +95,4 @@ class Notification(Document):
     created_at: datetime = datetime.utcnow()
 
     class Settings:
-        name = "task_comments"
+        name = "notifications"
