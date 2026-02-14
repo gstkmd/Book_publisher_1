@@ -31,6 +31,12 @@ export default function LoginPage() {
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center p-24 bg-gray-50">
+            <Link href="/" className="mb-6 flex items-center gap-2 text-indigo-600 font-bold hover:text-indigo-700 transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Home
+            </Link>
             <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
                 <h2 className="text-2xl font-bold mb-6 text-center">Login to Platform</h2>
                 {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">{error}</div>}
