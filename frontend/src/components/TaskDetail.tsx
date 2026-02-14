@@ -32,6 +32,7 @@ interface TaskDetailProps {
 export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
     const [task, setTask] = useState<any>(null);
     const [comments, setComments] = useState<any[]>([]);
+    const [activity, setActivity] = useState<any[]>([]);
     const [newComment, setNewComment] = useState('');
     const [loading, setLoading] = useState(true);
     const { token, user } = useAuth();
@@ -40,8 +41,29 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
         if (token && taskId) {
             fetchTaskDetails();
             fetchComments();
+            fetchActivity();
         }
     }, [token, taskId]);
+
+    // WebSocket for real-time updates
+    useEffect(() => {
+        if (!taskId || !token) return;
+
+        const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/api/v1/generic/ws/tasks/' + taskId;
+        const socket = new WebSocket(wsUrl);
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'task_update') {
+                fetchTaskDetails();
+                fetchActivity();
+            } else if (data.type === 'new_comment') {
+                fetchComments();
+            }
+        };
+
+        return () => socket.close();
+    }, [taskId, token]);
 
     const fetchTaskDetails = async () => {
         try {
@@ -63,6 +85,21 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
             console.error('Failed to fetch comments:', err);
         }
     };
+
+    const fetchActivity = async () => {
+        try {
+            const data = await api.get(`/generic/tasks/${taskId}/activity`, token!);
+            setActivity(data);
+        } catch (err) {
+            console.error('Failed to fetch activity:', err);
+        }
+    };
+
+    // Combine and sort feed
+    const feed = [
+        ...comments.map(c => ({ ...c, feedType: 'comment' })),
+        ...activity.map(a => ({ ...a, feedType: 'activity' }))
+    ].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
     const handleUpdateField = async (field: string, value: any) => {
         try {
@@ -288,40 +325,42 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                        {/* Audit Log Items */}
-                        <div className="flex gap-4">
-                            <div className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex-shrink-0" />
-                            <div className="space-y-1">
-                                <p className="text-xs text-gray-500">
-                                    <span className="font-bold text-gray-700 mr-1">You</span> created this task
-                                </p>
-                                <p className="text-[10px] text-gray-400 uppercase font-black">Aug 25 2025 at 11:46 am</p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 py-2 border-y border-gray-100 group cursor-pointer">
-                            <ChevronDown className="w-3 h-3 text-gray-400 group-hover:text-gray-600 transition-colors" />
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Show more</span>
-                        </div>
-
-                        {/* Real Comments */}
-                        {comments.map((comment: any) => (
-                            <div key={comment.id} className="flex gap-4 group">
-                                <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] text-white font-bold flex-shrink-0">
-                                    {comment.author_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
-                                </div>
-                                <div className="space-y-1.5 flex-1">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold text-gray-900">{comment.author_name}</span>
-                                        <span className="text-[10px] text-gray-400 font-medium">
-                                            {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
+                        {feed.map((item: any, idx: number) => (
+                            item.feedType === 'activity' ? (
+                                <div key={`activity-${item.id}`} className="flex gap-4">
+                                    <div className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-gray-500">
+                                        {item.user_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
                                     </div>
-                                    <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 text-sm text-gray-700">
-                                        {comment.text}
+                                    <div className="space-y-1">
+                                        <p className="text-xs text-gray-500">
+                                            <span className="font-bold text-gray-700 mr-1">{item.user_name === user?.full_name ? 'You' : item.user_name}</span>
+                                            {item.action === 'status_change' && `changed status from ${item.old_value} to ${item.new_value}`}
+                                            {item.action === 'assignee_change' && `changed assignee to ${item.new_value || 'Unassigned'}`}
+                                            {item.action === 'created' && 'created this task'}
+                                        </p>
+                                        <p className="text-[10px] text-gray-400 uppercase font-black">
+                                            {new Date(item.created_at).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        </p>
                                     </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <div key={`comment-${item.id}`} className="flex gap-4 group">
+                                    <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] text-white font-bold flex-shrink-0">
+                                        {item.author_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
+                                    </div>
+                                    <div className="space-y-1.5 flex-1">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-gray-900">{item.author_name}</span>
+                                            <span className="text-[10px] text-gray-400 font-medium">
+                                                {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        </div>
+                                        <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 text-sm text-gray-700">
+                                            {item.text}
+                                        </div>
+                                    </div>
+                                </div>
+                            )
                         ))}
                     </div>
 

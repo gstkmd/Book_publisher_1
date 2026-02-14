@@ -14,6 +14,7 @@ class TaskBase(BaseModel):
     time_estimate: Optional[str] = None
     track_time: Optional[int] = 0
     custom_fields: Optional[dict[str, str]] = {}
+    parent_task_id: Optional[str] = None
 
 class TaskCreate(TaskBase):
     content_id: Optional[str] = None
@@ -28,6 +29,7 @@ class TaskSchema(TaskBase):
     assigner_name: Optional[str] = None
     created_by: Optional[str] = None
     organization_id: Optional[str] = None
+    parent_task_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -45,5 +47,28 @@ class TaskCommentSchema(TaskCommentBase):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-    
+
+class ActivityLogSchema(BaseModel):
+    id: str
+    resource_type: str
+    resource_id: str
+    action: str
+    old_value: Optional[str] = None
+    new_value: Optional[str] = None
+    user_id: str
+    user_name: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class NotificationSchema(BaseModel):
+    id: str
+    user_id: str
+    title: str
+    message: str
+    type: str
+    link: str
+    read: bool
+    created_at: datetime
+
     model_config = ConfigDict(from_attributes=True)

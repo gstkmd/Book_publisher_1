@@ -59,6 +59,7 @@ class Task(Document):
     time_estimate: Optional[str] = None
     track_time: Optional[int] = 0 # In seconds
     custom_fields: Dict[str, str] = {}
+    parent_task_id: Optional[Link["Task"]] = None
     created_by: Link[User]
     created_at: datetime = datetime.utcnow()
     updated_at: datetime = datetime.utcnow()
@@ -70,6 +71,26 @@ class TaskComment(Document):
     task_id: Link[Task]
     text: str
     author: Link[User]
+    organization_id: Optional[str] = None
+    created_at: datetime = datetime.utcnow()
+
+class ActivityLog(Document):
+    resource_type: str # e.g., "task", "content"
+    resource_id: str
+    action: str # e.g., "status_change", "assignee_change", "created"
+    old_value: Optional[str] = None
+    new_value: Optional[str] = None
+    user: Link[User]
+    organization_id: Optional[str] = None
+    created_at: datetime = datetime.utcnow()
+
+class Notification(Document):
+    user_id: Link[User]
+    title: str
+    message: str
+    type: str # "task_assignment", "mention", "status_update"
+    link: str
+    read: bool = False
     organization_id: Optional[str] = None
     created_at: datetime = datetime.utcnow()
 

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, Up
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 from datetime import datetime
-from app.modules.generic.models import Content, ContentVersion, Comment, Task, TaskComment
+from app.modules.generic.models import Content, ContentVersion, Comment, Task, TaskComment, ActivityLog, Notification
 from app.modules.core.models import User
 from app.api.deps import get_current_user, get_current_active_superuser
 from app.modules.generic.websockets import manager
@@ -383,7 +383,14 @@ async def share_content(
 
 
 # --- Tasks ---
-from app.modules.generic.schemas import TaskCreate, TaskSchema, TaskCommentCreate, TaskCommentSchema
+from app.modules.generic.schemas import (
+    TaskCreate, 
+    TaskSchema, 
+    TaskCommentCreate, 
+    TaskCommentSchema,
+    ActivityLogSchema,
+    NotificationSchema
+)
 
 @router.post("/tasks", response_model=TaskSchema)
 async def create_task(
@@ -415,8 +422,26 @@ async def create_task(
         task.content_id = ObjectId(task_in.content_id)
     if task_in.assignee:
         task.assignee = ObjectId(task_in.assignee)
+    if task_in.parent_task_id:
+        task.parent_task_id = ObjectId(task_in.parent_task_id)
     
     await task.create()
+
+    # Log creation
+    await ActivityLog(
+        resource_type="task",
+        resource_id=str(task.id),
+        action="created",
+        user=current_user.id,
+        organization_id=current_user.organization_id
+    ).create()
+
+    # Broadcast creation
+    import json
+    await manager.broadcast(
+        json.dumps({"type": "task_created", "taskId": str(task.id), "title": task.title}),
+        "tasks_list" # Broad category for list refresh
+    )
 
     # Fetch names for response
     assignee_name = None
@@ -505,6 +530,10 @@ async def update_task(
     if not task or task.organization_id != current_user.organization_id:
         raise HTTPException(status_code=404, detail="Task not found")
     
+    # Track changes for ActivityLog
+    old_status = task.status
+    old_assignee = str(task.assignee.ref.id) if task.assignee else None
+    
     # Update core fields
     task.title = task_in.title
     task.description = task_in.description
@@ -530,7 +559,54 @@ async def update_task(
     else:
         task.content_id = None
         
+    if task_in.parent_task_id:
+        task.parent_task_id = ObjectId(task_in.parent_task_id)
+    else:
+        task.parent_task_id = None
+
     await task.save()
+
+    # Log significant changes
+    if old_status != task.status:
+        await ActivityLog(
+            resource_type="task",
+            resource_id=str(task.id),
+            action="status_change",
+            old_value=old_status,
+            new_value=task.status,
+            user=current_user.id,
+            organization_id=current_user.organization_id
+        ).create()
+
+    new_assignee = str(task.assignee.ref.id) if task.assignee else None
+    if old_assignee != new_assignee:
+        await ActivityLog(
+            resource_type="task",
+            resource_id=str(task.id),
+            action="assignee_change",
+            old_value=old_assignee,
+            new_value=new_assignee,
+            user=current_user.id,
+            organization_id=current_user.organization_id
+        ).create()
+        
+        # Notify new assignee
+        if new_assignee and new_assignee != str(current_user.id):
+            await Notification(
+                user_id=ObjectId(new_assignee),
+                title="New Task Assigned",
+                message=f"{current_user.full_name} assigned you the task: {task.title}",
+                type="task_assignment",
+                link=f"/dashboard/tasks?taskId={task.id}",
+                organization_id=current_user.organization_id
+            ).create()
+
+    # Broadcast update
+    import json
+    await manager.broadcast(
+        json.dumps({"type": "task_update", "taskId": str(task.id)}),
+        f"task_{task.id}"
+    )
     
     return TaskSchema(
         id=str(task.id),
@@ -557,7 +633,7 @@ async def update_task(
 @router.post("/tasks/{id}/comments", response_model=TaskCommentSchema)
 async def create_task_comment(
     id: str,
-    comment_in: TaskCommentBase,
+    comment_in: TaskCommentCreate,
     current_user: User = Depends(get_current_user)
 ):
     from bson import ObjectId
@@ -572,6 +648,29 @@ async def create_task_comment(
         organization_id=current_user.organization_id
     )
     await comment.create()
+    
+    # Broadcast new comment
+    import json
+    await manager.broadcast(
+        json.dumps({
+            "type": "new_comment", 
+            "taskId": str(id),
+            "text": comment.text,
+            "author_name": current_user.full_name
+        }),
+        f"task_{id}"
+    )
+
+    # Notify assignee if not the author
+    if task.assignee and str(task.assignee.ref.id) != str(current_user.id):
+        await Notification(
+            user_id=ObjectId(str(task.assignee.ref.id)),
+            title="New Comment on Task",
+            message=f"{current_user.full_name} commented on '{task.title}': \"{comment.text[:50]}...\"",
+            type="mention",
+            link=f"/dashboard/tasks?taskId={task.id}",
+            organization_id=current_user.organization_id
+        ).create()
     
     return TaskCommentSchema(
         id=str(comment.id),
@@ -605,6 +704,76 @@ async def get_task_comments(id: str, current_user: User = Depends(get_current_us
             created_at=c.created_at
         ))
     return results
+
+
+@router.get("/tasks/{id}/activity", response_model=List[ActivityLogSchema])
+async def get_task_activity(id: str, current_user: User = Depends(get_current_user)):
+    logs = await ActivityLog.find(
+        ActivityLog.resource_id == id,
+        ActivityLog.organization_id == current_user.organization_id
+    ).sort("-created_at").to_list()
+    
+    results = []
+    for log in logs:
+        user_name = "Unknown User"
+        u = await User.get(str(log.user.ref.id))
+        if u: user_name = u.full_name
+        
+        results.append(ActivityLogSchema(
+            id=str(log.id),
+            resource_type=log.resource_type,
+            resource_id=log.resource_id,
+            action=log.action,
+            old_value=log.old_value,
+            new_value=log.new_value,
+            user_id=str(log.user.ref.id),
+            user_name=user_name,
+            created_at=log.created_at
+        ))
+    return results
+
+@router.get("/notifications", response_model=List[NotificationSchema])
+async def get_notifications(current_user: User = Depends(get_current_user)):
+    notifications = await Notification.find(
+        Notification.user_id.id == current_user.id,
+        Notification.organization_id == current_user.organization_id
+    ).sort("-created_at").to_list()
+    
+    results = []
+    for n in notifications:
+        results.append(NotificationSchema(
+            id=str(n.id),
+            user_id=str(current_user.id),
+            title=n.title,
+            message=n.message,
+            type=n.type,
+            link=n.link,
+            read=n.read,
+            created_at=n.created_at
+        ))
+    return results
+
+@router.patch("/notifications/{id}/read")
+async def mark_notification_read(id: str, current_user: User = Depends(get_current_user)):
+    from bson import ObjectId
+    notification = await Notification.get(id)
+    if not notification or notification.user_id.ref.id != current_user.id:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    notification.read = True
+    await notification.save()
+    return {"status": "success"}
+
+@router.websocket("/ws/tasks/{task_id}")
+async def task_websocket(websocket: WebSocket, task_id: str):
+    await manager.connect(websocket, f"task_{task_id}")
+    try:
+        while True:
+            # We mostly use broadcast from regular endpoints, 
+            # but we can receive client-side pings or messages here if needed.
+            data = await websocket.receive_text()
+            # Handle client messages if necessary
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, f"task_{task_id}")
 
 
 @router.get("/export_content/{id}")
