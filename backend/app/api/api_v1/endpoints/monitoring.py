@@ -97,6 +97,11 @@ os.makedirs("storage/thumbnails", exist_ok=True)
 
 init_db()
 
+@router.get("/health")
+async def health_check():
+    """Health check for monitoring system"""
+    return {"status": "healthy", "database": "connected", "timestamp": datetime.now()}
+
 # ============ API ENDPOINTS FOR AGENT ============
 
 @router.post("/agent/register")

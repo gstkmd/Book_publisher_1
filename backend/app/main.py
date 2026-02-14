@@ -17,6 +17,7 @@ app = FastAPI(
     description="Modular Educational Publishing Platform API",
     version="0.1.0",
     lifespan=lifespan,
+    redirect_slashes=True,
 )
 
 # Set all CORS enabled origins
@@ -36,3 +37,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the Educational Publishing Platform API"}
+
+@app.get("/robots.txt")
+def robots_txt():
+    return "User-agent: *\nDisallow: /api/"
