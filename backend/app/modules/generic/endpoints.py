@@ -390,48 +390,53 @@ async def create_task(
     task_in: TaskCreate,
     current_user: User = Depends(get_current_user)
 ):
+    from bson import ObjectId
     # Create task with proper user association
     task = Task(
         title=task_in.title,
         description=task_in.description,
         status=task_in.status,
+        priority=task_in.priority,
+        stage=task_in.stage,
+        tags=task_in.tags or [],
         due_date=task_in.due_date,
         created_by=current_user.id,
-        organization_id=current_user.organization_id
+        assigner=current_user.id,
+        organization_id=current_user.organization_id,
+        updated_at=datetime.utcnow()
     )
     
     # Handle optional fields
     if task_in.content_id:
-        from bson import ObjectId
         task.content_id = ObjectId(task_in.content_id)
     if task_in.assignee:
-        from bson import ObjectId
         task.assignee = ObjectId(task_in.assignee)
     
     await task.create()
     
-    # Notify Assignee (Email stub)
-    if task.assignee:
-        pass # sending_email_service.send_assignment_email(...)
-
     # Return with properly serialized ObjectIds
     return TaskSchema(
         id=str(task.id),
         title=task.title,
         description=task.description,
         status=task.status,
+        priority=task.priority,
+        stage=task.stage,
+        tags=task.tags,
         due_date=task.due_date,
         content_id=str(task.content_id.ref.id) if task.content_id else None,
         assignee=str(task.assignee.ref.id) if task.assignee else None,
+        assigner=str(task.assigner.ref.id) if task.assigner else None,
         created_by=str(task.created_by.ref.id) if task.created_by else None,
         organization_id=task.organization_id,
-        created_at=task.created_at
+        created_at=task.created_at,
+        updated_at=task.updated_at
     )
 
 @router.get("/tasks", response_model=list[TaskSchema])
 async def get_tasks(current_user: User = Depends(get_current_user)):
-    # Filter by org_id in real app
-    tasks = await Task.find_all().to_list()
+    # Filter by organization_id for security
+    tasks = await Task.find(Task.organization_id == current_user.organization_id).to_list()
     
     # Convert to schemas with serialized ObjectIds
     return [
@@ -440,15 +445,72 @@ async def get_tasks(current_user: User = Depends(get_current_user)):
             title=task.title,
             description=task.description,
             status=task.status,
+            priority=task.priority,
+            stage=task.stage,
+            tags=task.tags,
             due_date=task.due_date,
             content_id=str(task.content_id.ref.id) if task.content_id else None,
             assignee=str(task.assignee.ref.id) if task.assignee else None,
+            assigner=str(task.assigner.ref.id) if task.assigner else None,
             created_by=str(task.created_by.ref.id) if task.created_by else None,
             organization_id=task.organization_id,
-            created_at=task.created_at
+            created_at=task.created_at,
+            updated_at=task.updated_at
         )
         for task in tasks
     ]
+
+@router.put("/tasks/{id}", response_model=TaskSchema)
+async def update_task(
+    id: str,
+    task_in: TaskCreate,
+    current_user: User = Depends(get_current_user)
+):
+    from bson import ObjectId
+    task = await Task.get(id)
+    if not task or task.organization_id != current_user.organization_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Update core fields
+    task.title = task_in.title
+    task.description = task_in.description
+    task.status = task_in.status
+    task.priority = task_in.priority
+    task.stage = task_in.stage
+    task.tags = task_in.tags or []
+    task.due_date = task_in.due_date
+    task.updated_at = datetime.utcnow()
+    
+    # Handle Links
+    if task_in.assignee:
+        task.assignee = ObjectId(task_in.assignee)
+    else:
+        task.assignee = None
+        
+    if task_in.content_id:
+        task.content_id = ObjectId(task_in.content_id)
+    else:
+        task.content_id = None
+        
+    await task.save()
+    
+    return TaskSchema(
+        id=str(task.id),
+        title=task.title,
+        description=task.description,
+        status=task.status,
+        priority=task.priority,
+        stage=task.stage,
+        tags=task.tags,
+        due_date=task.due_date,
+        content_id=str(task.content_id.ref.id) if task.content_id else None,
+        assignee=str(task.assignee.ref.id) if task.assignee else None,
+        assigner=str(task.assigner.ref.id) if task.assigner else None,
+        created_by=str(task.created_by.ref.id) if task.created_by else None,
+        organization_id=task.organization_id,
+        created_at=task.created_at,
+        updated_at=task.updated_at
+    )
 
 
 @router.get("/export_content/{id}")

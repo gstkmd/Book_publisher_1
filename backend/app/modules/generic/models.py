@@ -48,11 +48,16 @@ class Task(Document):
     description: Optional[str] = None
     content_id: Optional[Link[Content]] = None
     assignee: Optional[Link[User]] = None
+    assigner: Optional[Link[User]] = None
     organization_id: Optional[str] = None
     status: str = "pending" # pending, in_progress, completed
+    priority: str = "medium" # low, medium, high, urgent
+    stage: str = "To Do" # To Do, In Progress, Review, Done
+    tags: List[str] = []
     due_date: Optional[datetime] = None
     created_by: Link[User]
     created_at: datetime = datetime.utcnow()
+    updated_at: datetime = datetime.utcnow()
 
     class Settings:
         name = "tasks"

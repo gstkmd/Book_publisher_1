@@ -98,26 +98,40 @@ export default function CollaborationPage() {
 
                     <div className="space-y-3">
                         {tasks.map((task) => (
-                            <div key={task.id} className="border rounded p-4 hover:bg-gray-50">
+                            <div key={task.id} className="border rounded-xl p-4 hover:bg-gray-50 transition-all border-gray-100 shadow-sm">
                                 <div className="flex justify-between items-start">
-                                    <div>
-                                        <h3 className="font-bold">{task.title}</h3>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${task.priority === 'urgent' ? 'bg-red-50 text-red-600 border-red-100' :
+                                                task.priority === 'high' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                                                    'bg-blue-50 text-blue-600 border-blue-100'
+                                                }`}>
+                                                {task.priority || 'medium'}
+                                            </span>
+                                            <h3 className="font-bold text-gray-900">{task.title}</h3>
+                                        </div>
                                         {task.description && (
-                                            <p className="text-sm text-gray-600 mt-1">{task.description}</p>
+                                            <p className="text-sm text-gray-600 mt-1 line-clamp-1">{task.description}</p>
                                         )}
+                                        <div className="flex items-center gap-3 mt-3">
+                                            <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${task.stage === 'Done' ? 'bg-green-100 text-green-700' :
+                                                task.stage === 'Review' ? 'bg-purple-100 text-purple-700' :
+                                                    'bg-gray-100 text-gray-600'
+                                                }`}>
+                                                {task.stage || 'To Do'}
+                                            </span>
+                                            {task.due_date && (
+                                                <span className="text-[10px] font-medium text-gray-400">
+                                                    Due: {new Date(task.due_date).toLocaleDateString()}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
-                                    <span className={`px-2 py-1 text-xs rounded ${task.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                        task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                            'bg-gray-100 text-gray-800'
+                                    <span className={`px-2 py-1 text-[10px] font-black uppercase tracking-tighter rounded ${task.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                                         }`}>
                                         {task.status}
                                     </span>
                                 </div>
-                                {task.due_date && (
-                                    <div className="text-sm text-gray-500 mt-2">
-                                        Due: {new Date(task.due_date).toLocaleDateString()}
-                                    </div>
-                                )}
                             </div>
                         ))}
 
