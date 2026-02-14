@@ -52,7 +52,7 @@ export const MemberList = () => {
 
     const handleToggleStatus = async (userId: string, currentStatus: boolean) => {
         try {
-            await api.patch(`/core/members/${userId}/status?is_active=${!currentStatus}`, {}, token!);
+            await api.patch(`/organizations/members/${userId}/status?is_active=${!currentStatus}`, {}, token!);
             fetchMembers();
         } catch (err: any) {
             alert('Failed to update status: ' + (err.message || 'Unknown error'));
@@ -61,7 +61,7 @@ export const MemberList = () => {
 
     const handleRoleChange = async (userId: string, newRole: string) => {
         try {
-            await api.patch(`/core/members/${userId}/role?role=${newRole}`, {}, token!);
+            await api.patch(`/organizations/members/${userId}/role?role=${newRole}`, {}, token!);
             fetchMembers();
         } catch (err: any) {
             alert('Failed to update role: ' + (err.message || 'Unknown error'));

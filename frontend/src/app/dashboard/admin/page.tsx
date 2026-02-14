@@ -14,7 +14,7 @@ export default function AdminDashboard() {
 
     const fetchStats = async () => {
         try {
-            const data = await api.get('/core/stats', token!);
+            const data = await api.get('/organizations/stats', token!);
             setStats(data);
         } catch (err) { console.error(err); }
     };
