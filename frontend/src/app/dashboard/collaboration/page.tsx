@@ -103,31 +103,41 @@ export default function CollaborationPage() {
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${task.priority === 'urgent' ? 'bg-red-50 text-red-600 border-red-100' :
-                                                task.priority === 'high' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                                                    'bg-blue-50 text-blue-600 border-blue-100'
+                                                    task.priority === 'high' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                                                        'bg-blue-50 text-blue-600 border-blue-100'
                                                 }`}>
                                                 {task.priority || 'medium'}
                                             </span>
-                                            <h3 className="font-bold text-gray-900">{task.title}</h3>
+                                            <h3 className="font-bold text-gray-900 line-clamp-1">{task.title}</h3>
                                         </div>
                                         {task.description && (
-                                            <p className="text-sm text-gray-600 mt-1 line-clamp-1">{task.description}</p>
+                                            <p className="text-sm text-gray-500 mt-1 line-clamp-2">{task.description}</p>
                                         )}
-                                        <div className="flex items-center gap-3 mt-3">
+                                        <div className="flex flex-wrap items-center gap-3 mt-4">
                                             <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${task.stage === 'Done' ? 'bg-green-100 text-green-700' :
-                                                task.stage === 'Review' ? 'bg-purple-100 text-purple-700' :
-                                                    'bg-gray-100 text-gray-600'
+                                                    task.stage === 'Review' ? 'bg-purple-100 text-purple-700' :
+                                                        'bg-gray-200 text-gray-600'
                                                 }`}>
                                                 {task.stage || 'To Do'}
                                             </span>
                                             {task.due_date && (
-                                                <span className="text-[10px] font-medium text-gray-400">
-                                                    Due: {new Date(task.due_date).toLocaleDateString()}
+                                                <span className="text-[10px] font-bold text-gray-400">
+                                                    📅 {new Date(task.due_date).toLocaleDateString()}
+                                                </span>
+                                            )}
+                                            {task.assignee_name && (
+                                                <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1">
+                                                    👤 {task.assignee_name}
                                                 </span>
                                             )}
                                         </div>
+                                        {task.assigner_name && (
+                                            <div className="mt-2 text-[9px] text-gray-400 italic">
+                                                Assigned by: {task.assigner_name}
+                                            </div>
+                                        )}
                                     </div>
-                                    <span className={`px-2 py-1 text-[10px] font-black uppercase tracking-tighter rounded ${task.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                    <span className={`px-2 py-1 text-[10px] font-black uppercase tracking-tighter rounded ml-4 ${task.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                                         }`}>
                                         {task.status}
                                     </span>

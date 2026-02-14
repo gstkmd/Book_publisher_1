@@ -15,7 +15,9 @@ interface Task {
     tags?: string[];
     due_date?: string;
     assignee?: any;
+    assignee_name?: string;
     assigner?: any;
+    assigner_name?: string;
     content_id?: any;
 }
 
@@ -59,25 +61,26 @@ export const TaskManager = () => {
 
             setTasks(tasksWithComments);
         } catch (err) {
-            console.error(err);
+            console.error('Fetch tasks failed:', err);
         }
     };
 
     const handleCreateTask = async () => {
-        if (!newTaskTitle) return;
+        if (!newTaskTitle.trim() || !token) return;
         setLoading(true);
         try {
             await api.post('/generic/tasks', {
-                title: newTaskTitle,
+                title: newTaskTitle.trim(),
                 status: 'pending',
                 priority: 'medium',
-                stage: 'To Do'
-            }, token!);
+                stage: 'To Do',
+                tags: []
+            }, token);
             setNewTaskTitle('');
-            fetchTasks();
+            await fetchTasks();
         } catch (err) {
-            console.error(err);
-            alert('Failed to create task');
+            console.error('Create task failed:', err);
+            alert('Failed to create task. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -85,14 +88,25 @@ export const TaskManager = () => {
 
     const handleUpdateTask = async (task: Task, updates: Partial<Task>) => {
         try {
-            await api.put(`/generic/tasks/${task.id}`, {
-                ...task,
-                ...updates
-            }, token!);
+            // Stripping fields not accepted by TaskCreate schema if necessary
+            // But usually Pydantic ignores extra fields.
+            const payload = {
+                title: updates.title ?? task.title,
+                description: updates.description ?? task.description,
+                status: updates.status ?? task.status,
+                priority: updates.priority ?? task.priority,
+                stage: updates.stage ?? task.stage,
+                tags: updates.tags ?? task.tags ?? [],
+                due_date: updates.due_date ?? task.due_date,
+                assignee: updates.assignee ?? (task.assignee ? (typeof task.assignee === 'string' ? task.assignee : task.assignee._id || task.assignee.id) : null),
+                content_id: updates.content_id ?? (task.content_id ? (typeof task.content_id === 'string' ? task.content_id : task.content_id._id || task.content_id.id) : null)
+            };
+
+            await api.put(`/generic/tasks/${task.id}`, payload, token!);
             setEditingTask(null);
             fetchTasks();
         } catch (err) {
-            console.error(err);
+            console.error('Update task failed:', err);
             alert('Failed to update task');
         }
     };
@@ -132,23 +146,22 @@ export const TaskManager = () => {
             </div>
 
             {/* Create Bar */}
-            <div className="flex gap-2 mb-8 bg-gray-50 p-2 rounded-lg border border-gray-100">
+            <form onSubmit={(e) => { e.preventDefault(); handleCreateTask(); }} className="flex gap-2 mb-8 bg-gray-50 p-2 rounded-lg border border-gray-100">
                 <input
                     type="text"
                     value={newTaskTitle}
                     onChange={(e) => setNewTaskTitle(e.target.value)}
                     placeholder="Quick add: what's the next task?"
                     className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium px-3 placeholder:text-gray-400"
-                    onKeyDown={(e) => e.key === 'Enter' && handleCreateTask()}
                 />
                 <button
-                    onClick={handleCreateTask}
-                    disabled={loading}
+                    type="submit"
+                    disabled={loading || !newTaskTitle.trim()}
                     className="bg-indigo-600 text-white px-4 py-2 rounded-md font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
                 >
                     {loading ? 'Adding...' : 'Add Task'}
                 </button>
-            </div>
+            </form>
 
             {/* Task List */}
             <div className="space-y-3">
@@ -198,9 +211,14 @@ export const TaskManager = () => {
                                     <div className={`text-[10px] font-black uppercase tracking-wider ${task.due_date && new Date(task.due_date) < new Date() ? 'text-red-500' : 'text-gray-400'}`}>
                                         {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No Deadline'}
                                     </div>
-                                    <div className="text-[10px] text-gray-300 font-bold uppercase tracking-widest mt-0.5">
-                                        Assignee: {task.assignee ? 'Team Member' : 'Unassigned'}
+                                    <div className="text-[10px] font-bold uppercase tracking-widest mt-0.5 text-gray-500">
+                                        {task.assignee_name ? `For: ${task.assignee_name}` : 'Unassigned'}
                                     </div>
+                                    {task.assigner_name && (
+                                        <div className="text-[9px] text-gray-400 font-medium italic">
+                                            By: {task.assigner_name}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-[10px] font-black text-gray-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all">
                                     →
@@ -251,6 +269,16 @@ export const TaskManager = () => {
                                         </button>
                                     ))}
                                 </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Due Date</label>
+                                <input
+                                    type="date"
+                                    defaultValue={editingTask.due_date ? new Date(editingTask.due_date).toISOString().split('T')[0] : ''}
+                                    onChange={(e) => handleUpdateTask(editingTask, { due_date: e.target.value })}
+                                    className="w-full p-2 border-2 border-gray-100 rounded-lg text-sm font-medium focus:border-indigo-600 transition-colors"
+                                />
                             </div>
 
                             <button
