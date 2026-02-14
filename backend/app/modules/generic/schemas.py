@@ -19,7 +19,9 @@ class TaskSchema(TaskBase):
     id: str
     content_id: Optional[str] = None
     assignee: Optional[str] = None
+    assignee_name: Optional[str] = None
     assigner: Optional[str] = None
+    assigner_name: Optional[str] = None
     created_by: Optional[str] = None
     organization_id: Optional[str] = None
     created_at: datetime

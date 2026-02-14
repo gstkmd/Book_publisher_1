@@ -413,8 +413,16 @@ async def create_task(
         task.assignee = ObjectId(task_in.assignee)
     
     await task.create()
+
+    # Fetch names for response
+    assignee_name = None
+    if task.assignee:
+        u = await User.get(str(task.assignee.ref.id))
+        if u: assignee_name = u.full_name
     
-    # Return with properly serialized ObjectIds
+    assigner_name = current_user.full_name
+    
+    # Return with properly serialized ObjectIds and names
     return TaskSchema(
         id=str(task.id),
         title=task.title,
@@ -426,7 +434,9 @@ async def create_task(
         due_date=task.due_date,
         content_id=str(task.content_id.ref.id) if task.content_id else None,
         assignee=str(task.assignee.ref.id) if task.assignee else None,
+        assignee_name=assignee_name,
         assigner=str(task.assigner.ref.id) if task.assigner else None,
+        assigner_name=assigner_name,
         created_by=str(task.created_by.ref.id) if task.created_by else None,
         organization_id=task.organization_id,
         created_at=task.created_at,
@@ -438,9 +448,19 @@ async def get_tasks(current_user: User = Depends(get_current_user)):
     # Filter by organization_id for security
     tasks = await Task.find(Task.organization_id == current_user.organization_id).to_list()
     
-    # Convert to schemas with serialized ObjectIds
-    return [
-        TaskSchema(
+    results = []
+    for task in tasks:
+        assignee_name = None
+        if task.assignee:
+            u = await User.get(str(task.assignee.ref.id))
+            if u: assignee_name = u.full_name
+        
+        assigner_name = None
+        if task.assigner:
+            u = await User.get(str(task.assigner.ref.id))
+            if u: assigner_name = u.full_name
+
+        results.append(TaskSchema(
             id=str(task.id),
             title=task.title,
             description=task.description,
@@ -451,14 +471,16 @@ async def get_tasks(current_user: User = Depends(get_current_user)):
             due_date=task.due_date,
             content_id=str(task.content_id.ref.id) if task.content_id else None,
             assignee=str(task.assignee.ref.id) if task.assignee else None,
+            assignee_name=assignee_name,
             assigner=str(task.assigner.ref.id) if task.assigner else None,
+            assigner_name=assigner_name,
             created_by=str(task.created_by.ref.id) if task.created_by else None,
             organization_id=task.organization_id,
             created_at=task.created_at,
             updated_at=task.updated_at
-        )
-        for task in tasks
-    ]
+        ))
+    
+    return results
 
 @router.put("/tasks/{id}", response_model=TaskSchema)
 async def update_task(
