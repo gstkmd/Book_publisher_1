@@ -15,6 +15,7 @@ class Standard(Document):
     subject: str # Math, ELA, Science
     grade_level: str
     region: str = "US" # US, UK, IN
+    organization_id: Optional[str] = None
     
     class Settings:
         name = "standards"
@@ -40,6 +41,7 @@ class Assessment(Document):
     description: Optional[str] = None
     questions: List[Question] = []
     aligned_standards: List[Link[Standard]] = []
+    organization_id: Optional[str] = None
     created_at: datetime = datetime.utcnow()
     is_published: bool = False
 
@@ -51,7 +53,10 @@ class LessonPlan(Document):
     title: str
     content_id: str
     standard_id: str
-    plan_content: str
+    plan_content: Dict = {} # Rich Text JSON
+    grade_level: Optional[str] = None
+    subject: Optional[str] = None
+    organization_id: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:

@@ -4,6 +4,7 @@ from app.core.config import settings
 from app.core.config import settings
 from app.modules.core.models import User, WebhookSubscription, Organization
 from app.modules.generic.models import Content, ContentVersion, Comment, Task
+from app.modules.generic.rights_models import License, Contract
 from app.modules.educational.models import Standard, Assessment, LessonPlan
 
 import certifi
@@ -15,5 +16,9 @@ async def init_db():
     )
     await init_beanie(
         database=client[settings.DB_NAME],
-        document_models=[User, Content, ContentVersion, Standard, Assessment, LessonPlan, WebhookSubscription, Organization, Comment, Task]
+        document_models=[
+            User, Content, ContentVersion, Standard, Assessment, 
+            LessonPlan, WebhookSubscription, Organization, Comment, 
+            Task, License, Contract
+        ]
     )

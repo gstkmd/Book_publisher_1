@@ -50,17 +50,60 @@ export const MemberList = () => {
         }
     };
 
+    const handleToggleStatus = async (userId: string, currentStatus: boolean) => {
+        try {
+            await api.patch(`/core/members/${userId}/status?is_active=${!currentStatus}`, {}, token!);
+            fetchMembers();
+        } catch (err: any) {
+            alert('Failed to update status: ' + (err.message || 'Unknown error'));
+        }
+    };
+
+    const handleRoleChange = async (userId: string, newRole: string) => {
+        try {
+            await api.patch(`/core/members/${userId}/role?role=${newRole}`, {}, token!);
+            fetchMembers();
+        } catch (err: any) {
+            alert('Failed to update role: ' + (err.message || 'Unknown error'));
+        }
+    };
+
     return (
         <div className="bg-white p-6 rounded-lg shadow mb-6 relative">
             <h2 className="text-xl font-bold mb-4">Team Members</h2>
             <div className="space-y-2">
                 {members.map(m => (
-                    <div key={m._id || m.email} className="flex justify-between items-center p-3 border rounded">
-                        <div>
-                            <div className="font-medium">{m.full_name || 'No Name'}</div>
+                    <div key={m._id || m.email} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50 transition">
+                        <div className="flex-1">
+                            <div className="font-medium flex items-center gap-2">
+                                {m.full_name || 'No Name'}
+                                {!m.is_active && (
+                                    <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold uppercase">Inactive</span>
+                                )}
+                            </div>
                             <div className="text-sm text-gray-500">{m.email}</div>
                         </div>
-                        <span className="text-xs bg-gray-100 px-2 py-1 rounded capitalize">{m.role}</span>
+
+                        <div className="flex items-center gap-4">
+                            <select
+                                value={m.role}
+                                onChange={(e) => handleRoleChange(m._id, e.target.value)}
+                                className="text-xs bg-gray-50 border-none px-2 py-1 rounded capitalize focus:ring-1 focus:ring-blue-500"
+                            >
+                                <option value="user">User</option>
+                                <option value="author">Author</option>
+                                <option value="section_editor">Section Editor</option>
+                                <option value="teacher">Teacher</option>
+                                <option value="admin">Admin</option>
+                            </select>
+
+                            <button
+                                onClick={() => handleToggleStatus(m._id, m.is_active)}
+                                className={`text-[10px] font-bold uppercase px-2 py-1 rounded transition ${m.is_active ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
+                            >
+                                {m.is_active ? 'Deactivate' : 'Activate'}
+                            </button>
+                        </div>
                     </div>
                 ))}
             </div>

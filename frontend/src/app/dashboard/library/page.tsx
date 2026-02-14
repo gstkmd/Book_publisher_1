@@ -111,6 +111,21 @@ export default function ContentLibrary() {
         console.log('Content shared successfully');
     };
 
+    const handleMigrate = async () => {
+        if (!confirm('This will assign all orphaned content to your organization. Continue?')) return;
+        try {
+            setLoading(true);
+            const res = await api.post('/generic/migrate-orphans', {}, token!);
+            alert(res.message || 'Migration successful');
+            fetchContent();
+        } catch (err: any) {
+            console.error(err);
+            alert('Migration failed: ' + (err.message || 'Unknown error'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const filteredContent = contents.filter(c => {
         if (!c) return false;
         if (filter === 'all') return true;
@@ -208,6 +223,16 @@ export default function ContentLibrary() {
                         onClick={() => setFilter('published')}
                         className={`px-4 py-2 rounded-md transition ${filter === 'published' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
                     >Published</button>
+
+                    {user?.role === 'admin' && (
+                        <button
+                            onClick={handleMigrate}
+                            className="px-4 py-2 rounded-md transition text-amber-600 hover:bg-amber-50 border border-amber-200 ml-4 text-sm font-medium"
+                            title="Assign orphaned content to your organization"
+                        >
+                            🛡️ Fix Visibility
+                        </button>
+                    )}
                 </div>
                 <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500">View:</span>

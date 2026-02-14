@@ -162,3 +162,43 @@ async def get_organization_stats(current_user: User = Depends(get_current_user))
         "plan_limit_mb": 1024 # 1GB free tier
     }
 
+@router.patch("/members/{user_id}/status")
+async def update_member_status(
+    user_id: str,
+    is_active: bool,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can manage members")
+
+    user = await User.get(user_id)
+    if not user or user.organization_id != current_user.organization_id:
+        raise HTTPException(status_code=404, detail="Member not found in your organization")
+
+    user.is_active = is_active
+    await user.save()
+    return {"message": f"User status updated to {'active' if is_active else 'inactive'}"}
+
+@router.patch("/members/{user_id}/role")
+async def update_member_role(
+    user_id: str,
+    role: str,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can manage members")
+
+    user = await User.get(user_id)
+    if not user or user.organization_id != current_user.organization_id:
+        raise HTTPException(status_code=404, detail="Member not found in your organization")
+
+    # Validate role - simplified check
+    from app.modules.core.models import UserRole
+    try:
+        user.role = UserRole(role)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid role")
+        
+    await user.save()
+    return {"message": f"User role updated to {role}"}
+

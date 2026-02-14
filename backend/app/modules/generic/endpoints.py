@@ -4,7 +4,7 @@ from typing import List, Optional, Dict
 from datetime import datetime
 from app.modules.generic.models import Content, ContentVersion, Comment, Task
 from app.modules.core.models import User
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_active_superuser
 from app.modules.generic.websockets import manager
 from app.core.storage import s3_client
 
@@ -69,18 +69,27 @@ async def websocket_endpoint(websocket: WebSocket, document_id: str):
 async def read_contents(current_user: User = Depends(get_current_user)):
     """
     Get all content items for the current user's organization.
-    Admins can see all content items.
+    Strictly restricted to the organization ID for SaaS security.
     """
-    from app.modules.core.models import UserRole
+    return await Content.find(Content.organization_id == current_user.organization_id).to_list()
+
+
+@router.post("/migrate-orphans")
+async def migrate_orphans(current_user: User = Depends(get_current_active_superuser)):
+    """
+    One-time migration to assign orphaned content to the user's organization.
+    Restricted to Admins.
+    """
+    # Find content with no organization_id
+    orphaned_content = await Content.find(Content.organization_id == None).to_list()
     
-    if current_user.role == UserRole.ADMIN:
-        return await Content.find_all().to_list()
+    count = 0
+    for content in orphaned_content:
+        content.organization_id = current_user.organization_id
+        await content.save()
+        count += 1
         
-    # Find content for user's organization or orphaned content (None)
-    return await Content.find(
-        (Content.organization_id == current_user.organization_id) |
-        (Content.organization_id == None)
-    ).to_list()
+    return {"message": f"Successfully migrated {count} orphaned content items to organization {current_user.organization_id}"}
 
 @router.get("/content/{id}", response_model=Content)
 async def get_content(id: str):
@@ -206,16 +215,10 @@ async def update_content_status(
 @router.get("/workflow/stats")
 async def get_workflow_stats(current_user: User = Depends(get_current_user)):
     """Get counts of content by status for the current organization"""
-    from app.modules.core.models import UserRole
+    from app.modules.generic.models import Content
     
-    # Base filter by organization + support for Admins and orphans
-    if current_user.role == UserRole.ADMIN:
-        base_query = Content.find_all()
-    else:
-        base_query = Content.find(
-            (Content.organization_id == current_user.organization_id) |
-            (Content.organization_id == None)
-        )
+    # Base filter by organization
+    base_query = Content.find(Content.organization_id == current_user.organization_id)
     
     # Aggregate counts
     draft_count = await base_query.find(Content.status == "draft").count()
