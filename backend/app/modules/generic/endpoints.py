@@ -67,7 +67,20 @@ async def websocket_endpoint(websocket: WebSocket, document_id: str):
 
 @router.get("/content", response_model=List[Content])
 async def read_contents(current_user: User = Depends(get_current_user)):
-    return await Content.find(Content.organization_id == current_user.organization_id).to_list()
+    """
+    Get all content items for the current user's organization.
+    Admins can see all content items.
+    """
+    from app.modules.core.models import UserRole
+    
+    if current_user.role == UserRole.ADMIN:
+        return await Content.find_all().to_list()
+        
+    # Find content for user's organization or orphaned content (None)
+    return await Content.find(
+        (Content.organization_id == current_user.organization_id) |
+        (Content.organization_id == None)
+    ).to_list()
 
 @router.get("/content/{id}", response_model=Content)
 async def get_content(id: str):
@@ -193,10 +206,16 @@ async def update_content_status(
 @router.get("/workflow/stats")
 async def get_workflow_stats(current_user: User = Depends(get_current_user)):
     """Get counts of content by status for the current organization"""
-    from app.modules.generic.models import Content
+    from app.modules.core.models import UserRole
     
-    # Base filter by organization
-    base_query = Content.find(Content.organization_id == current_user.organization_id)
+    # Base filter by organization + support for Admins and orphans
+    if current_user.role == UserRole.ADMIN:
+        base_query = Content.find_all()
+    else:
+        base_query = Content.find(
+            (Content.organization_id == current_user.organization_id) |
+            (Content.organization_id == None)
+        )
     
     # Aggregate counts
     draft_count = await base_query.find(Content.status == "draft").count()
