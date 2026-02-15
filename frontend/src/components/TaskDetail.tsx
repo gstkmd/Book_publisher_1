@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 
 interface TaskDetailProps {
-    taskId: string;
+    taskId?: string;
     onClose: () => void;
     onUpdate: () => void;
 }
@@ -38,10 +38,27 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
     const { token, user } = useAuth();
 
     useEffect(() => {
-        if (token && taskId) {
-            fetchTaskDetails();
-            fetchComments();
-            fetchActivity();
+        if (token) {
+            if (taskId) {
+                fetchTaskDetails();
+                fetchComments();
+                fetchActivity();
+            } else {
+                setTask({
+                    title: '',
+                    description: '',
+                    status: 'pending',
+                    priority: 'medium',
+                    stage: 'To Do',
+                    tags: [],
+                    assignee: null,
+                    assignee_name: '',
+                    due_date: null,
+                    start_date: null,
+                    time_estimate: ''
+                });
+                setLoading(false);
+            }
         }
     }, [token, taskId]);
 
@@ -102,13 +119,40 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
     ].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
     const handleUpdateField = async (field: string, value: any) => {
+        const updates = { ...task, [field]: value };
+        if (!taskId) {
+            setTask(updates);
+            return;
+        }
+
         try {
-            const updates = { ...task, [field]: value };
             await api.put(`/generic/tasks/${taskId}`, updates, token!);
             setTask(updates);
             onUpdate();
         } catch (err) {
             console.error(`Failed to update ${field}:`, err);
+        }
+    };
+
+    const handleCreateTask = async () => {
+        if (!task.title.trim()) {
+            alert('Title is required');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const newTask = await api.post('/generic/tasks', {
+                ...task,
+                assignee: task.assignee?._id || task.assignee?.id || task.assignee
+            }, token!);
+            onUpdate();
+            onClose();
+        } catch (err) {
+            console.error('Failed to create task:', err);
+            alert('Failed to create task');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -147,12 +191,23 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors">
                                 <span className="w-2 h-2 rounded-full bg-gray-400"></span>
-                                <span className="text-xs font-bold text-gray-600">Task</span>
+                                <span className="text-xs font-bold text-gray-600">{taskId ? 'Task' : 'New Task'}</span>
                                 <ChevronDown className="w-3 h-3 text-gray-400" />
                             </div>
-                            <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-                                <Maximize2 className="w-4 h-4" />
-                            </button>
+                            {taskId && (
+                                <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                                    <Maximize2 className="w-4 h-4" />
+                                </button>
+                            )}
+                            {!taskId && (
+                                <button
+                                    onClick={handleCreateTask}
+                                    className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-sm flex items-center gap-2"
+                                >
+                                    <Plus className="w-3 h-3" />
+                                    Create Task
+                                </button>
+                            )}
                         </div>
                         <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all">
                             <X className="w-6 h-6" />
@@ -274,39 +329,6 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                             />
                         </div>
 
-                        {/* Custom Fields */}
-                        <div className="space-y-4 pt-4 border-t border-gray-50">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-gray-900">
-                                    <ChevronDown className="w-4 h-4" />
-                                    <span className="text-sm font-black uppercase tracking-wider">Custom Fields</span>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <Search className="w-4 h-4 text-gray-400" />
-                                    <Maximize2 className="w-4 h-4 text-gray-400" />
-                                    <Plus className="w-4 h-4 text-gray-400" />
-                                </div>
-                            </div>
-
-                            <div className="space-y-0.5">
-                                {[
-                                    'Client Mail', 'Client Name', 'Client Notified',
-                                    'Client Phone', 'Comment For communi...',
-                                    'Completion Infomation', 'Dealing Name',
-                                    'Dealing Phone', 'Last Reminder Date'
-                                ].map(field => (
-                                    <div key={field} className="grid grid-cols-2 py-2.5 border-b border-gray-50 group transition-colors hover:bg-gray-50/50 px-2 rounded-lg">
-                                        <div className="flex items-center gap-3 text-xs font-semibold text-gray-500">
-                                            <div className="w-4 h-4 flex items-center justify-center border border-gray-200 rounded text-[9px]">T</div>
-                                            {field}
-                                        </div>
-                                        <div className="text-xs font-medium text-gray-300 group-hover:text-gray-500 transition-colors">
-                                            {task.custom_fields?.[field] || '-'}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
                     </div>
                 </div>
 

@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { TaskDetail } from './TaskDetail';
+import { Plus } from 'lucide-react';
 
 interface Task {
     id: string;
@@ -28,7 +29,6 @@ interface TaskWithComments extends Task {
 
 export const TaskManager = () => {
     const [tasks, setTasks] = useState<TaskWithComments[]>([]);
-    const [newTaskTitle, setNewTaskTitle] = useState('');
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const { token } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -66,26 +66,6 @@ export const TaskManager = () => {
         }
     };
 
-    const handleCreateTask = async () => {
-        if (!newTaskTitle.trim() || !token) return;
-        setLoading(true);
-        try {
-            await api.post('/generic/tasks', {
-                title: newTaskTitle.trim(),
-                status: 'pending',
-                priority: 'medium',
-                stage: 'To Do',
-                tags: []
-            }, token);
-            setNewTaskTitle('');
-            await fetchTasks();
-        } catch (err) {
-            console.error('Create task failed:', err);
-            alert('Failed to create task. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleUpdateTask = async (task: Task, updates: Partial<Task>) => {
         try {
@@ -146,23 +126,18 @@ export const TaskManager = () => {
                 </div>
             </div>
 
-            {/* Create Bar */}
-            <form onSubmit={(e) => { e.preventDefault(); handleCreateTask(); }} className="flex gap-2 mb-8 bg-gray-50 p-2 rounded-lg border border-gray-100">
-                <input
-                    type="text"
-                    value={newTaskTitle}
-                    onChange={(e) => setNewTaskTitle(e.target.value)}
-                    placeholder="Quick add: what's the next task?"
-                    className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium px-3 placeholder:text-gray-400"
-                />
+            {/* Create Bar replaced with Full Add Button */}
+            <div className="mb-8">
                 <button
-                    type="submit"
-                    disabled={loading || !newTaskTitle.trim()}
-                    className="bg-indigo-600 text-white px-4 py-2 rounded-md font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
+                    onClick={() => setEditingTask({ id: '' } as Task)}
+                    className="w-full py-4 bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-xl flex items-center justify-center gap-3 text-indigo-600 hover:bg-indigo-100 hover:border-indigo-300 transition-all group"
                 >
-                    {loading ? 'Adding...' : 'Add Task'}
+                    <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <Plus className="w-5 h-5" />
+                    </div>
+                    <span className="font-bold text-sm uppercase tracking-widest">Add New Task</span>
                 </button>
-            </form>
+            </div>
 
             {/* Task List */}
             <div className="space-y-3">
@@ -233,7 +208,7 @@ export const TaskManager = () => {
             {/* Task Detail View */}
             {editingTask && (
                 <TaskDetail
-                    taskId={editingTask.id}
+                    taskId={editingTask.id || undefined}
                     onClose={() => setEditingTask(null)}
                     onUpdate={fetchTasks}
                 />
