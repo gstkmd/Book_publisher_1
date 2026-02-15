@@ -93,9 +93,12 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
             const updateTimer = () => {
                 let accumulated = task.track_time || 0;
                 if (task.timer_start) {
-                    const start = new Date(task.timer_start).getTime();
-                    const now = new Date().getTime();
-                    accumulated += Math.floor((now - start) / 1000);
+                    const startTimeStr = task.timer_start;
+                    const startTime = new Date(startTimeStr).getTime();
+                    if (!isNaN(startTime)) {
+                        const now = new Date().getTime();
+                        accumulated += Math.floor((now - startTime) / 1000);
+                    }
                 }
                 setDisplayTime(accumulated);
             };
@@ -213,6 +216,50 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
             setNewComment('');
         } catch (err) {
             console.error('Failed to add comment:', err);
+        }
+    };
+
+    const parseEstimate = (estimate: string) => {
+        const hMatch = estimate?.match(/(\d+)h/);
+        const mMatch = estimate?.match(/(\d+)m/);
+        return {
+            h: hMatch ? hMatch[1] : '',
+            m: mMatch ? mMatch[1] : ''
+        };
+    };
+
+    const handleUpdateEstimate = (h: string, m: string) => {
+        const estimate = `${h ? h + 'h ' : ''}${m ? m + 'm' : ''}`.trim();
+        handleUpdateField('time_estimate', estimate);
+    };
+
+    const handleAddTag = (tag: string) => {
+        if (!tag.trim() || task.tags.includes(tag.trim())) return;
+        handleUpdateField('tags', [...task.tags, tag.trim()]);
+    };
+
+    const handleRemoveTag = (tag: string) => {
+        handleUpdateField('tags', task.tags.filter((t: string) => t !== tag));
+    };
+
+    const [showLinkInput, setShowLinkInput] = useState(false);
+    const [newLink, setNewLink] = useState({ label: '', url: '' });
+    const [showAttachInput, setShowAttachInput] = useState(false);
+    const [newAttach, setNewAttach] = useState({ name: '', url: '' });
+
+    const handleAddLink = () => {
+        if (newLink.label && newLink.url) {
+            handleUpdateField('links', [...(task.links || []), newLink]);
+            setNewLink({ label: '', url: '' });
+            setShowLinkInput(false);
+        }
+    };
+
+    const handleAddAttachment = () => {
+        if (newAttach.name && newAttach.url) {
+            handleUpdateField('attachments', [...(task.attachments || []), newAttach]);
+            setNewAttach({ name: '', url: '' });
+            setShowAttachInput(false);
         }
     };
 
@@ -372,13 +419,24 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                     <Clock className="w-4 h-4" />
                                     <span className="text-xs font-bold uppercase tracking-wider">Time estimate</span>
                                 </div>
-                                <input
-                                    type="text"
-                                    defaultValue={task.time_estimate}
-                                    onBlur={(e) => handleUpdateField('time_estimate', e.target.value)}
-                                    placeholder="e.g. 2h 30m"
-                                    className="text-xs font-bold text-gray-700 bg-transparent border-none focus:ring-0 p-0 placeholder:text-gray-300"
-                                />
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="number"
+                                        placeholder="Hr"
+                                        defaultValue={parseEstimate(task.time_estimate).h}
+                                        onBlur={(e) => handleUpdateEstimate(e.target.value, parseEstimate(task.time_estimate).m)}
+                                        className="w-12 text-xs font-bold text-gray-700 bg-gray-50 border border-gray-100 rounded px-1.5 py-0.5 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                    />
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase">H</span>
+                                    <input
+                                        type="number"
+                                        placeholder="Min"
+                                        defaultValue={parseEstimate(task.time_estimate).m}
+                                        onBlur={(e) => handleUpdateEstimate(parseEstimate(task.time_estimate).h, e.target.value)}
+                                        className="w-12 text-xs font-bold text-gray-700 bg-gray-50 border border-gray-100 rounded px-1.5 py-0.5 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                    />
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase">M</span>
+                                </div>
                             </div>
 
                             {/* Track Time */}
@@ -405,8 +463,137 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                     <Tag className="w-4 h-4" />
                                     <span className="text-xs font-bold uppercase tracking-wider">Tags</span>
                                 </div>
-                                <div className="text-xs font-bold text-gray-300 hover:text-gray-500 cursor-pointer transition-colors">
-                                    Empty
+                                <div className="flex flex-wrap gap-1 items-center">
+                                    {task.tags?.map((t: string) => (
+                                        <span key={t} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-bold flex items-center gap-1 group/tag">
+                                            {t}
+                                            <X className="w-2.5 h-2.5 cursor-pointer hover:text-red-500 opacity-0 group-hover/tag:opacity-100 transition-opacity" onClick={() => handleRemoveTag(t)} />
+                                        </span>
+                                    ))}
+                                    <input
+                                        type="text"
+                                        placeholder="+ Tag"
+                                        className="text-[10px] font-bold text-gray-400 bg-transparent border-none focus:ring-0 p-0 w-16"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                handleAddTag(e.currentTarget.value);
+                                                e.currentTarget.value = '';
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Attachments & Links */}
+                        <div className="grid grid-cols-2 gap-8 pt-4 border-t border-gray-50">
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-gray-400">
+                                        <Paperclip className="w-4 h-4" />
+                                        <span className="text-xs font-bold uppercase tracking-widest text-gray-500">Attachments</span>
+                                    </div>
+                                    <button onClick={() => setShowAttachInput(true)} className="p-1 hover:bg-gray-100 rounded-md transition-colors">
+                                        <Plus className="w-3.5 h-3.5 text-indigo-600" />
+                                    </button>
+                                </div>
+                                <div className="space-y-2">
+                                    {showAttachInput && (
+                                        <div className="p-3 bg-white border border-indigo-100 rounded-lg shadow-sm space-y-2 animate-in slide-in-from-top-2 duration-200">
+                                            <input
+                                                type="text"
+                                                placeholder="File Name"
+                                                value={newAttach.name}
+                                                onChange={(e) => setNewAttach({ ...newAttach, name: e.target.value })}
+                                                className="w-full text-xs p-2 border border-gray-100 rounded focus:ring-1 focus:ring-indigo-500 outline-none"
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="File URL (placeholder)"
+                                                value={newAttach.url}
+                                                onChange={(e) => setNewAttach({ ...newAttach, url: e.target.value })}
+                                                className="w-full text-xs p-2 border border-gray-100 rounded focus:ring-1 focus:ring-indigo-500 outline-none"
+                                            />
+                                            <div className="flex justify-end gap-2">
+                                                <button onClick={() => setShowAttachInput(false)} className="text-[10px] font-bold text-gray-400 uppercase">Cancel</button>
+                                                <button onClick={handleAddAttachment} className="text-[10px] font-bold text-indigo-600 uppercase">Add</button>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {task.attachments?.map((a: any, idx: number) => (
+                                        <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg group">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className="w-8 h-8 rounded bg-white flex items-center justify-center border border-gray-100 text-[10px] font-bold text-gray-400 uppercase">
+                                                    {a.name.split('.').pop()}
+                                                </div>
+                                                <a href={a.url} target="_blank" rel="noreferrer" className="text-xs font-bold text-gray-700 truncate hover:text-indigo-600 transition-colors">{a.name}</a>
+                                            </div>
+                                            <button
+                                                onClick={() => handleUpdateField('attachments', task.attachments.filter((_: any, i: number) => i !== idx))}
+                                                className="p-1 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {(!task.attachments || task.attachments.length === 0) && (
+                                        <div className="text-[10px] font-bold text-gray-300 uppercase italic">No files attached</div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-gray-400">
+                                        <AtSign className="w-4 h-4" />
+                                        <span className="text-xs font-bold uppercase tracking-widest text-gray-500">External Links</span>
+                                    </div>
+                                    <button onClick={() => setShowLinkInput(true)} className="p-1 hover:bg-gray-100 rounded-md transition-colors">
+                                        <Plus className="w-3.5 h-3.5 text-indigo-600" />
+                                    </button>
+                                </div>
+                                <div className="space-y-2">
+                                    {showLinkInput && (
+                                        <div className="p-3 bg-white border border-indigo-100 rounded-lg shadow-sm space-y-2 animate-in slide-in-from-top-2 duration-200">
+                                            <input
+                                                type="text"
+                                                placeholder="Link Label (e.g. Drive)"
+                                                value={newLink.label}
+                                                onChange={(e) => setNewLink({ ...newLink, label: e.target.value })}
+                                                className="w-full text-xs p-2 border border-gray-100 rounded focus:ring-1 focus:ring-indigo-500 outline-none"
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="URL"
+                                                value={newLink.url}
+                                                onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
+                                                className="w-full text-xs p-2 border border-gray-100 rounded focus:ring-1 focus:ring-indigo-500 outline-none"
+                                            />
+                                            <div className="flex justify-end gap-2">
+                                                <button onClick={() => setShowLinkInput(false)} className="text-[10px] font-bold text-gray-400 uppercase">Cancel</button>
+                                                <button onClick={handleAddLink} className="text-[10px] font-bold text-indigo-600 uppercase">Add</button>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {task.links?.map((l: any, idx: number) => (
+                                        <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg group">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className="w-8 h-8 rounded bg-white flex items-center justify-center border border-gray-100">
+                                                    <Maximize2 className="w-3 h-3 text-indigo-500" />
+                                                </div>
+                                                <a href={l.url} target="_blank" rel="noreferrer" className="text-xs font-bold text-gray-700 truncate hover:text-indigo-600 transition-colors">{l.label}</a>
+                                            </div>
+                                            <button
+                                                onClick={() => handleUpdateField('links', task.links.filter((_: any, i: number) => i !== idx))}
+                                                className="p-1 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {(!task.links || task.links.length === 0) && (
+                                        <div className="text-[10px] font-bold text-gray-300 uppercase italic">No external links</div>
+                                    )}
                                 </div>
                             </div>
                         </div>

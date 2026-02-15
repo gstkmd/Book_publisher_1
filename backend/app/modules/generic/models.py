@@ -59,6 +59,8 @@ class Task(Document):
     time_estimate: Optional[str] = None
     timer_start: Optional[datetime] = None
     track_time: Optional[int] = 0 # In seconds
+    attachments: list[dict[str, str]] = [] # [{"name": "file.pdf", "url": "/uploads/..."}]
+    links: list[dict[str, str]] = [] # [{"label": "Google Drive", "url": "https://..."}]
     custom_fields: Dict[str, str] = {}
     parent_task_id: Optional[Link["Task"]] = None
     created_by: Link[User]

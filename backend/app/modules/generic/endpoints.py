@@ -410,6 +410,8 @@ async def create_task(
         start_date=task_in.start_date,
         time_estimate=task_in.time_estimate,
         track_time=task_in.track_time or 0,
+        attachments=task_in.attachments or [],
+        links=task_in.links or [],
         custom_fields=task_in.custom_fields or {},
         created_by=current_user.id,
         assigner=current_user.id,
@@ -511,6 +513,8 @@ async def get_tasks(current_user: User = Depends(get_current_user)):
             time_estimate=task.time_estimate,
             timer_start=task.timer_start,
             track_time=task.track_time,
+            attachments=task.attachments,
+            links=task.links,
             custom_fields=task.custom_fields,
             content_id=str(task.content_id.ref.id) if task.content_id else None,
             assignee=str(task.assignee.ref.id) if task.assignee else None,
@@ -563,7 +567,9 @@ async def update_task(
     task.due_date = task_in.due_date
     task.start_date = task_in.start_date
     task.time_estimate = task_in.time_estimate
-    task.track_time = task_in.track_time or 0
+    # task.track_time = task_in.track_time or 0 # DON'T OVERWRITE - Backend is source of truth
+    task.attachments = task_in.attachments or []
+    task.links = task_in.links or []
     task.custom_fields = task_in.custom_fields or {}
     task.updated_at = datetime.utcnow()
     
@@ -640,6 +646,8 @@ async def update_task(
         time_estimate=task.time_estimate,
         timer_start=task.timer_start,
         track_time=task.track_time,
+        attachments=task.attachments,
+        links=task.links,
         custom_fields=task.custom_fields,
         content_id=str(task.content_id.ref.id) if task.content_id else None,
         assignee=str(task.assignee.ref.id) if task.assignee else None,

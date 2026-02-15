@@ -14,6 +14,8 @@ class TaskBase(BaseModel):
     time_estimate: Optional[str] = None
     timer_start: Optional[datetime] = None
     track_time: Optional[int] = 0
+    attachments: Optional[list[dict[str, str]]] = []
+    links: Optional[list[dict[str, str]]] = []
     custom_fields: Optional[dict[str, str]] = {}
     parent_task_id: Optional[str] = None
 
