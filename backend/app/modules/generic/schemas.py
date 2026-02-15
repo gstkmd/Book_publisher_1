@@ -12,6 +12,7 @@ class TaskBase(BaseModel):
     due_date: Optional[datetime] = None
     start_date: Optional[datetime] = None
     time_estimate: Optional[str] = None
+    timer_start: Optional[datetime] = None
     track_time: Optional[int] = 0
     custom_fields: Optional[dict[str, str]] = {}
     parent_task_id: Optional[str] = None

@@ -33,12 +33,15 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
     const [task, setTask] = useState<any>(null);
     const [comments, setComments] = useState<any[]>([]);
     const [activity, setActivity] = useState<any[]>([]);
+    const [members, setMembers] = useState<any[]>([]);
     const [newComment, setNewComment] = useState('');
     const [loading, setLoading] = useState(true);
+    const [displayTime, setDisplayTime] = useState<number>(0);
     const { token, user } = useAuth();
 
     useEffect(() => {
         if (token) {
+            fetchMembers();
             if (taskId) {
                 fetchTaskDetails();
                 fetchComments();
@@ -82,6 +85,32 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
         return () => socket.close();
     }, [taskId, token]);
 
+    // Timer Logic
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+
+        if (task?.stage === 'In Progress') {
+            const updateTimer = () => {
+                let accumulated = task.track_time || 0;
+                if (task.timer_start) {
+                    const start = new Date(task.timer_start).getTime();
+                    const now = new Date().getTime();
+                    accumulated += Math.floor((now - start) / 1000);
+                }
+                setDisplayTime(accumulated);
+            };
+
+            updateTimer();
+            interval = setInterval(updateTimer, 1000);
+        } else {
+            setDisplayTime(task?.track_time || 0);
+        }
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [task?.stage, task?.track_time, task?.timer_start]);
+
     const fetchTaskDetails = async () => {
         try {
             const tasks = await api.get('/generic/tasks', token!);
@@ -112,14 +141,29 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
         }
     };
 
+    const fetchMembers = async () => {
+        try {
+            const data = await api.get('/organizations/members', token!);
+            setMembers(data);
+        } catch (err) {
+            console.error('Failed to fetch members:', err);
+        }
+    };
+
     // Combine and sort feed
     const feed = [
         ...comments.map(c => ({ ...c, feedType: 'comment' })),
         ...activity.map(a => ({ ...a, feedType: 'activity' }))
     ].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-    const handleUpdateField = async (field: string, value: any) => {
-        const updates = { ...task, [field]: value };
+    const handleUpdateField = async (field: string | Record<string, any>, value?: any) => {
+        let updates: Record<string, any>;
+        if (typeof field === 'string') {
+            updates = { ...task, [field]: value };
+        } else {
+            updates = { ...task, ...field };
+        }
+
         if (!taskId) {
             setTask(updates);
             return;
@@ -130,7 +174,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
             setTask(updates);
             onUpdate();
         } catch (err) {
-            console.error(`Failed to update ${field}:`, err);
+            console.error('Failed to update task:', err);
         }
     };
 
@@ -170,6 +214,13 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
         } catch (err) {
             console.error('Failed to add comment:', err);
         }
+    };
+
+    const formatTime = (seconds: number) => {
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
     if (loading) return (
@@ -225,10 +276,6 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                 placeholder="Task Title"
                             />
 
-                            <div className="flex items-center gap-2 px-4 py-3 bg-indigo-50/30 rounded-xl border border-indigo-100/50 group cursor-pointer transition-all hover:bg-indigo-50">
-                                <span className="text-indigo-600">✨</span>
-                                <span className="text-sm font-medium text-indigo-700/70">Ask AI to create a summary, generate subtasks or find similar tasks</span>
-                            </div>
                         </div>
 
                         {/* Metadata Grid */}
@@ -239,10 +286,16 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                     <CheckCircle2 className="w-4 h-4" />
                                     <span className="text-xs font-bold uppercase tracking-wider">Status</span>
                                 </div>
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-md font-bold text-xs uppercase cursor-pointer hover:bg-indigo-100 transition-colors">
-                                    {task.stage || 'To Do'}
-                                    <ChevronDown className="w-3 h-3" />
-                                </div>
+                                <select
+                                    value={task.stage || 'To Do'}
+                                    onChange={(e) => handleUpdateField('stage', e.target.value)}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-md font-bold text-xs uppercase cursor-pointer hover:bg-indigo-100 transition-colors border-none focus:ring-0"
+                                >
+                                    <option value="To Do">To Do</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Review">Review</option>
+                                    <option value="Done">Done</option>
+                                </select>
                             </div>
 
                             {/* Assignees */}
@@ -251,11 +304,24 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                     <UserIcon className="w-4 h-4" />
                                     <span className="text-xs font-bold uppercase tracking-wider">Assignees</span>
                                 </div>
-                                <div className="flex items-center gap-2 cursor-pointer group">
-                                    <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] text-white font-bold">
-                                        {task.assignee_name?.split(' ').map((n: string) => n[0]).join('') || 'AR'}
-                                    </div>
-                                    <span className="text-xs font-bold text-gray-700">{task.assignee_name || 'Unassigned'}</span>
+                                <div className="flex items-center gap-2 cursor-pointer group relative">
+                                    <select
+                                        value={task.assignee?._id || task.assignee?.id || task.assignee || ''}
+                                        onChange={(e) => {
+                                            const selectedId = e.target.value;
+                                            const member = members.find(m => (m._id || m.id) === selectedId);
+                                            handleUpdateField({
+                                                assignee: selectedId,
+                                                assignee_name: member?.full_name || ''
+                                            });
+                                        }}
+                                        className="text-xs font-bold text-gray-700 bg-transparent border-none focus:ring-0 p-0"
+                                    >
+                                        <option value="">Unassigned</option>
+                                        {members.map(m => (
+                                            <option key={m._id || m.id} value={m._id || m.id}>{m.full_name}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
 
@@ -266,10 +332,19 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                     <span className="text-xs font-bold uppercase tracking-wider">Dates</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-indigo-600 cursor-pointer transition-colors">
-                                    <Clock className="w-3.5 h-3.5 mr-1" />
-                                    {task.start_date ? new Date(task.start_date).toLocaleDateString() : 'Start'}
+                                    <input
+                                        type="date"
+                                        value={task.start_date ? new Date(task.start_date).toISOString().split('T')[0] : ''}
+                                        onChange={(e) => handleUpdateField('start_date', e.target.value)}
+                                        className="bg-transparent border-none focus:ring-0 p-0 text-xs font-bold w-24"
+                                    />
                                     <span className="mx-1">→</span>
-                                    {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'End'}
+                                    <input
+                                        type="date"
+                                        value={task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : ''}
+                                        onChange={(e) => handleUpdateField('due_date', e.target.value)}
+                                        className="bg-transparent border-none focus:ring-0 p-0 text-xs font-bold w-24"
+                                    />
                                 </div>
                             </div>
 
@@ -279,9 +354,16 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                     <Flag className="w-4 h-4" />
                                     <span className="text-xs font-bold uppercase tracking-wider">Priority</span>
                                 </div>
-                                <div className="text-xs font-bold text-gray-300 hover:text-gray-500 cursor-pointer flex items-center gap-1 transition-colors capitalize">
-                                    {task.priority || 'Empty'}
-                                </div>
+                                <select
+                                    value={task.priority || 'medium'}
+                                    onChange={(e) => handleUpdateField('priority', e.target.value)}
+                                    className="text-xs font-bold text-gray-700 bg-transparent border-none focus:ring-0 p-0 capitalize"
+                                >
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
                             </div>
 
                             {/* Time Estimate */}
@@ -290,9 +372,13 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                     <Clock className="w-4 h-4" />
                                     <span className="text-xs font-bold uppercase tracking-wider">Time estimate</span>
                                 </div>
-                                <div className="text-xs font-bold text-gray-300 hover:text-gray-500 cursor-pointer transition-colors">
-                                    {task.time_estimate || 'Empty'}
-                                </div>
+                                <input
+                                    type="text"
+                                    defaultValue={task.time_estimate}
+                                    onBlur={(e) => handleUpdateField('time_estimate', e.target.value)}
+                                    placeholder="e.g. 2h 30m"
+                                    className="text-xs font-bold text-gray-700 bg-transparent border-none focus:ring-0 p-0 placeholder:text-gray-300"
+                                />
                             </div>
 
                             {/* Track Time */}
@@ -301,9 +387,15 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                     <Play className="w-4 h-4" />
                                     <span className="text-xs font-bold uppercase tracking-wider">Track time</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-indigo-600 cursor-pointer transition-colors">
-                                    <Play className="w-3.5 h-3.5 fill-current" />
-                                    Start
+                                <div className="flex items-center gap-2 text-xs font-bold text-indigo-600">
+                                    <Clock className="w-3.5 h-3.5" />
+                                    {formatTime(displayTime)}
+                                    {task.stage === 'In Progress' && (
+                                        <span className="flex h-2 w-2 relative">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                                        </span>
+                                    )}
                                 </div>
                             </div>
 
@@ -321,12 +413,15 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
 
                         {/* Description */}
                         <div className="space-y-4 pt-4 border-t border-gray-50">
-                            <textarea
-                                defaultValue={task.description}
-                                onBlur={(e) => handleUpdateField('description', e.target.value)}
-                                className="w-full border-none focus:ring-0 p-0 text-sm leading-relaxed text-gray-600 min-h-[100px] placeholder:text-gray-200"
-                                placeholder="Add a more detailed description..."
-                            />
+                            <div className="flex flex-col gap-2">
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Description</span>
+                                <textarea
+                                    defaultValue={task.description}
+                                    onBlur={(e) => handleUpdateField('description', e.target.value)}
+                                    className="w-full border border-gray-100 rounded-xl p-4 text-sm leading-relaxed text-gray-600 min-h-[150px] placeholder:text-gray-300 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none bg-gray-50/10"
+                                    placeholder="Add a more detailed description..."
+                                />
+                            </div>
                         </div>
 
                     </div>

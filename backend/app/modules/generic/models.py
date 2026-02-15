@@ -57,6 +57,7 @@ class Task(Document):
     due_date: Optional[datetime] = None
     start_date: Optional[datetime] = None
     time_estimate: Optional[str] = None
+    timer_start: Optional[datetime] = None
     track_time: Optional[int] = 0 # In seconds
     custom_fields: Dict[str, str] = {}
     parent_task_id: Optional[Link["Task"]] = None

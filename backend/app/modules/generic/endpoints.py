@@ -417,6 +417,10 @@ async def create_task(
         updated_at=datetime.utcnow()
     )
     
+    # Time Tracking Logic for initial stage
+    if task_in.stage == "In Progress":
+        task.timer_start = datetime.utcnow()
+    
     # Handle optional fields
     if task_in.content_id:
         task.content_id = ObjectId(task_in.content_id)
@@ -463,6 +467,7 @@ async def create_task(
         due_date=task.due_date,
         start_date=task.start_date,
         time_estimate=task.time_estimate,
+        timer_start=task.timer_start,
         track_time=task.track_time,
         custom_fields=task.custom_fields,
         content_id=str(task.content_id.ref.id) if task.content_id else None,
@@ -504,6 +509,7 @@ async def get_tasks(current_user: User = Depends(get_current_user)):
             due_date=task.due_date,
             start_date=task.start_date,
             time_estimate=task.time_estimate,
+            timer_start=task.timer_start,
             track_time=task.track_time,
             custom_fields=task.custom_fields,
             content_id=str(task.content_id.ref.id) if task.content_id else None,
@@ -532,7 +538,20 @@ async def update_task(
     
     # Track changes for ActivityLog
     old_status = task.status
+    old_stage = task.stage
     old_assignee = str(task.assignee.ref.id) if task.assignee else None
+    
+    # Time Tracking Logic
+    if old_stage != task_in.stage:
+        if task_in.stage == "In Progress":
+            # Starting timer
+            task.timer_start = datetime.utcnow()
+        elif old_stage == "In Progress":
+            # Stopping timer
+            if task.timer_start:
+                delta = datetime.utcnow() - task.timer_start
+                task.track_time = (task.track_time or 0) + int(delta.total_seconds())
+            task.timer_start = None
     
     # Update core fields
     task.title = task_in.title
@@ -619,6 +638,7 @@ async def update_task(
         due_date=task.due_date,
         start_date=task.start_date,
         time_estimate=task.time_estimate,
+        timer_start=task.timer_start,
         track_time=task.track_time,
         custom_fields=task.custom_fields,
         content_id=str(task.content_id.ref.id) if task.content_id else None,
