@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict
 from beanie import Document, Link
 from pydantic import Field
-from datetime import datetime
+from datetime import datetime, timezone
 from app.modules.core.models import User
 
 class Content(Document):
@@ -14,8 +14,8 @@ class Content(Document):
     author: Link[User]
     tags: List[str] = []
     organization_id: Optional[str] = None
-    created_at: datetime = datetime.utcnow()
-    updated_at: datetime = datetime.utcnow()
+    created_at: datetime = datetime.now(timezone.utc)
+    updated_at: datetime = datetime.now(timezone.utc)
 
     class Settings:
         name = "content"
@@ -25,7 +25,7 @@ class ContentVersion(Document):
     version_number: int
     title: str
     body: Dict = {}
-    created_at: datetime = datetime.utcnow()
+    created_at: datetime = datetime.now(timezone.utc)
     created_by: Link[User]
 
     class Settings:
@@ -38,7 +38,7 @@ class Comment(Document):
     author: Link[User]
     organization_id: Optional[str] = None
     resolved: bool = False
-    created_at: datetime = datetime.utcnow()
+    created_at: datetime = datetime.now(timezone.utc)
 
     class Settings:
         name = "comments"
@@ -64,8 +64,8 @@ class Task(Document):
     custom_fields: Dict[str, str] = {}
     parent_task_id: Optional[Link["Task"]] = None
     created_by: Link[User]
-    created_at: datetime = datetime.utcnow()
-    updated_at: datetime = datetime.utcnow()
+    created_at: datetime = datetime.now(timezone.utc)
+    updated_at: datetime = datetime.now(timezone.utc)
 
     class Settings:
         name = "tasks"
@@ -75,7 +75,7 @@ class TaskComment(Document):
     text: str
     author: Link[User]
     organization_id: Optional[str] = None
-    created_at: datetime = datetime.utcnow()
+    created_at: datetime = datetime.now(timezone.utc)
 
 class ActivityLog(Document):
     resource_type: str # e.g., "task", "content"
@@ -85,7 +85,7 @@ class ActivityLog(Document):
     new_value: Optional[str] = None
     user: Link[User]
     organization_id: Optional[str] = None
-    created_at: datetime = datetime.utcnow()
+    created_at: datetime = datetime.now(timezone.utc)
 
 class Notification(Document):
     user_id: Link[User]
@@ -95,7 +95,7 @@ class Notification(Document):
     link: str
     read: bool = False
     organization_id: Optional[str] = None
-    created_at: datetime = datetime.utcnow()
+    created_at: datetime = datetime.now(timezone.utc)
 
     class Settings:
         name = "notifications"

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, Up
 from beanie import Link
 from pydantic import BaseModel
 from typing import List, Optional, Dict
-from datetime import datetime
+from datetime import datetime, timezone
 from app.modules.generic.models import Content, ContentVersion, Comment, Task, TaskComment, ActivityLog, Notification
 from app.modules.core.models import User
 from app.api.deps import get_current_user, get_current_active_superuser
@@ -134,7 +134,7 @@ async def update_content(id: str, content_in: Content):
     content.status = content_in.status
     if content_in.organization_id:
         content.organization_id = content_in.organization_id
-    content.updated_at = datetime.utcnow()
+    content.updated_at = datetime.now(timezone.utc)
     await content.save()
 
     # Create new version
@@ -179,7 +179,7 @@ async def restore_version(id: str, version_id: str):
     
     content.title = version.title
     content.body = version.body
-    content.updated_at = datetime.utcnow()
+    content.updated_at = datetime.now(timezone.utc)
     await content.save()
     
     # Create a restoration version? Optional but good practice.
@@ -197,7 +197,7 @@ async def update_content_status(
         raise HTTPException(status_code=404, detail="Content not found")
         
     content.status = status
-    content.updated_at = datetime.utcnow()
+    content.updated_at = datetime.now(timezone.utc)
     await content.save()
     
     # Create new version to track the status change
@@ -425,12 +425,12 @@ async def create_task(
         created_by=current_user,
         assigner=current_user,
         organization_id=current_user.organization_id,
-        updated_at=datetime.utcnow()
+        updated_at=datetime.now(timezone.utc)
     )
     
     # Time Tracking Logic for initial stage
     if task_in.stage == "In Progress":
-        task.timer_start = datetime.utcnow()
+        task.timer_start = datetime.now(timezone.utc)
     
     # Handle optional fields
     if task_in.content_id:
@@ -499,7 +499,7 @@ async def get_tasks(current_user: User = Depends(get_current_user)):
     # Filter by organization_id for security
     tasks = await Task.find(Task.organization_id == current_user.organization_id).to_list()
     
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     task_map = {}
     for task in tasks:
         task_time = task.track_time or 0
@@ -594,7 +594,7 @@ async def update_task(
     if old_stage != task_in.stage:
         if task_in.stage == "In Progress":
             # Starting timer
-            task.timer_start = datetime.utcnow()
+            task.timer_start = datetime.now(timezone.utc)
         elif old_stage == "In Progress":
             # Stopping timer
             if task.timer_start:
@@ -616,7 +616,7 @@ async def update_task(
     task.attachments = task_in.attachments or []
     task.links = task_in.links or []
     task.custom_fields = task_in.custom_fields or {}
-    task.updated_at = datetime.utcnow()
+    task.updated_at = datetime.now(timezone.utc)
     
     # Handle Links
     if task_in.assignee:
