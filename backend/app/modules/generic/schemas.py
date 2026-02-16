@@ -33,6 +33,7 @@ class TaskSchema(TaskBase):
     created_by: Optional[str] = None
     organization_id: Optional[str] = None
     parent_task_id: Optional[str] = None
+    total_time: Optional[int] = 0
     created_at: datetime
     updated_at: datetime
 

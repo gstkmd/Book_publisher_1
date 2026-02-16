@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -37,6 +37,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
     const [newComment, setNewComment] = useState('');
     const [loading, setLoading] = useState(true);
     const [displayTime, setDisplayTime] = useState<number>(0);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const { token, user } = useAuth();
 
     useEffect(() => {
@@ -91,7 +92,12 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
 
         if (task?.stage === 'In Progress') {
             const updateTimer = () => {
-                let accumulated = task.track_time || 0;
+                let accumulated = (task.track_time || 0);
+                // Note: task.total_time from backend is used for display in the list, 
+                // but here in detail we might want to stick to task's own time + session.
+                // Or if we want to show the accumulated tree time here too:
+                // accumulated = task.total_time || task.track_time || 0;
+
                 if (task.timer_start) {
                     const startTimeStr = task.timer_start;
                     const startTime = new Date(startTimeStr).getTime();
@@ -250,8 +256,6 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
 
     const [showLinkInput, setShowLinkInput] = useState(false);
     const [newLink, setNewLink] = useState({ label: '', url: '' });
-    const [showAttachInput, setShowAttachInput] = useState(false);
-    const [newAttach, setNewAttach] = useState({ name: '', url: '' });
 
     const handleAddLink = () => {
         if (newLink.label && newLink.url) {
@@ -261,28 +265,26 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
         }
     };
 
-    const handleAddAttachment = () => {
-        if (!newAttach.url) {
-            alert('File URL is required');
-            return;
-        }
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !taskId) return;
 
-        let name = newAttach.name;
-        if (!name) {
-            // Try to extract name from URL or use default
-            try {
-                const urlObj = new URL(newAttach.url);
-                const pathParts = urlObj.pathname.split('/');
-                name = pathParts[pathParts.length - 1] || 'Untitled Attachment';
-            } catch (e) {
-                name = 'Untitled Attachment';
-            }
-        }
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
 
-        const attachToAdd = { ...newAttach, name };
-        handleUpdateField('attachments', [...(task.attachments || []), attachToAdd]);
-        setNewAttach({ name: '', url: '' });
-        setShowAttachInput(false);
+            const result = await api.post(`/generic/upload`, formData, token!, true); // Assuming 4th arg is isFormData
+            const attachToAdd = {
+                name: file.name,
+                url: result.url
+            };
+            handleUpdateField('attachments', [...(task.attachments || []), attachToAdd]);
+        } catch (err) {
+            console.error('Failed to upload file:', err);
+            alert('Failed to upload file');
+        } finally {
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
     };
 
     const formatTime = (seconds: number) => {
@@ -515,33 +517,22 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                         <Paperclip className="w-4 h-4" />
                                         <span className="text-xs font-bold uppercase tracking-widest text-gray-500">Attachments</span>
                                     </div>
-                                    <button onClick={() => setShowAttachInput(true)} className="p-1 hover:bg-gray-100 rounded-md transition-colors">
-                                        <Plus className="w-3.5 h-3.5 text-indigo-600" />
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                        disabled={!taskId}
+                                        title={!taskId ? "Save task first to add attachments" : "Upload File"}
+                                    >
+                                        <Plus className={`w-3.5 h-3.5 ${!taskId ? 'text-gray-300' : 'text-indigo-600'}`} />
                                     </button>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleFileUpload}
+                                        className="hidden"
+                                    />
                                 </div>
                                 <div className="space-y-2">
-                                    {showAttachInput && (
-                                        <div className="p-3 bg-white border border-indigo-100 rounded-lg shadow-sm space-y-2 animate-in slide-in-from-top-2 duration-200">
-                                            <input
-                                                type="text"
-                                                placeholder="File Name"
-                                                value={newAttach.name}
-                                                onChange={(e) => setNewAttach({ ...newAttach, name: e.target.value })}
-                                                className="w-full text-xs p-2 border border-gray-100 rounded focus:ring-1 focus:ring-indigo-500 outline-none"
-                                            />
-                                            <input
-                                                type="text"
-                                                placeholder="File URL (placeholder)"
-                                                value={newAttach.url}
-                                                onChange={(e) => setNewAttach({ ...newAttach, url: e.target.value })}
-                                                className="w-full text-xs p-2 border border-gray-100 rounded focus:ring-1 focus:ring-indigo-500 outline-none"
-                                            />
-                                            <div className="flex justify-end gap-2">
-                                                <button onClick={() => setShowAttachInput(false)} className="text-[10px] font-bold text-gray-400 uppercase">Cancel</button>
-                                                <button onClick={handleAddAttachment} className="text-[10px] font-bold text-indigo-600 uppercase">Add</button>
-                                            </div>
-                                        </div>
-                                    )}
                                     {task.attachments?.map((a: any, idx: number) => (
                                         <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg group">
                                             <div className="flex items-center gap-2 min-w-0">

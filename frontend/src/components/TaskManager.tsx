@@ -21,6 +21,7 @@ interface Task {
     assigner?: any;
     assigner_name?: string;
     content_id?: any;
+    total_time?: number;
 }
 
 interface TaskWithComments extends Task {
@@ -32,6 +33,13 @@ export const TaskManager = () => {
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const { token } = useAuth();
     const [loading, setLoading] = useState(false);
+
+    const formatTime = (seconds: number) => {
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        if (hrs > 0) return `${hrs}h ${mins}m`;
+        return `${mins}m`;
+    };
 
     useEffect(() => {
         if (token) fetchTasks();
@@ -139,6 +147,7 @@ export const TaskManager = () => {
                 </button>
             </div>
 
+
             {/* Task List */}
             <div className="space-y-3">
                 {tasks.length === 0 && (
@@ -179,6 +188,11 @@ export const TaskManager = () => {
                                         >
                                             Review Page
                                         </Link>
+                                    )}
+                                    {task.total_time !== undefined && task.total_time > 0 && (
+                                        <span className="text-[10px] font-bold px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full flex items-center gap-1">
+                                            ⏱️ {formatTime(task.total_time)}
+                                        </span>
                                     )}
                                 </div>
                             </div>

@@ -461,7 +461,7 @@ async def create_task(
     # Fetch names for response
     assignee_name = None
     if task.assignee:
-        u = await User.get(str(task.assignee.ref.id))
+        u = await User.get(get_link_id(task.assignee))
         if u: assignee_name = u.full_name
     
     assigner_name = current_user.full_name
@@ -488,6 +488,8 @@ async def create_task(
         assigner_name=assigner_name,
         created_by=get_link_id(task.created_by),
         organization_id=task.organization_id,
+        parent_task_id=get_link_id(task.parent_task_id),
+        total_time=task.track_time or 0,
         created_at=task.created_at,
         updated_at=task.updated_at
     )
@@ -497,16 +499,48 @@ async def get_tasks(current_user: User = Depends(get_current_user)):
     # Filter by organization_id for security
     tasks = await Task.find(Task.organization_id == current_user.organization_id).to_list()
     
-    results = []
+    now = datetime.utcnow()
+    task_map = {}
     for task in tasks:
+        task_time = task.track_time or 0
+        if task.stage == "In Progress" and task.timer_start:
+            delta = now - task.timer_start
+            task_time += int(delta.total_seconds())
+        
+        task_map[str(task.id)] = {
+            "task": task,
+            "own_time": task_time,
+            "children": []
+        }
+
+    for tid, data in task_map.items():
+        parent_id = get_link_id(data["task"].parent_task_id)
+        if parent_id and parent_id in task_map:
+            task_map[parent_id]["children"].append(tid)
+
+    memo = {}
+    def get_total_time(tid):
+        if tid in memo: return memo[tid]
+        data = task_map[tid]
+        total = data["own_time"]
+        for child_id in data["children"]:
+            total += get_total_time(child_id)
+        memo[tid] = total
+        return total
+
+    results = []
+    for tid, data in task_map.items():
+        task = data["task"]
+        total_time = get_total_time(tid)
+        
         assignee_name = None
         if task.assignee:
-            u = await User.get(str(task.assignee.ref.id))
+            u = await User.get(get_link_id(task.assignee))
             if u: assignee_name = u.full_name
         
         assigner_name = None
         if task.assigner:
-            u = await User.get(str(task.assigner.ref.id))
+            u = await User.get(get_link_id(task.assigner))
             if u: assigner_name = u.full_name
 
         results.append(TaskSchema(
@@ -532,6 +566,8 @@ async def get_tasks(current_user: User = Depends(get_current_user)):
             assigner_name=assigner_name,
             created_by=get_link_id(task.created_by),
             organization_id=task.organization_id,
+            parent_task_id=get_link_id(task.parent_task_id),
+            total_time=total_time,
             created_at=task.created_at,
             updated_at=task.updated_at
         ))
