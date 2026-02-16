@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from app.modules.generic.models import Content, ContentVersion, Comment, Task, TaskComment, ActivityLog, Notification
 from app.modules.core.models import User
 from app.api.deps import get_current_user, get_current_active_superuser
+from app.modules.generic.schemas import ContentSchema
 from app.modules.generic.websockets import manager
 from app.core.storage import s3_client
 
@@ -66,7 +67,7 @@ async def websocket_endpoint(websocket: WebSocket, document_id: str):
         manager.disconnect(websocket, document_id)
         await manager.broadcast("User left the chat", document_id)
 
-@router.get("/content")
+@router.get("/content", response_model=List[ContentSchema])
 async def read_contents(current_user: User = Depends(get_current_user)):
     """
     Get all content items for the current user's organization.
@@ -85,12 +86,18 @@ async def read_contents(current_user: User = Depends(get_current_user)):
         reviewers = []
         for task in pending_tasks:
             if task.assignee:
-                u = await User.get(task.assignee.ref.id)
+                # Resolve assignee ID from Link
+                assignee_id = task.assignee.ref.id
+                u = await User.get(assignee_id)
                 if u:
                     reviewers.append(u.full_name)
         
         c_dict = content.dict()
-        c_dict["_id"] = str(content.id) # Ensure frontend gets string ID
+        c_dict["id"] = str(content.id)
+        # Manually serialize Link field to string ID to avoid DBRef error
+        if content.author and hasattr(content.author, "ref"):
+            c_dict["author"] = str(content.author.ref.id)
+        
         c_dict["pending_reviewers"] = reviewers
         results.append(c_dict)
         
@@ -114,15 +121,22 @@ async def migrate_orphans(current_user: User = Depends(get_current_active_superu
         
     return {"message": f"Successfully migrated {count} orphaned content items to organization {current_user.organization_id}"}
 
-@router.get("/content/{id}", response_model=Content)
+@router.get("/content/{id}", response_model=ContentSchema)
 async def get_content(id: str):
     content = await Content.get(id)
     if not content:
         raise HTTPException(status_code=404, detail="Content not found")
-    return content
+    
+    # Manually prepare dict to avoid DBRef serialization issues
+    c_dict = content.dict()
+    c_dict["id"] = str(content.id)
+    if content.author and hasattr(content.author, "ref"):
+        c_dict["author"] = str(content.author.ref.id)
+    
+    return c_dict
 
 
-@router.post("/content", response_model=Content)
+@router.post("/content", response_model=ContentSchema)
 async def create_content(content: Content, current_user: User = Depends(get_current_user)):
     content.organization_id = current_user.organization_id
     await content.create()
@@ -140,9 +154,13 @@ async def create_content(content: Content, current_user: User = Depends(get_curr
     from app.modules.core.services import webhook_service
     await webhook_service.dispatch_event("content.created", content.dict(), organization_id=content.organization_id)
 
-    return content
+    c_dict = content.dict()
+    c_dict["id"] = str(content.id)
+    if content.author and hasattr(content.author, "ref"):
+        c_dict["author"] = str(content.author.ref.id)
+    return c_dict
 
-@router.put("/content/{id}", response_model=Content)
+@router.put("/content/{id}", response_model=ContentSchema)
 async def update_content(id: str, content_in: Content):
     content = await Content.get(id)
     if not content:
@@ -174,7 +192,11 @@ async def update_content(id: str, content_in: Content):
     from app.modules.core.services import webhook_service
     await webhook_service.dispatch_event("content.updated", content.dict(), organization_id=content.organization_id)
 
-    return content
+    c_dict = content.dict()
+    c_dict["id"] = str(content.id)
+    if content.author and hasattr(content.author, "ref"):
+        c_dict["author"] = str(content.author.ref.id)
+    return c_dict
 
 @router.delete("/content/{id}")
 async def delete_content(id: str):
@@ -207,7 +229,7 @@ async def restore_version(id: str, version_id: str):
     # Create a restoration version? Optional but good practice.
     return {"message": f"Restored to version {version.version_number}"}
 
-@router.patch("/content/{id}/status", response_model=Content)
+@router.patch("/content/{id}/status", response_model=ContentSchema)
 async def update_content_status(
     id: str, 
     status: str = Body(..., embed=True),
@@ -233,7 +255,11 @@ async def update_content_status(
     )
     await version.create()
     
-    return content
+    c_dict = content.dict()
+    c_dict["id"] = str(content.id)
+    if content.author and hasattr(content.author, "ref"):
+        c_dict["author"] = str(content.author.ref.id)
+    return c_dict
 
 @router.get("/workflow/stats")
 async def get_workflow_stats(current_user: User = Depends(get_current_user)):

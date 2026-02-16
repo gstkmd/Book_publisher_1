@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List, Dict
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 
@@ -74,5 +74,22 @@ class NotificationSchema(BaseModel):
     link: str
     read: bool
     created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class ContentSchema(BaseModel):
+    id: str
+    title: str
+    slug: str
+    body: Dict = {}
+    cover_image: Optional[str] = None
+    type: str = "article"
+    status: str = "draft"
+    author: str
+    tags: List[str] = []
+    organization_id: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    pending_reviewers: Optional[List[str]] = []
 
     model_config = ConfigDict(from_attributes=True)
