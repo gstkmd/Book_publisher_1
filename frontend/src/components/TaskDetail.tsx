@@ -173,8 +173,14 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
         }
 
         try {
-            await api.put(`/generic/tasks/${taskId}`, updates, token!);
-            setTask(updates);
+            // Send the updates but use the returned data from server to keep state in sync
+            // This is crucial for server-calculated fields like track_time and timer_start
+            const response = await api.put(`/generic/tasks/${taskId}`, updates, token!);
+
+            // Merge response back into task state
+            // Some fields returned might be flattened versions (like assignee as string vs object)
+            // so we handle those carefully to avoid UI flicker if possible
+            setTask(response);
             onUpdate();
         } catch (err) {
             console.error('Failed to update task:', err);
@@ -256,11 +262,27 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
     };
 
     const handleAddAttachment = () => {
-        if (newAttach.name && newAttach.url) {
-            handleUpdateField('attachments', [...(task.attachments || []), newAttach]);
-            setNewAttach({ name: '', url: '' });
-            setShowAttachInput(false);
+        if (!newAttach.url) {
+            alert('File URL is required');
+            return;
         }
+
+        let name = newAttach.name;
+        if (!name) {
+            // Try to extract name from URL or use default
+            try {
+                const urlObj = new URL(newAttach.url);
+                const pathParts = urlObj.pathname.split('/');
+                name = pathParts[pathParts.length - 1] || 'Untitled Attachment';
+            } catch (e) {
+                name = 'Untitled Attachment';
+            }
+        }
+
+        const attachToAdd = { ...newAttach, name };
+        handleUpdateField('attachments', [...(task.attachments || []), attachToAdd]);
+        setNewAttach({ name: '', url: '' });
+        setShowAttachInput(false);
     };
 
     const formatTime = (seconds: number) => {
