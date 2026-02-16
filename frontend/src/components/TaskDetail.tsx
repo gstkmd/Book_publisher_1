@@ -39,6 +39,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
     const [comments, setComments] = useState<any[]>([]);
     const [activity, setActivity] = useState<any[]>([]);
     const [members, setMembers] = useState<any[]>([]);
+    const [libraryContent, setLibraryContent] = useState<any[]>([]);
     const [newComment, setNewComment] = useState('');
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -52,6 +53,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
     useEffect(() => {
         if (token) {
             fetchMembers();
+            fetchLibraryContent();
             if (taskId) {
                 fetchTaskDetails();
                 fetchComments();
@@ -172,6 +174,15 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
             setMembers(data);
         } catch (err) {
             console.error('Failed to fetch members:', err);
+        }
+    };
+
+    const fetchLibraryContent = async () => {
+        try {
+            const data = await api.get('/generic/content', token!);
+            setLibraryContent(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error('Failed to fetch library content:', err);
         }
     };
 
@@ -368,7 +379,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                         Review Content
                                     </button>
                                     <Link
-                                        href={`/dashboard/editor/${typeof task.content_id === 'string' ? task.content_id : (task.content_id?._id || task.content_id?.id)}`}
+                                        href={`/dashboard/editor/${task.content_id?._id || task.content_id?.id || task.content_id}`}
                                         className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-blue-600 hover:bg-white transition-all"
                                     >
                                         <ExternalLink className="w-3 h-3" />
@@ -584,6 +595,27 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                             />
                                         </div>
                                     </div>
+
+                                    {/* Linked Content */}
+                                    <div className="flex items-center group">
+                                        <div className="w-32 flex items-center gap-2 text-gray-400">
+                                            <FileText className="w-4 h-4" />
+                                            <span className="text-xs font-bold uppercase tracking-wider">Linked Content</span>
+                                        </div>
+                                        <select
+                                            value={task.content_id?._id || task.content_id?.id || task.content_id || ''}
+                                            onChange={(e) => {
+                                                const newVal = e.target.value;
+                                                handleUpdateField('content_id', newVal || null);
+                                            }}
+                                            className="text-xs font-bold text-gray-700 bg-transparent border-none focus:ring-0 p-0 max-w-[200px] truncate"
+                                        >
+                                            <option value="">None</option>
+                                            {libraryContent.map(c => (
+                                                <option key={c._id || c.id} value={c._id || c.id}>{c.title}</option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
 
                                 {/* Attachments & Links */}
@@ -703,7 +735,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                             </>
                         ) : (
                             <ContentReview
-                                contentId={typeof task.content_id === 'string' ? task.content_id : (task.content_id?._id || task.content_id?.id)}
+                                contentId={task.content_id?._id || task.content_id?.id || task.content_id}
                                 showSidebar={true}
                                 isEmbedded={true}
                             />
