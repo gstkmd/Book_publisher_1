@@ -392,6 +392,14 @@ from app.modules.generic.schemas import (
     NotificationSchema
 )
 
+def get_link_id(link_field):
+    """Safely extract ID from a Beanie Link or raw ObjectId/string."""
+    if link_field is None:
+        return None
+    if hasattr(link_field, "ref"):
+        return str(link_field.ref.id)
+    return str(link_field)
+
 @router.post("/tasks", response_model=TaskSchema)
 async def create_task(
     task_in: TaskCreate,
@@ -472,12 +480,12 @@ async def create_task(
         timer_start=task.timer_start,
         track_time=task.track_time,
         custom_fields=task.custom_fields,
-        content_id=str(task.content_id.ref.id) if task.content_id else None,
-        assignee=str(task.assignee.ref.id) if task.assignee else None,
+        content_id=get_link_id(task.content_id),
+        assignee=get_link_id(task.assignee),
         assignee_name=assignee_name,
-        assigner=str(task.assigner.ref.id) if task.assigner else None,
+        assigner=get_link_id(task.assigner),
         assigner_name=assigner_name,
-        created_by=str(task.created_by.ref.id) if task.created_by else None,
+        created_by=get_link_id(task.created_by),
         organization_id=task.organization_id,
         created_at=task.created_at,
         updated_at=task.updated_at
@@ -516,12 +524,12 @@ async def get_tasks(current_user: User = Depends(get_current_user)):
             attachments=task.attachments,
             links=task.links,
             custom_fields=task.custom_fields,
-            content_id=str(task.content_id.ref.id) if task.content_id else None,
-            assignee=str(task.assignee.ref.id) if task.assignee else None,
+            content_id=get_link_id(task.content_id),
+            assignee=get_link_id(task.assignee),
             assignee_name=assignee_name,
-            assigner=str(task.assigner.ref.id) if task.assigner else None,
+            assigner=get_link_id(task.assigner),
             assigner_name=assigner_name,
-            created_by=str(task.created_by.ref.id) if task.created_by else None,
+            created_by=get_link_id(task.created_by),
             organization_id=task.organization_id,
             created_at=task.created_at,
             updated_at=task.updated_at
@@ -543,7 +551,7 @@ async def update_task(
     # Track changes for ActivityLog
     old_status = task.status
     old_stage = task.stage
-    old_assignee = str(task.assignee.ref.id) if task.assignee else None
+    old_assignee = get_link_id(task.assignee)
     
     # Time Tracking Logic
     if old_stage != task_in.stage:
@@ -603,7 +611,7 @@ async def update_task(
             organization_id=current_user.organization_id
         ).create()
 
-    new_assignee = str(task.assignee.ref.id) if task.assignee else None
+    new_assignee = get_link_id(task.assignee)
     if old_assignee != new_assignee:
         await ActivityLog(
             resource_type="task",
@@ -649,10 +657,10 @@ async def update_task(
         attachments=task.attachments,
         links=task.links,
         custom_fields=task.custom_fields,
-        content_id=str(task.content_id.ref.id) if task.content_id else None,
-        assignee=str(task.assignee.ref.id) if task.assignee else None,
-        assigner=str(task.assigner.ref.id) if task.assigner else None,
-        created_by=str(task.created_by.ref.id) if task.created_by else None,
+        content_id=get_link_id(task.content_id),
+        assignee=get_link_id(task.assignee),
+        assigner=get_link_id(task.assigner),
+        created_by=get_link_id(task.created_by),
         organization_id=task.organization_id,
         created_at=task.created_at,
         updated_at=task.updated_at
@@ -720,14 +728,14 @@ async def get_task_comments(id: str, current_user: User = Depends(get_current_us
     results = []
     for c in comments:
         author_name = "Unknown User"
-        u = await User.get(str(c.author.ref.id))
+        u = await User.get(get_link_id(c.author))
         if u: author_name = u.full_name
         
         results.append(TaskCommentSchema(
             id=str(c.id),
             task_id=str(id),
             text=c.text,
-            author=str(c.author.ref.id),
+            author=get_link_id(c.author),
             author_name=author_name,
             created_at=c.created_at
         ))
@@ -744,7 +752,7 @@ async def get_task_activity(id: str, current_user: User = Depends(get_current_us
     results = []
     for log in logs:
         user_name = "Unknown User"
-        u = await User.get(str(log.user.ref.id))
+        u = await User.get(get_link_id(log.user))
         if u: user_name = u.full_name
         
         results.append(ActivityLogSchema(
@@ -754,7 +762,7 @@ async def get_task_activity(id: str, current_user: User = Depends(get_current_us
             action=log.action,
             old_value=log.old_value,
             new_value=log.new_value,
-            user_id=str(log.user.ref.id),
+            user_id=get_link_id(log.user),
             user_name=user_name,
             created_at=log.created_at
         ))
@@ -785,7 +793,7 @@ async def get_notifications(current_user: User = Depends(get_current_user)):
 async def mark_notification_read(id: str, current_user: User = Depends(get_current_user)):
     from bson import ObjectId
     notification = await Notification.get(id)
-    if not notification or notification.user_id.ref.id != current_user.id:
+    if not notification or get_link_id(notification.user_id) != str(current_user.id):
         raise HTTPException(status_code=404, detail="Notification not found")
     notification.read = True
     await notification.save()
