@@ -203,7 +203,7 @@ async def update_content(id: PydanticObjectId, content_in: Content):
     return c_dict
 
 @router.delete("/content/{id}")
-async def delete_content(id: str):
+async def delete_content(id: PydanticObjectId):
     content = await Content.get(id)
     if not content:
         raise HTTPException(status_code=404, detail="Content not found")
@@ -212,14 +212,14 @@ async def delete_content(id: str):
     return {"message": "Content deleted successfully"}
 
 @router.get("/content/{id}/versions", response_model=List[ContentVersion])
-async def get_content_versions(id: str):
+async def get_content_versions(id: PydanticObjectId):
     content = await Content.get(id)
     if not content:
         raise HTTPException(status_code=404, detail="Content not found")
     return await ContentVersion.find(ContentVersion.content_id.id == content.id).sort(-ContentVersion.version_number).to_list()
 
 @router.post("/content/{id}/restore/{version_id}")
-async def restore_version(id: str, version_id: str):
+async def restore_version(id: PydanticObjectId, version_id: PydanticObjectId):
     content = await Content.get(id)
     version = await ContentVersion.get(version_id)
     if not content or not version:
@@ -317,7 +317,7 @@ async def create_comment(req: CreateCommentRequest):
     return comment
 
 @router.get("/content/{id}/comments", response_model=List[Comment])
-async def get_content_comments(id: str):
+async def get_content_comments(id: PydanticObjectId):
     from bson import ObjectId
     try:
         oid = ObjectId(id)
@@ -351,7 +351,7 @@ async def get_content_comments(id: str):
 
 @router.patch("/comments/{id}/resolve")
 async def toggle_comment_resolution(
-    id: str,
+    id: PydanticObjectId,
     resolved: bool,
     current_user: User = Depends(get_current_user)
 ):
@@ -365,7 +365,7 @@ async def toggle_comment_resolution(
     return comment
 
 @router.get("/content/{id}/comments/stats")
-async def get_comment_stats(id: str):
+async def get_comment_stats(id: PydanticObjectId):
     """Get comment statistics for content"""
     comments = await Comment.find(Comment.content_id.id == id).to_list()
     total = len(comments)
@@ -379,7 +379,7 @@ async def get_comment_stats(id: str):
     }
 
 @router.get("/tasks/{id}/comment-stats")
-async def get_task_comment_stats(id: str):
+async def get_task_comment_stats(id: PydanticObjectId):
     """Get comment statistics for task's linked content"""
     task = await Task.get(id)
     if not task or not task.content_id:
@@ -403,7 +403,7 @@ class ShareContentRequest(BaseModel):
 
 @router.post("/content/{id}/share")
 async def share_content(
-    id: str,
+    id: PydanticObjectId,
     share_data: ShareContentRequest,
     current_user: User = Depends(get_current_user)
 ):
@@ -642,7 +642,7 @@ async def get_tasks(current_user: User = Depends(get_current_user)):
 
 @router.put("/tasks/{id}", response_model=TaskSchema)
 async def update_task(
-    id: str,
+    id: PydanticObjectId,
     task_in: TaskCreate,
     current_user: User = Depends(get_current_user)
 ):
@@ -771,7 +771,7 @@ async def update_task(
 
 @router.post("/tasks/{id}/comments", response_model=TaskCommentSchema)
 async def create_task_comment(
-    id: str,
+    id: PydanticObjectId,
     comment_in: TaskCommentCreate,
     current_user: User = Depends(get_current_user)
 ):
@@ -821,7 +821,7 @@ async def create_task_comment(
     )
 
 @router.get("/tasks/{id}/comments", response_model=List[TaskCommentSchema])
-async def get_task_comments(id: str, current_user: User = Depends(get_current_user)):
+async def get_task_comments(id: PydanticObjectId, current_user: User = Depends(get_current_user)):
     from bson import ObjectId
     comments = await TaskComment.find(
         TaskComment.task_id.id == ObjectId(id),
@@ -846,7 +846,7 @@ async def get_task_comments(id: str, current_user: User = Depends(get_current_us
 
 
 @router.get("/tasks/{id}/activity", response_model=List[ActivityLogSchema])
-async def get_task_activity(id: str, current_user: User = Depends(get_current_user)):
+async def get_task_activity(id: PydanticObjectId, current_user: User = Depends(get_current_user)):
     logs = await ActivityLog.find(
         ActivityLog.resource_id == id,
         ActivityLog.organization_id == current_user.organization_id
@@ -893,7 +893,7 @@ async def get_notifications(current_user: User = Depends(get_current_user)):
     return results
 
 @router.patch("/notifications/{id}/read")
-async def mark_notification_read(id: str, current_user: User = Depends(get_current_user)):
+async def mark_notification_read(id: PydanticObjectId, current_user: User = Depends(get_current_user)):
     from bson import ObjectId
     notification = await Notification.get(id)
     if not notification or get_link_id(notification.user_id) != str(current_user.id):
@@ -916,7 +916,7 @@ async def task_websocket(websocket: WebSocket, task_id: str):
 
 
 @router.get("/export_content/{id}")
-async def export_content(id: str, format: str = "pdf"):
+async def export_content(id: PydanticObjectId, format: str = "pdf"):
     from fastapi.responses import Response
     from app.modules.generic.publishing import publishing_service
     

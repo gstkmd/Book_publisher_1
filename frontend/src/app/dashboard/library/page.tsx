@@ -338,7 +338,7 @@ export default function ContentLibrary() {
             )}
             {selectedContent && (
                 <ShareContentModal
-                    contentId={selectedContent._id}
+                    contentId={selectedContent.id || selectedContent._id}
                     contentTitle={selectedContent.title}
                     isOpen={shareModalOpen}
                     onClose={() => {

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.modules.core.models import User, Organization
+from beanie import PydanticObjectId
 from app.api.deps import get_current_user
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr
@@ -164,7 +165,7 @@ async def get_organization_stats(current_user: User = Depends(get_current_user))
 
 @router.patch("/members/{user_id}/status")
 async def update_member_status(
-    user_id: str,
+    user_id: PydanticObjectId,
     is_active: bool,
     current_user: User = Depends(get_current_user)
 ):
@@ -181,7 +182,7 @@ async def update_member_status(
 
 @router.patch("/members/{user_id}/role")
 async def update_member_role(
-    user_id: str,
+    user_id: PydanticObjectId,
     role: str,
     current_user: User = Depends(get_current_user)
 ):

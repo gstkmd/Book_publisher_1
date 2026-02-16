@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 
 interface User {
+    id: string;
     _id: string;
     email: string;
     full_name?: string;
@@ -132,29 +133,32 @@ export default function ShareContentModal({
                                 </div>
                             ) : (
                                 <div className="divide-y">
-                                    {users.map(user => (
-                                        <label
-                                            key={user._id}
-                                            className="flex items-center p-3 hover:bg-gray-50 cursor-pointer"
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedUsers.includes(user._id)}
-                                                onChange={() => handleToggleUser(user._id)}
-                                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                                            />
-                                            <div className="ml-3">
-                                                <div className="text-sm font-medium text-gray-900">
-                                                    {user.full_name || user.email}
-                                                </div>
-                                                {user.full_name && (
-                                                    <div className="text-xs text-gray-500">
-                                                        {user.email}
+                                    {users.map(user => {
+                                        const userId = user.id || user._id;
+                                        return (
+                                            <label
+                                                key={userId}
+                                                className="flex items-center p-3 hover:bg-gray-50 cursor-pointer"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedUsers.includes(userId)}
+                                                    onChange={() => handleToggleUser(userId)}
+                                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                                />
+                                                <div className="ml-3">
+                                                    <div className="text-sm font-medium text-gray-900">
+                                                        {user.full_name || user.email}
                                                     </div>
-                                                )}
-                                            </div>
-                                        </label>
-                                    ))}
+                                                    {user.full_name && (
+                                                        <div className="text-xs text-gray-500">
+                                                            {user.email}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </label>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
