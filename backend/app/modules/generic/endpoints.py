@@ -401,6 +401,14 @@ def get_link_id(link_field):
         return str(link_field.ref.id)
     return str(link_field)
 
+def ensure_utc(dt):
+    """Ensures a datetime is timezone-aware UTC."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
 @router.post("/tasks", response_model=TaskSchema)
 async def create_task(
     task_in: TaskCreate,
@@ -504,7 +512,7 @@ async def get_tasks(current_user: User = Depends(get_current_user)):
     for task in tasks:
         task_time = task.track_time or 0
         if task.stage == "In Progress" and task.timer_start:
-            delta = now - task.timer_start
+            delta = now - ensure_utc(task.timer_start)
             task_time += int(delta.total_seconds())
         
         task_map[str(task.id)] = {
@@ -598,7 +606,7 @@ async def update_task(
         elif old_stage == "In Progress":
             # Stopping timer
             if task.timer_start:
-                delta = datetime.utcnow() - task.timer_start
+                delta = datetime.now(timezone.utc) - ensure_utc(task.timer_start)
                 task.track_time = (task.track_time or 0) + int(delta.total_seconds())
             task.timer_start = None
     

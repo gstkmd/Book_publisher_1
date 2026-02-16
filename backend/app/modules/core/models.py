@@ -1,7 +1,7 @@
 from typing import Optional, List
 from beanie import Document
 from pydantic import EmailStr
-from datetime import datetime
+from datetime import datetime, timezone
 
 from enum import Enum
 
@@ -22,7 +22,7 @@ class User(Document):
     organization_id: Optional[str] = None # Link to Organization
     role: UserRole = UserRole.USER
     is_active: bool = True
-    created_at: datetime = datetime.utcnow()
+    created_at: datetime = datetime.now(timezone.utc)
 
     class Settings:
         name = "users"
@@ -35,7 +35,7 @@ class WebhookSubscription(Document):
     events: List[str] # e.g. ["content.created", "content.updated"]
     secret: str
     organization_id: Optional[str] = None
-    created_at: datetime = datetime.utcnow()
+    created_at: datetime = datetime.now(timezone.utc)
     is_active: bool = True
 
     class Settings:
@@ -46,7 +46,7 @@ class Organization(Document):
     slug: str
     plan: str = "free" # free, pro, enterprise
     stripe_customer_id: Optional[str] = None
-    created_at: datetime = datetime.utcnow()
+    created_at: datetime = datetime.now(timezone.utc)
     is_active: bool = True
 
     class Settings:

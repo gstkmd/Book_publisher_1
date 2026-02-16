@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict, Union
 from beanie import Document, Link
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 class QuestionType(str, Enum):
@@ -42,7 +42,7 @@ class Assessment(Document):
     questions: List[Question] = []
     aligned_standards: List[Link[Standard]] = []
     organization_id: Optional[str] = None
-    created_at: datetime = datetime.utcnow()
+    created_at: datetime = datetime.now(timezone.utc)
     is_published: bool = False
 
 
@@ -57,7 +57,7 @@ class LessonPlan(Document):
     grade_level: Optional[str] = None
     subject: Optional[str] = None
     organization_id: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
         name = "lesson_plans"

@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict
 from beanie import Document, Link
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 from app.modules.core.models import User
 from app.modules.generic.models import Content
 
@@ -20,7 +20,7 @@ class License(Document):
     end_date: datetime
     status: str = "active"
     organization_id: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
         name = "licenses"
@@ -36,7 +36,7 @@ class Contract(Document):
     tiers: List[RoyaltyTier] = []
     payment_terms: str = "Net 30"
     organization_id: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
         name = "contracts"
