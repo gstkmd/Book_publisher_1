@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form, Depends, Body
-from beanie import Link
+from beanie import Link, PydanticObjectId
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 from datetime import datetime, timezone
@@ -94,6 +94,7 @@ async def read_contents(current_user: User = Depends(get_current_user)):
         
         c_dict = content.dict()
         c_dict["id"] = str(content.id)
+        c_dict["_id"] = str(content.id)
         # Manually serialize Link field to string ID to avoid DBRef error
         if content.author and hasattr(content.author, "ref"):
             c_dict["author"] = str(content.author.ref.id)
@@ -122,7 +123,7 @@ async def migrate_orphans(current_user: User = Depends(get_current_active_superu
     return {"message": f"Successfully migrated {count} orphaned content items to organization {current_user.organization_id}"}
 
 @router.get("/content/{id}", response_model=ContentSchema)
-async def get_content(id: str):
+async def get_content(id: PydanticObjectId):
     content = await Content.get(id)
     if not content:
         raise HTTPException(status_code=404, detail="Content not found")
@@ -130,6 +131,7 @@ async def get_content(id: str):
     # Manually prepare dict to avoid DBRef serialization issues
     c_dict = content.dict()
     c_dict["id"] = str(content.id)
+    c_dict["_id"] = str(content.id)
     if content.author and hasattr(content.author, "ref"):
         c_dict["author"] = str(content.author.ref.id)
     
@@ -156,12 +158,13 @@ async def create_content(content: Content, current_user: User = Depends(get_curr
 
     c_dict = content.dict()
     c_dict["id"] = str(content.id)
+    c_dict["_id"] = str(content.id)
     if content.author and hasattr(content.author, "ref"):
         c_dict["author"] = str(content.author.ref.id)
     return c_dict
 
 @router.put("/content/{id}", response_model=ContentSchema)
-async def update_content(id: str, content_in: Content):
+async def update_content(id: PydanticObjectId, content_in: Content):
     content = await Content.get(id)
     if not content:
         raise HTTPException(status_code=404, detail="Content not found")
@@ -194,6 +197,7 @@ async def update_content(id: str, content_in: Content):
 
     c_dict = content.dict()
     c_dict["id"] = str(content.id)
+    c_dict["_id"] = str(content.id)
     if content.author and hasattr(content.author, "ref"):
         c_dict["author"] = str(content.author.ref.id)
     return c_dict
@@ -231,7 +235,7 @@ async def restore_version(id: str, version_id: str):
 
 @router.patch("/content/{id}/status", response_model=ContentSchema)
 async def update_content_status(
-    id: str, 
+    id: PydanticObjectId, 
     status: str = Body(..., embed=True),
     current_user: User = Depends(get_current_user)
 ):
@@ -257,6 +261,7 @@ async def update_content_status(
     
     c_dict = content.dict()
     c_dict["id"] = str(content.id)
+    c_dict["_id"] = str(content.id)
     if content.author and hasattr(content.author, "ref"):
         c_dict["author"] = str(content.author.ref.id)
     return c_dict

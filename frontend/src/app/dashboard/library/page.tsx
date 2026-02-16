@@ -297,22 +297,22 @@ export default function ContentLibrary() {
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-3">
                                             <Link
-                                                href={`/dashboard/editor/${c._id}`}
+                                                href={`/dashboard/editor/${c.id || c._id}`}
                                                 className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                                             >Edit</Link>
                                             <Link
-                                                href={`/dashboard/library/${c._id}/versions`}
+                                                href={`/dashboard/library/${c.id || c._id}/versions`}
                                                 className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
                                             >Versions</Link>
                                             <Link
-                                                href={`/dashboard/library/${c._id}/review`}
+                                                href={`/dashboard/library/${c.id || c._id}/review`}
                                                 className={`text-sm font-bold px-2 py-1 rounded transition-colors ${c.status === 'review'
                                                     ? 'bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200'
                                                     : 'text-teal-600 hover:text-teal-800'}`}
                                             >Review</Link>
                                             {c.status === 'draft' && (
                                                 <button
-                                                    onClick={() => handlePublish(c._id)}
+                                                    onClick={() => handlePublish(c.id || c._id)}
                                                     className="text-green-600 hover:text-green-800 text-sm font-medium"
                                                 >Publish</button>
                                             )}
@@ -321,11 +321,11 @@ export default function ContentLibrary() {
                                                 className="text-purple-600 hover:text-purple-800 text-sm font-medium"
                                             >Share</button>
                                             <button
-                                                onClick={() => handleExport(c._id, 'pdf')}
+                                                onClick={() => handleExport(c.id || c._id, 'pdf')}
                                                 className="text-gray-600 hover:text-gray-800 text-sm"
                                             >Export</button>
                                             <button
-                                                onClick={() => handleDelete(c._id)}
+                                                onClick={() => handleDelete(c.id || c._id)}
                                                 className="text-red-600 hover:text-red-800 text-sm"
                                             >Delete</button>
                                         </div>

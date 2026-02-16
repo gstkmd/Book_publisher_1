@@ -17,6 +17,7 @@ interface Comment {
 }
 
 interface Content {
+    id: string;
     _id: string;
     title: string;
     body: any;
@@ -423,8 +424,8 @@ export default function ReviewContentPage() {
                                     }}
                                     onMouseEnter={() => setSelectedCommentId(comment.id || comment._id!)}
                                     className={`border rounded p-3 cursor-pointer transition-all duration-200 ${selectedCommentId === (comment.id || comment._id)
-                                            ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-400'
-                                            : 'border-gray-200 hover:border-blue-300'
+                                        ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-400'
+                                        : 'border-gray-200 hover:border-blue-300'
                                         } ${comment.resolved ? 'opacity-60' : ''}`}
                                 >
                                     <div className="flex items-start justify-between mb-2">

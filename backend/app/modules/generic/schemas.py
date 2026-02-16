@@ -79,6 +79,7 @@ class NotificationSchema(BaseModel):
 
 class ContentSchema(BaseModel):
     id: str
+    _id: Optional[str] = None
     title: str
     slug: str
     body: Dict = {}
@@ -92,4 +93,4 @@ class ContentSchema(BaseModel):
     updated_at: datetime
     pending_reviewers: Optional[List[str]] = []
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
