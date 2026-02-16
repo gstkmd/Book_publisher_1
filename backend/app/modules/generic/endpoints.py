@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form, Depends, Body
+from beanie import Link
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 from datetime import datetime
@@ -248,9 +249,9 @@ async def create_comment(req: CreateCommentRequest):
     from bson import ObjectId
     
     comment = Comment(
-        content_id=ObjectId(req.content_id),
+        content_id=Link(id=ObjectId(req.content_id), document_class=Content),
         text=req.text,
-        author=ObjectId(req.author),
+        author=Link(id=ObjectId(req.author), document_class=User),
         selection_range=req.selection_range,
         resolved=req.resolved
     )
@@ -421,8 +422,8 @@ async def create_task(
         attachments=task_in.attachments or [],
         links=task_in.links or [],
         custom_fields=task_in.custom_fields or {},
-        created_by=current_user.id,
-        assigner=current_user.id,
+        created_by=current_user,
+        assigner=current_user,
         organization_id=current_user.organization_id,
         updated_at=datetime.utcnow()
     )
@@ -433,11 +434,11 @@ async def create_task(
     
     # Handle optional fields
     if task_in.content_id:
-        task.content_id = ObjectId(task_in.content_id)
+        task.content_id = Link(id=ObjectId(task_in.content_id), document_class=Content)
     if task_in.assignee:
-        task.assignee = ObjectId(task_in.assignee)
+        task.assignee = Link(id=ObjectId(task_in.assignee), document_class=User)
     if task_in.parent_task_id:
-        task.parent_task_id = ObjectId(task_in.parent_task_id)
+        task.parent_task_id = Link(id=ObjectId(task_in.parent_task_id), document_class=Task)
     
     await task.create()
 
@@ -583,17 +584,17 @@ async def update_task(
     
     # Handle Links
     if task_in.assignee:
-        task.assignee = ObjectId(task_in.assignee)
+        task.assignee = Link(id=ObjectId(task_in.assignee), document_class=User)
     else:
         task.assignee = None
         
     if task_in.content_id:
-        task.content_id = ObjectId(task_in.content_id)
+        task.content_id = Link(id=ObjectId(task_in.content_id), document_class=Content)
     else:
         task.content_id = None
         
     if task_in.parent_task_id:
-        task.parent_task_id = ObjectId(task_in.parent_task_id)
+        task.parent_task_id = Link(id=ObjectId(task_in.parent_task_id), document_class=Task)
     else:
         task.parent_task_id = None
 
@@ -678,9 +679,9 @@ async def create_task_comment(
         raise HTTPException(status_code=404, detail="Task not found")
     
     comment = TaskComment(
-        task_id=ObjectId(id),
+        task_id=Link(id=ObjectId(id), document_class=Task),
         text=comment_in.text,
-        author=current_user.id,
+        author=current_user,
         organization_id=current_user.organization_id
     )
     await comment.create()
