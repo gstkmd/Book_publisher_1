@@ -136,6 +136,7 @@ export default function ContentLibrary() {
         const st = status || 'draft';
         const colors: Record<string, string> = {
             draft: 'bg-yellow-100 text-yellow-800',
+            review: 'bg-teal-100 text-teal-800 border border-teal-200',
             published: 'bg-green-100 text-green-800',
             archived: 'bg-gray-100 text-gray-800'
         };
@@ -279,9 +280,16 @@ export default function ContentLibrary() {
                                         <span className="text-sm text-gray-600">{getTypeLabel(c.type)}</span>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${getStatusBadge(c.status)}`}>
-                                            {c.status || 'draft'}
-                                        </span>
+                                        <div className="flex flex-col gap-1">
+                                            <span className={`text-[10px] w-fit px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${getStatusBadge(c.status)}`}>
+                                                {c.status || 'draft'}
+                                            </span>
+                                            {c.status === 'review' && c.pending_reviewers?.length > 0 && (
+                                                <span className="text-[10px] text-gray-400 italic">
+                                                    Pending with: {c.pending_reviewers.join(', ')}
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 text-sm text-gray-600">
                                         {formatDate(c.updated_at || c.created_at)}
@@ -298,7 +306,9 @@ export default function ContentLibrary() {
                                             >Versions</Link>
                                             <Link
                                                 href={`/dashboard/library/${c._id}/review`}
-                                                className="text-teal-600 hover:text-teal-800 text-sm font-medium"
+                                                className={`text-sm font-bold px-2 py-1 rounded transition-colors ${c.status === 'review'
+                                                    ? 'bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200'
+                                                    : 'text-teal-600 hover:text-teal-800'}`}
                                             >Review</Link>
                                             {c.status === 'draft' && (
                                                 <button

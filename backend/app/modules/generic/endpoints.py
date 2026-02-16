@@ -66,13 +66,35 @@ async def websocket_endpoint(websocket: WebSocket, document_id: str):
         manager.disconnect(websocket, document_id)
         await manager.broadcast("User left the chat", document_id)
 
-@router.get("/content", response_model=List[Content])
+@router.get("/content")
 async def read_contents(current_user: User = Depends(get_current_user)):
     """
     Get all content items for the current user's organization.
-    Strictly restricted to the organization ID for SaaS security.
+    Includes active reviewers info for 'Review' status highlighting.
     """
-    return await Content.find(Content.organization_id == current_user.organization_id).to_list()
+    contents = await Content.find(Content.organization_id == current_user.organization_id).to_list()
+    
+    results = []
+    for content in contents:
+        # Find pending tasks for this content
+        pending_tasks = await Task.find(
+            Task.content_id.id == content.id,
+            Task.status != "completed"
+        ).to_list()
+        
+        reviewers = []
+        for task in pending_tasks:
+            if task.assignee:
+                u = await User.get(task.assignee.ref.id)
+                if u:
+                    reviewers.append(u.full_name)
+        
+        c_dict = content.dict()
+        c_dict["_id"] = str(content.id) # Ensure frontend gets string ID
+        c_dict["pending_reviewers"] = reviewers
+        results.append(c_dict)
+        
+    return results
 
 
 @router.post("/migrate-orphans")
@@ -375,6 +397,11 @@ async def share_content(
         )
         await task.create()
         created_tasks.append(str(task.id))
+    
+    if created_tasks:
+        content.status = "review"
+        content.updated_at = datetime.now(timezone.utc)
+        await content.save()
     
     return {
         "success": True,
