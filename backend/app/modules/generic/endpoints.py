@@ -455,7 +455,7 @@ async def create_task(
         resource_type="task",
         resource_id=str(task.id),
         action="created",
-        user=current_user.id,
+        user=current_user,
         organization_id=current_user.organization_id
     ).create()
 
@@ -652,7 +652,7 @@ async def update_task(
             action="status_change",
             old_value=old_status,
             new_value=task.status,
-            user=current_user.id,
+            user=current_user,
             organization_id=current_user.organization_id
         ).create()
 
@@ -664,7 +664,7 @@ async def update_task(
             action="assignee_change",
             old_value=old_assignee,
             new_value=new_assignee,
-            user=current_user.id,
+            user=current_user,
             organization_id=current_user.organization_id
         ).create()
         

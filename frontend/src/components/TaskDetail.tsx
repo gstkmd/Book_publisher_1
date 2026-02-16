@@ -36,8 +36,11 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
     const [members, setMembers] = useState<any[]>([]);
     const [newComment, setNewComment] = useState('');
     const [loading, setLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [displayTime, setDisplayTime] = useState<number>(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
     const { token, user } = useAuth();
 
     useEffect(() => {
@@ -120,6 +123,13 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
         };
     }, [task?.stage, task?.track_time, task?.timer_start]);
 
+    // Cleanup timer on unmount
+    useEffect(() => {
+        return () => {
+            if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        };
+    }, []);
+
     const fetchTaskDetails = async () => {
         try {
             const tasks = await api.get('/generic/tasks', token!);
@@ -165,7 +175,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
         ...activity.map(a => ({ ...a, feedType: 'activity' }))
     ].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-    const handleUpdateField = async (field: string | Record<string, any>, value?: any) => {
+    const handleUpdateField = (field: string | Record<string, any>, value?: any) => {
         let updates: Record<string, any>;
         if (typeof field === 'string') {
             updates = { ...task, [field]: value };
@@ -173,24 +183,33 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
             updates = { ...task, ...field };
         }
 
+        // Update local state immediately for responsive UI
+        setTask(updates);
+
         if (!taskId) {
-            setTask(updates);
             return;
         }
 
-        try {
-            // Send the updates but use the returned data from server to keep state in sync
-            // This is crucial for server-calculated fields like track_time and timer_start
-            const response = await api.put(`/generic/tasks/${taskId}`, updates, token!);
-
-            // Merge response back into task state
-            // Some fields returned might be flattened versions (like assignee as string vs object)
-            // so we handle those carefully to avoid UI flicker if possible
-            setTask(response);
-            onUpdate();
-        } catch (err) {
-            console.error('Failed to update task:', err);
+        // Debounce saving
+        if (saveTimerRef.current) {
+            clearTimeout(saveTimerRef.current);
         }
+
+        setIsSaving(true);
+        saveTimerRef.current = setTimeout(async () => {
+            try {
+                const response = await api.put(`/generic/tasks/${taskId}`, updates, token!);
+                // Only update from server if we are not currently saving something else 
+                // to avoid race conditions and cursor jumps in controlled inputs
+                setTask((prev: any) => ({ ...prev, ...response }));
+                setLastSaved(new Date());
+                onUpdate();
+            } catch (err) {
+                console.error('Failed to update task:', err);
+            } finally {
+                setIsSaving(false);
+            }
+        }, 1000); // 1 second lag as requested
     };
 
     const handleCreateTask = async () => {
@@ -316,11 +335,23 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                 <span className="text-xs font-bold text-gray-600">{taskId ? 'Task' : 'New Task'}</span>
                                 <ChevronDown className="w-3 h-3 text-gray-400" />
                             </div>
-                            {taskId && (
-                                <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-                                    <Maximize2 className="w-4 h-4" />
-                                </button>
-                            )}
+                            <div className="flex items-center gap-3">
+                                {isSaving ? (
+                                    <div className="flex items-center gap-2 text-indigo-500 animate-pulse">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                                        <span className="text-[10px] font-bold uppercase tracking-wider">Saving...</span>
+                                    </div>
+                                ) : lastSaved && (
+                                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                        Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
+                                )}
+                                {taskId && (
+                                    <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                                        <Maximize2 className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
                             {!taskId && (
                                 <button
                                     onClick={handleCreateTask}
@@ -341,8 +372,8 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                         <div className="space-y-4">
                             <input
                                 type="text"
-                                defaultValue={task.title}
-                                onBlur={(e) => handleUpdateField('title', e.target.value)}
+                                value={task.title}
+                                onChange={(e) => handleUpdateField('title', e.target.value)}
                                 className="text-4xl font-extrabold text-gray-900 w-full border-none focus:ring-0 p-0 placeholder:text-gray-200"
                                 placeholder="Task Title"
                             />
@@ -359,7 +390,10 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                 </div>
                                 <select
                                     value={task.stage || 'To Do'}
-                                    onChange={(e) => handleUpdateField('stage', e.target.value)}
+                                    onChange={(e) => {
+                                        const newVal = e.target.value;
+                                        handleUpdateField('stage', newVal);
+                                    }}
                                     className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-md font-bold text-xs uppercase cursor-pointer hover:bg-indigo-100 transition-colors border-none focus:ring-0"
                                 >
                                     <option value="To Do">To Do</option>
@@ -427,7 +461,10 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                 </div>
                                 <select
                                     value={task.priority || 'medium'}
-                                    onChange={(e) => handleUpdateField('priority', e.target.value)}
+                                    onChange={(e) => {
+                                        const newVal = e.target.value;
+                                        handleUpdateField('priority', newVal);
+                                    }}
                                     className="text-xs font-bold text-gray-700 bg-transparent border-none focus:ring-0 p-0 capitalize"
                                 >
                                     <option value="low">Low</option>
@@ -616,8 +653,8 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                             <div className="flex flex-col gap-2">
                                 <span className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Description</span>
                                 <textarea
-                                    defaultValue={task.description}
-                                    onBlur={(e) => handleUpdateField('description', e.target.value)}
+                                    value={task.description}
+                                    onChange={(e) => handleUpdateField('description', e.target.value)}
                                     className="w-full border border-gray-100 rounded-xl p-4 text-sm leading-relaxed text-gray-600 min-h-[150px] placeholder:text-gray-300 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none bg-gray-50/10"
                                     placeholder="Add a more detailed description..."
                                 />
