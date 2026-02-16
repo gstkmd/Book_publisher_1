@@ -346,7 +346,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                 <ChevronDown className="w-3 h-3 text-gray-400" />
                             </div>
                             {task.content_id && (
-                                <div className="flex items-center gap-1 p-1 bg-gray-50 border border-gray-100 rounded-xl ml-2">
+                                <div className="flex items-center gap-1 p-1 bg-gray-50 border border-gray-100 rounded-xl ml-2 text-nowrap">
                                     <button
                                         onClick={() => setActiveTab('details')}
                                         className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'details'
@@ -367,6 +367,13 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                         <FileText className="w-3 h-3" />
                                         Review Content
                                     </button>
+                                    <Link
+                                        href={`/dashboard/editor/${typeof task.content_id === 'string' ? task.content_id : (task.content_id?._id || task.content_id?.id)}`}
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-blue-600 hover:bg-white transition-all"
+                                    >
+                                        <ExternalLink className="w-3 h-3" />
+                                        Edit
+                                    </Link>
                                 </div>
                             )}
                             {isSaving ? (
@@ -697,7 +704,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                         ) : (
                             <ContentReview
                                 contentId={typeof task.content_id === 'string' ? task.content_id : (task.content_id?._id || task.content_id?.id)}
-                                showSidebar={false}
+                                showSidebar={true}
                                 isEmbedded={true}
                             />
                         )}
