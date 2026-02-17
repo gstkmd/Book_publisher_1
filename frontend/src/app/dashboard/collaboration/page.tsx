@@ -103,8 +103,8 @@ export default function CollaborationPage() {
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${task.priority === 'urgent' ? 'bg-red-50 text-red-600 border-red-100' :
-                                                    task.priority === 'high' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                                                        'bg-blue-50 text-blue-600 border-blue-100'
+                                                task.priority === 'high' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                                                    'bg-blue-50 text-blue-600 border-blue-100'
                                                 }`}>
                                                 {task.priority || 'medium'}
                                             </span>
@@ -115,8 +115,8 @@ export default function CollaborationPage() {
                                         )}
                                         <div className="flex flex-wrap items-center gap-3 mt-4">
                                             <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${task.stage === 'Done' ? 'bg-green-100 text-green-700' :
-                                                    task.stage === 'Review' ? 'bg-purple-100 text-purple-700' :
-                                                        'bg-gray-200 text-gray-600'
+                                                task.stage === 'Review' ? 'bg-purple-100 text-purple-700' :
+                                                    'bg-gray-200 text-gray-600'
                                                 }`}>
                                                 {task.stage || 'To Do'}
                                             </span>
@@ -174,29 +174,29 @@ export default function CollaborationPage() {
                     <h2 className="text-xl font-bold mb-6">Publishing Workflow</h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                        <div className="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded">
-                            <div className="text-sm text-yellow-700 font-semibold mb-2">DRAFT</div>
+                        <Link href="/dashboard/library?status=draft" className="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded hover:shadow-md transition-all cursor-pointer group">
+                            <div className="text-sm text-yellow-700 font-semibold mb-2 group-hover:underline">DRAFT</div>
                             <div className="text-2xl font-bold">{workflowStats.draft}</div>
                             <div className="text-sm text-gray-600">Items in draft</div>
-                        </div>
+                        </Link>
 
-                        <div className="border-l-4 border-blue-500 bg-blue-50 p-4 rounded">
-                            <div className="text-sm text-blue-700 font-semibold mb-2">REVIEW</div>
+                        <Link href="/dashboard/library?status=review" className="border-l-4 border-blue-500 bg-blue-50 p-4 rounded hover:shadow-md transition-all cursor-pointer group">
+                            <div className="text-sm text-blue-700 font-semibold mb-2 group-hover:underline">REVIEW</div>
                             <div className="text-2xl font-bold">{workflowStats.review}</div>
                             <div className="text-sm text-gray-600">Under review</div>
-                        </div>
+                        </Link>
 
-                        <div className="border-l-4 border-green-500 bg-green-50 p-4 rounded">
-                            <div className="text-sm text-green-700 font-semibold mb-2">APPROVED</div>
+                        <Link href="/dashboard/library?status=approved" className="border-l-4 border-green-500 bg-green-50 p-4 rounded hover:shadow-md transition-all cursor-pointer group">
+                            <div className="text-sm text-green-700 font-semibold mb-2 group-hover:underline">APPROVED</div>
                             <div className="text-2xl font-bold">{workflowStats.approved}</div>
                             <div className="text-sm text-gray-600">Approved items</div>
-                        </div>
+                        </Link>
 
-                        <div className="border-l-4 border-indigo-500 bg-indigo-50 p-4 rounded">
-                            <div className="text-sm text-indigo-700 font-semibold mb-2">PUBLISHED</div>
+                        <Link href="/dashboard/library?status=published" className="border-l-4 border-indigo-500 bg-indigo-50 p-4 rounded hover:shadow-md transition-all cursor-pointer group">
+                            <div className="text-sm text-indigo-700 font-semibold mb-2 group-hover:underline">PUBLISHED</div>
                             <div className="text-2xl font-bold">{workflowStats.published}</div>
                             <div className="text-sm text-gray-600">Published items</div>
-                        </div>
+                        </Link>
                     </div>
 
                     <Link

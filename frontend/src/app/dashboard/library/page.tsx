@@ -18,6 +18,15 @@ export default function ContentLibrary() {
     const [shareModalOpen, setShareModalOpen] = useState(false);
     const [selectedContent, setSelectedContent] = useState<any>(null);
 
+    const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const statusParam = searchParams?.get('status');
+
+    useEffect(() => {
+        if (statusParam) {
+            setFilter(statusParam);
+        }
+    }, [statusParam]);
+
     useEffect(() => {
         if (token) {
             fetchContent();
@@ -137,7 +146,8 @@ export default function ContentLibrary() {
         const colors: Record<string, string> = {
             draft: 'bg-yellow-100 text-yellow-800',
             review: 'bg-teal-100 text-teal-800 border border-teal-200',
-            published: 'bg-green-100 text-green-800',
+            approved: 'bg-green-100 text-green-800',
+            published: 'bg-indigo-100 text-indigo-800',
             archived: 'bg-gray-100 text-gray-800'
         };
         return colors[st] || colors.draft;
@@ -220,6 +230,14 @@ export default function ContentLibrary() {
                         onClick={() => setFilter('draft')}
                         className={`px-4 py-2 rounded-md transition ${filter === 'draft' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
                     >Drafts</button>
+                    <button
+                        onClick={() => setFilter('review')}
+                        className={`px-4 py-2 rounded-md transition ${filter === 'review' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                    >Review</button>
+                    <button
+                        onClick={() => setFilter('approved')}
+                        className={`px-4 py-2 rounded-md transition ${filter === 'approved' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                    >Approved</button>
                     <button
                         onClick={() => setFilter('published')}
                         className={`px-4 py-2 rounded-md transition ${filter === 'published' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}

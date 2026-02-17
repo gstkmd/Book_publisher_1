@@ -698,6 +698,25 @@ async def update_task(
                 content.status = "draft"
                 await content.save()
 
+    # --- Auto-Approval Logic ---
+    # If task is marked Done/Completed, check if all tasks for this content are finished
+    if (task.stage == "Done" or task.status == "completed") and task.content_id:
+        content_id = get_link_id(task.content_id)
+        if content_id:
+            unfinished_tasks_count = await Task.find(
+                Task.content_id.id == ObjectId(content_id),
+                Task.id != task.id, # Exclude current task
+                Task.status != "completed",
+                Task.stage != "Done"
+            ).count()
+            
+            if unfinished_tasks_count == 0:
+                content = await Content.get(content_id)
+                if content and content.status == "review":
+                    content.status = "approved"
+                    content.updated_at = datetime.now(timezone.utc)
+                    await content.save()
+
     await task.save()
 
     # Log significant changes
