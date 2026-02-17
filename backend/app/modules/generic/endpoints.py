@@ -81,7 +81,8 @@ async def read_contents(current_user: User = Depends(get_current_user)):
         # Find pending tasks for this content
         pending_tasks = await Task.find(
             Task.content_id.id == content.id,
-            Task.status != "completed"
+            Task.status != "completed",
+            Task.stage != "Done"
         ).to_list()
         
         reviewers = []
