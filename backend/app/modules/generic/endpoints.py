@@ -3,6 +3,7 @@ from beanie import Link, PydanticObjectId
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 from datetime import datetime, timezone
+from bson import ObjectId, DBRef
 from app.modules.generic.models import Content, ContentVersion, Comment, Task, TaskComment, ActivityLog, Notification
 from app.modules.core.models import User
 from app.api.deps import get_current_user, get_current_active_superuser
@@ -299,12 +300,11 @@ class CreateCommentRequest(BaseModel):
 @router.post("/comments")
 async def create_comment(req: CreateCommentRequest):
     """Create comment with proper Link references"""
-    from bson import ObjectId
     
     comment = Comment(
-        content_id=Link(id=ObjectId(req.content_id), document_class=Content),
+        content_id=Link(ref=DBRef(collection="content", id=ObjectId(req.content_id))),
         text=req.text,
-        author=Link(id=ObjectId(req.author), document_class=User),
+        author=Link(ref=DBRef(collection="users", id=ObjectId(req.author))),
         selection_range=req.selection_range,
         resolved=req.resolved
     )
@@ -472,7 +472,6 @@ async def create_task(
     task_in: TaskCreate,
     current_user: User = Depends(get_current_user)
 ):
-    from bson import ObjectId
     # Create task with proper user association
     task = Task(
         title=task_in.title,
@@ -500,11 +499,11 @@ async def create_task(
     
     # Handle optional fields
     if task_in.content_id:
-        task.content_id = Link(id=ObjectId(task_in.content_id), document_class=Content)
+        task.content_id = Link(ref=DBRef(collection="content", id=ObjectId(task_in.content_id)))
     if task_in.assignee:
-        task.assignee = Link(id=ObjectId(task_in.assignee), document_class=User)
+        task.assignee = Link(ref=DBRef(collection="users", id=ObjectId(task_in.assignee)))
     if task_in.parent_task_id:
-        task.parent_task_id = Link(id=ObjectId(task_in.parent_task_id), document_class=Task)
+        task.parent_task_id = Link(ref=DBRef(collection="tasks", id=ObjectId(task_in.parent_task_id)))
     
     await task.create()
 
@@ -646,7 +645,6 @@ async def update_task(
     task_in: TaskCreate,
     current_user: User = Depends(get_current_user)
 ):
-    from bson import ObjectId
     task = await Task.get(id)
     if not task or task.organization_id != current_user.organization_id:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -686,17 +684,17 @@ async def update_task(
     
     # Handle Links
     if task_in.assignee:
-        task.assignee = Link(id=ObjectId(task_in.assignee), document_class=User)
+        task.assignee = Link(ref=DBRef(collection="users", id=ObjectId(task_in.assignee)))
     else:
         task.assignee = None
         
     if task_in.content_id:
-        task.content_id = Link(id=ObjectId(task_in.content_id), document_class=Content)
+        task.content_id = Link(ref=DBRef(collection="content", id=ObjectId(task_in.content_id)))
     else:
         task.content_id = None
         
     if task_in.parent_task_id:
-        task.parent_task_id = Link(id=ObjectId(task_in.parent_task_id), document_class=Task)
+        task.parent_task_id = Link(ref=DBRef(collection="tasks", id=ObjectId(task_in.parent_task_id)))
     else:
         task.parent_task_id = None
 
@@ -775,13 +773,12 @@ async def create_task_comment(
     comment_in: TaskCommentCreate,
     current_user: User = Depends(get_current_user)
 ):
-    from bson import ObjectId
     task = await Task.get(id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     
     comment = TaskComment(
-        task_id=Link(id=ObjectId(id), document_class=Task),
+        task_id=Link(ref=DBRef(collection="tasks", id=ObjectId(id))),
         text=comment_in.text,
         author=current_user,
         organization_id=current_user.organization_id
