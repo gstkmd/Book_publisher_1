@@ -597,7 +597,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                     </div>
 
                                     {/* Linked Content */}
-                                    <div className="flex items-center group">
+                                    <div className="flex items-center group col-span-2 border-t border-gray-50 pt-4 mt-2">
                                         <div className="w-32 flex items-center gap-2 text-gray-400">
                                             <FileText className="w-4 h-4" />
                                             <span className="text-xs font-bold uppercase tracking-wider">Linked Content</span>
@@ -608,7 +608,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                                 const newVal = e.target.value;
                                                 handleUpdateField('content_id', newVal || null);
                                             }}
-                                            className="text-xs font-bold text-gray-700 bg-transparent border-none focus:ring-0 p-0 max-w-[200px] truncate"
+                                            className="text-xs font-bold text-gray-700 bg-transparent border-none focus:ring-0 p-0 flex-1 truncate cursor-pointer hover:text-indigo-600 transition-colors"
                                         >
                                             <option value="">None</option>
                                             {libraryContent.map(c => (
