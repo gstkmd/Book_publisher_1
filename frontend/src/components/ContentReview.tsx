@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 
 interface Comment {
     id?: string;
@@ -162,12 +163,17 @@ export default function ContentReview({
             setNewCommentText('');
             setShowCommentInput(false);
             setSelection(null);
-            fetchComments();
+
+            // Refetch AND optimistically refresh stats?
+            await fetchComments();
+
+            toast.success('Comment posted successfully!');
+
             window.getSelection()?.removeAllRanges();
             if (onCommentPosted) onCommentPosted();
         } catch (err: any) {
             console.error("Comment Post Error:", err);
-            alert('Failed to post comment');
+            toast.error('Failed to post comment');
         } finally {
             setPostingComment(false);
         }

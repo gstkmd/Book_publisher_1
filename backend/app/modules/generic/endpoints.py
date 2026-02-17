@@ -318,35 +318,12 @@ async def create_comment(req: CreateCommentRequest):
 
 @router.get("/content/{id}/comments", response_model=List[Comment])
 async def get_content_comments(id: PydanticObjectId):
-    from bson import ObjectId
+    """Fetch comments for content with reliable filtering"""
     try:
-        oid = ObjectId(id)
-        # Fallback to manual filtering to ensure correctness
-        all_comments = await Comment.find_all().to_list()
-        filtered_comments = []
-        for c in all_comments:
-            c_content_id = None
-            # Check if it's a Link or direct ObjectId
-            if hasattr(c.content_id, 'ref') and hasattr(c.content_id.ref, 'id'):
-                 # It's a standard Beanie Link
-                 c_content_id = str(c.content_id.ref.id)
-            elif hasattr(c.content_id, 'id'):
-                 # It might be a direct object or another Link form
-                 c_content_id = str(c.content_id.id)
-            elif isinstance(c.content_id, ObjectId):
-                 # It's a raw ObjectId
-                 c_content_id = str(c.content_id)
-            else:
-                 # Try casting to string as last resort
-                 c_content_id = str(c.content_id)
-            
-            if c_content_id == id:
-                filtered_comments.append(c)
-                
-        print(f"DEBUG: Manually filtered comments for content {id}. Found {len(filtered_comments)} out of {len(all_comments)}")
-        return filtered_comments
+        # Use Beanie's native filtering which is optimized for Link fields
+        return await Comment.find(Comment.content_id.id == id).to_list()
     except Exception as e:
-        print(f"DEBUG: Error fetching comments: {e}")
+        print(f"DEBUG: Error fetching comments for {id}: {e}")
         return []
 
 @router.patch("/comments/{id}/resolve")
