@@ -273,21 +273,30 @@ async def get_workflow_stats(current_user: User = Depends(get_current_user)):
     """Get counts of content by status for the current organization"""
     from app.modules.generic.models import Content
     
-    # Base filter by organization
-    base_query = Content.find(Content.organization_id == current_user.organization_id)
+    # Use aggregation for efficiency and reliability
+    pipeline = [
+        {"$match": {"organization_id": current_user.organization_id}},
+        {"$group": {"_id": "$status", "count": {"$sum": 1}}}
+    ]
     
-    # Aggregate counts
-    draft_count = await base_query.find(Content.status == "draft").count()
-    review_count = await base_query.find(Content.status == "review").count()
-    approved_count = await base_query.find(Content.status == "approved").count()
-    published_count = await base_query.find(Content.status == "published").count()
+    cursor = Content.get_motor_collection().aggregate(pipeline)
     
-    return {
-        "draft": draft_count,
-        "review": review_count,
-        "approved": approved_count,
-        "published": published_count
+    stats = {
+        "draft": 0,
+        "review": 0,
+        "approved": 0,
+        "published": 0
     }
+    
+    async for doc in cursor:
+        status_val = doc["_id"]
+        # Handle case-insensitive status and map to our keys
+        if status_val:
+            s_lower = status_val.lower()
+            if s_lower in stats:
+                stats[s_lower] += doc["count"]
+    
+    return stats
 
 # --- Comments ---
 
