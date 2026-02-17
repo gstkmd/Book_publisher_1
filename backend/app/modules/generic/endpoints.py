@@ -675,6 +675,19 @@ async def update_task(
     else:
         task.parent_task_id = None
 
+    # --- Auto Re-assignment Logic ---
+    # If task is moved to "Needs Edit" or "Changes Requested", re-assign to original author
+    if task.stage in ["Needs Edit", "Changes Requested"] and task.content_id:
+        content_id = get_link_id(task.content_id)
+        if content_id:
+            content = await Content.get(content_id)
+            if content and content.author:
+                # Re-assign to author
+                task.assignee = content.author
+                # Revert content status to draft to signal work is needed
+                content.status = "draft"
+                await content.save()
+
     await task.save()
 
     # Log significant changes
