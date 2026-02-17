@@ -302,9 +302,9 @@ async def create_comment(req: CreateCommentRequest):
     """Create comment with proper Link references"""
     
     comment = Comment(
-        content_id=Link(ref=DBRef(collection="content", id=ObjectId(req.content_id))),
+        content_id=Link(ref=DBRef(collection="content", id=ObjectId(req.content_id)), document_class=Content),
         text=req.text,
-        author=Link(ref=DBRef(collection="users", id=ObjectId(req.author))),
+        author=Link(ref=DBRef(collection="users", id=ObjectId(req.author)), document_class=User),
         selection_range=req.selection_range,
         resolved=req.resolved
     )
@@ -499,11 +499,11 @@ async def create_task(
     
     # Handle optional fields
     if task_in.content_id:
-        task.content_id = Link(ref=DBRef(collection="content", id=ObjectId(task_in.content_id)))
+        task.content_id = Link(ref=DBRef(collection="content", id=ObjectId(task_in.content_id)), document_class=Content)
     if task_in.assignee:
-        task.assignee = Link(ref=DBRef(collection="users", id=ObjectId(task_in.assignee)))
+        task.assignee = Link(ref=DBRef(collection="users", id=ObjectId(task_in.assignee)), document_class=User)
     if task_in.parent_task_id:
-        task.parent_task_id = Link(ref=DBRef(collection="tasks", id=ObjectId(task_in.parent_task_id)))
+        task.parent_task_id = Link(ref=DBRef(collection="tasks", id=ObjectId(task_in.parent_task_id)), document_class=Task)
     
     await task.create()
 
@@ -684,17 +684,17 @@ async def update_task(
     
     # Handle Links
     if task_in.assignee:
-        task.assignee = Link(ref=DBRef(collection="users", id=ObjectId(task_in.assignee)))
+        task.assignee = Link(ref=DBRef(collection="users", id=ObjectId(task_in.assignee)), document_class=User)
     else:
         task.assignee = None
         
     if task_in.content_id:
-        task.content_id = Link(ref=DBRef(collection="content", id=ObjectId(task_in.content_id)))
+        task.content_id = Link(ref=DBRef(collection="content", id=ObjectId(task_in.content_id)), document_class=Content)
     else:
         task.content_id = None
         
     if task_in.parent_task_id:
-        task.parent_task_id = Link(ref=DBRef(collection="tasks", id=ObjectId(task_in.parent_task_id)))
+        task.parent_task_id = Link(ref=DBRef(collection="tasks", id=ObjectId(task_in.parent_task_id)), document_class=Task)
     else:
         task.parent_task_id = None
 
@@ -778,7 +778,7 @@ async def create_task_comment(
         raise HTTPException(status_code=404, detail="Task not found")
     
     comment = TaskComment(
-        task_id=Link(ref=DBRef(collection="tasks", id=ObjectId(id))),
+        task_id=Link(ref=DBRef(collection="tasks", id=ObjectId(id)), document_class=Task),
         text=comment_in.text,
         author=current_user,
         organization_id=current_user.organization_id
