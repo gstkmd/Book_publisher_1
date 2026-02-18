@@ -107,7 +107,10 @@ async def health_check():
 @router.post("/agent/register")
 async def register_agent(
     computer_name: str = Form(...),
-    os_version: str = Form(...)
+    os_version: str = Form(...),
+    platform: Optional[str] = Form(None),
+    arch: Optional[str] = Form(None),
+    nickname: Optional[str] = Form(None)
 ):
     """Register a new monitoring agent"""
     agent_id = str(uuid.uuid4())
@@ -116,17 +119,31 @@ async def register_agent(
             "INSERT INTO agents (id, computer_name, os_version, last_seen) VALUES (?, ?, ?, ?)",
             (agent_id, computer_name, os_version, datetime.now())
         )
+
         conn.commit()
     return {"agent_id": agent_id, "status": "registered"}
 
 @router.post("/screenshots/upload")
 async def upload_screenshot(
-    agent_id: str = Form(...),
-    screenshot: UploadFile = File(...),
-    timestamp: str = Form(...)
+    agent_id: Optional[str] = Form(None),
+    agentId: Optional[str] = Form(None),
+    screenshot: Optional[UploadFile] = File(None),
+    files: Optional[UploadFile] = File(None),
+    timestamp: Optional[str] = Form(None)
 ):
     """Receive screenshot from agent"""
+    # Robustly handle different field names
+    agent_id = agent_id or agentId
+    screenshot = screenshot or files
+    timestamp = timestamp or datetime.now().isoformat()
+
+    if not agent_id:
+        raise HTTPException(status_code=422, detail="agent_id or agentId is required")
+    if not screenshot:
+        raise HTTPException(status_code=422, detail="screenshot or files is required")
+
     try:
+
         # Generate unique filename
         file_id = str(uuid.uuid4())
         file_extension = os.path.splitext(screenshot.filename)[1] or ".png"
@@ -162,8 +179,8 @@ async def track_app_usage(data: dict):
     """Track application usage from agent"""
     try:
         app_id = str(uuid.uuid4())
-        agent_id = data.get("agentId")
-        app_data = data.get("appData", {})
+        agent_id = data.get("agent_id") or data.get("agentId")
+        app_data = data.get("app_data") or data.get("appData", {})
         
         # Calculate duration
         open_time = datetime.fromisoformat(app_data.get("appOpenAt").replace('Z', '+00:00'))
@@ -178,11 +195,11 @@ async def track_app_usage(data: dict):
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     app_id, agent_id, 
-                    app_data.get("appName", "Unknown"),
-                    app_data.get("appOpenAt"),
-                    app_data.get("appCloseAt"),
-                    app_data.get("keysPressed", 0),
-                    app_data.get("mouseClicks", 0),
+                    app_data.get("app_name") or app_data.get("appName", "Unknown"),
+                    app_data.get("app_open_at") or app_data.get("appOpenAt"),
+                    app_data.get("app_close_at") or app_data.get("appCloseAt"),
+                    app_data.get("keys_pressed") or app_data.get("keysPressed", 0),
+                    app_data.get("mouse_clicks") or app_data.get("mouseClicks", 0),
                     duration
                 )
             )
@@ -197,7 +214,7 @@ async def track_idle_time(data: dict):
     """Track idle time periods"""
     try:
         idle_id = str(uuid.uuid4())
-        agent_id = data.get("agentId")
+        agent_id = data.get("agent_id") or data.get("agentId")
         idle_from = data.get("from")
         idle_to = data.get("to")
         

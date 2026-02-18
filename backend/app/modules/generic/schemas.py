@@ -79,7 +79,7 @@ class NotificationSchema(BaseModel):
 
 class ContentSchema(BaseModel):
     id: str
-    _id: Optional[str] = None
+
     title: str
     slug: str
     body: Dict = {}

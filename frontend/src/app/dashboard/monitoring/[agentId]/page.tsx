@@ -16,18 +16,19 @@ export default function AgentDetailPage() {
     const [activity, setActivity] = useState<any>(null);
     const [screenshots, setScreenshots] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
     useEffect(() => {
         if (token && agentId) {
             fetchAgentData();
         }
-    }, [token, agentId]);
+    }, [token, agentId, selectedDate]);
 
     const fetchAgentData = async () => {
         setIsLoading(true);
         try {
             const [activityData, screenshotsData] = await Promise.all([
-                api.get(`/monitoring/dashboard/agent/${agentId}/activity`, token || undefined),
+                api.get(`/monitoring/dashboard/agent/${agentId}/activity?date=${selectedDate}`, token || undefined),
                 api.get(`/monitoring/dashboard/screenshots?agent_id=${agentId}&limit=50`, token || undefined)
             ]);
             setActivity(activityData);
@@ -49,14 +50,26 @@ export default function AgentDetailPage() {
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
-            <div className="flex items-center gap-4">
-                <button
-                    onClick={() => router.back()}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
-                >
-                    ⬅️
-                </button>
-                <h1 className="text-2xl font-bold text-gray-900">Agent Activity Detail</h1>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => router.back()}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+                    >
+                        ⬅️
+                    </button>
+                    <h1 className="text-2xl font-bold text-gray-900">Agent Activity Detail</h1>
+                </div>
+
+                <div className="flex items-center gap-2 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
+                    <span className="text-sm font-bold text-gray-500 ml-2">Select Date:</span>
+                    <input
+                        type="date"
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        className="border-0 focus:ring-0 text-sm font-bold text-indigo-600 cursor-pointer"
+                    />
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -88,7 +101,7 @@ export default function AgentDetailPage() {
                                 ))}
                                 {(!activity?.app_usage || activity.app_usage.length === 0) && (
                                     <tr>
-                                        <td colSpan={3} className="px-6 py-8 text-center text-gray-500">No activity recorded for this date.</td>
+                                        <td colSpan={3} className="px-6 py-8 text-center text-gray-500">No activity recorded for this date ({selectedDate}).</td>
                                     </tr>
                                 )}
                             </tbody>
