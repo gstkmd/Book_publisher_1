@@ -28,7 +28,17 @@ export function ScreenshotGallery({ screenshots, apiUrl }: ScreenshotGalleryProp
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-end p-3">
                             <div className="text-white opacity-0 group-hover:opacity-100 transition-opacity">
                                 <p className="text-xs font-bold truncate">{shot.computer_name}</p>
-                                <p className="text-[10px]">{new Date(shot.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
+                                <p className="text-[10px]">
+                                    {(() => {
+                                        try {
+                                            const d = new Date(shot.timestamp);
+                                            const istTime = new Date(d.getTime() + (5.5 * 60 * 60 * 1000));
+                                            return istTime.toISOString().replace('T', ' ').substring(0, 19);
+                                        } catch (e) {
+                                            return shot.timestamp;
+                                        }
+                                    })()}
+                                </p>
                             </div>
                         </div>
                     </div>
