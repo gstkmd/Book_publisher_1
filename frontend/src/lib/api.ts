@@ -1,16 +1,34 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+const inflightRequests = new Map<string, Promise<any>>();
+
 export const api = {
     get: async (endpoint: string, token?: string) => {
-        const headers: HeadersInit = {
-            'Content-Type': 'application/json',
-        };
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
+        const cacheKey = `${endpoint}:${token || 'no-token'}`;
+
+        if (inflightRequests.has(cacheKey)) {
+            console.log(`📡 Merging inflight request for: ${endpoint}`);
+            return inflightRequests.get(cacheKey);
         }
-        const res = await fetch(`${API_URL}${endpoint}`, { headers });
-        if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
-        return res.json();
+
+        const fetchPromise = (async () => {
+            try {
+                const headers: HeadersInit = {
+                    'Content-Type': 'application/json',
+                };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                const res = await fetch(`${API_URL}${endpoint}`, { headers });
+                if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+                return await res.json();
+            } finally {
+                inflightRequests.delete(cacheKey);
+            }
+        })();
+
+        inflightRequests.set(cacheKey, fetchPromise);
+        return fetchPromise;
     },
 
     post: async (endpoint: string, body: any, token?: string, isFormData = false) => {

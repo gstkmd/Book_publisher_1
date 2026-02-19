@@ -37,15 +37,18 @@ export default function MonitoringDashboardPage() {
         }
     }, [token]);
 
+    const isFetchingRef = useRef(false);
+
     const fetchData = async () => {
-        // Add a small random jitter (0-200ms) to break symmetry between multiple tabs
-        // starting at the exact same microsecond.
+        // 1. Check local synchronous guard (prevents same-render-cycle double fires)
+        if (isFetchingRef.current) return;
+
+        // 2. Add a small random jitter (0-200ms) to break symmetry between multiple tabs
         await new Promise(resolve => setTimeout(resolve, Math.random() * 200));
 
         const now = Date.now();
 
-        // 1. Check module-level lock (shared in this tab's memory)
-        // 2. Check localStorage lock (shared across ALL tabs for this origin)
+        // 3. Check localStorage lock (shared across ALL tabs/instances)
         const lastGlobalFetch = parseInt(localStorage.getItem('last_monitoring_fetch') || '0');
 
         if (now - lastGlobalFetch < 2000) {
@@ -53,6 +56,7 @@ export default function MonitoringDashboardPage() {
             return;
         }
 
+        isFetchingRef.current = true;
         localStorage.setItem('last_monitoring_fetch', now.toString());
         setIsLoading(true);
         console.log(`[${globalInstanceId}] 📡 Fetching monitoring data...`);
@@ -66,12 +70,13 @@ export default function MonitoringDashboardPage() {
             setSummary(summaryData);
             setAgents(agentsData);
             setScreenshots(screenshotsData);
-            console.log(`[${globalInstanceId}] ✅ Data received`);
+            console.log(`[${globalInstanceId}] ✅ Data received (Synchronized)`);
         } catch (err: any) {
             console.error(`[${globalInstanceId}] ❌ Fetch failed:`, err);
             setError('Could not load monitoring data. Please ensure the backend is running.');
         } finally {
             setIsLoading(false);
+            isFetchingRef.current = false;
         }
     };
 
