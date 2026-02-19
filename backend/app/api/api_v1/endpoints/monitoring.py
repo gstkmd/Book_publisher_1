@@ -203,6 +203,12 @@ async def track_app_usage(data: dict):
                     duration
                 )
             )
+            
+            # Update agent last seen
+            conn.execute(
+                "UPDATE agents SET last_seen = ? WHERE id = ?",
+                (datetime.now(), agent_id)
+            )
             conn.commit()
         
         return {"status": "success", "app_id": app_id}
