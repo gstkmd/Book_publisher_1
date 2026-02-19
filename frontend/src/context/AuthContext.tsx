@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (storedToken) {
             console.log(`[AUTH-${instanceId}] 🔑 Token found in localStorage, fetching user...`);
             setToken(storedToken);
-            // Fetch user details
+            // Fetch user details - Using deduplicated api.get
             api.get('/users/me', storedToken)
                 .then((userData) => {
                     console.log(`[AUTH-${instanceId}] ✅ User profile fetched for: ${userData.email}`);
