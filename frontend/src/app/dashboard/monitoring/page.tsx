@@ -23,6 +23,7 @@ export default function MonitoringDashboardPage() {
 
     const agentsSectionRef = useRef<HTMLDivElement>(null);
     const screenshotsSectionRef = useRef<HTMLDivElement>(null);
+    const fetchingRef = useRef(false);
 
     useEffect(() => {
         if (token) {
@@ -31,6 +32,12 @@ export default function MonitoringDashboardPage() {
     }, [token]);
 
     const fetchData = async () => {
+        if (fetchingRef.current) {
+            console.log('🔄 Fetch already in progress, skipping...');
+            return;
+        }
+
+        fetchingRef.current = true;
         setIsLoading(true);
         try {
             const [summaryData, agentsData, screenshotsData] = await Promise.all([
@@ -46,8 +53,24 @@ export default function MonitoringDashboardPage() {
             setError('Could not load monitoring data. Please ensure the backend is running.');
         } finally {
             setIsLoading(false);
+            fetchingRef.current = false;
         }
     };
+
+    useEffect(() => {
+        if (!token) return;
+
+        console.log('⏱️ Setting up monitoring polling (30s)');
+        const intervalId = setInterval(() => {
+            console.log('🔔 Polling monitoring data...');
+            fetchData();
+        }, 30000); // Poll every 30 seconds
+
+        return () => {
+            console.log('🛑 Clearing monitoring polling');
+            clearInterval(intervalId);
+        };
+    }, [token]);
 
     const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>) => {
         ref.current?.scrollIntoView({ behavior: 'smooth' });
