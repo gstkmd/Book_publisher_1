@@ -13,6 +13,10 @@ import Link from 'next/link';
 // Our monitoring routes are under /monitoring
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+// Global lock to persist across component remounts in the same tab
+let globalFetchLock = false;
+let lastFetchTimestamp = 0;
+
 export default function MonitoringDashboardPage() {
     const { token, user } = useAuth();
     const [summary, setSummary] = useState<any>(null);
@@ -23,7 +27,6 @@ export default function MonitoringDashboardPage() {
 
     const agentsSectionRef = useRef<HTMLDivElement>(null);
     const screenshotsSectionRef = useRef<HTMLDivElement>(null);
-    const fetchingRef = useRef(false);
 
     useEffect(() => {
         if (token) {
@@ -32,12 +35,14 @@ export default function MonitoringDashboardPage() {
     }, [token]);
 
     const fetchData = async () => {
-        if (fetchingRef.current) {
-            console.log('🔄 Fetch already in progress, skipping...');
+        const now = Date.now();
+        if (globalFetchLock || (now - lastFetchTimestamp < 1000)) {
+            console.log('🔄 Fetch blocked (global lock or debounce)');
             return;
         }
 
-        fetchingRef.current = true;
+        globalFetchLock = true;
+        lastFetchTimestamp = now;
         setIsLoading(true);
         try {
             const [summaryData, agentsData, screenshotsData] = await Promise.all([
@@ -53,7 +58,7 @@ export default function MonitoringDashboardPage() {
             setError('Could not load monitoring data. Please ensure the backend is running.');
         } finally {
             setIsLoading(false);
-            fetchingRef.current = false;
+            globalFetchLock = false;
         }
     };
 
