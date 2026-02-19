@@ -38,6 +38,10 @@ export default function MonitoringDashboardPage() {
     }, [token]);
 
     const fetchData = async () => {
+        // Add a small random jitter (0-200ms) to break symmetry between multiple tabs
+        // starting at the exact same microsecond.
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 200));
+
         const now = Date.now();
 
         // 1. Check module-level lock (shared in this tab's memory)
