@@ -27,19 +27,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
+    const [instanceId] = useState(() => Math.random().toString(36).substring(7));
 
     useEffect(() => {
+        console.log(`[AUTH-${instanceId}] 🏗️ AuthProvider mounted`);
         const storedToken = localStorage.getItem('token');
         if (storedToken) {
+            console.log(`[AUTH-${instanceId}] 🔑 Token found in localStorage, fetching user...`);
             setToken(storedToken);
             // Fetch user details
             api.get('/users/me', storedToken)
-                .then((userData) => setUser(userData))
-                .catch(() => {
+                .then((userData) => {
+                    console.log(`[AUTH-${instanceId}] ✅ User profile fetched for: ${userData.email}`);
+                    setUser(userData);
+                })
+                .catch((err) => {
+                    console.error(`[AUTH-${instanceId}] ❌ User profile fetch failed:`, err);
                     logout();
                 })
-                .finally(() => setIsLoading(false));
+                .finally(() => {
+                    console.log(`[AUTH-${instanceId}] 🏁 Auth initialization complete`);
+                    setIsLoading(false);
+                });
         } else {
+            console.log(`[AUTH-${instanceId}] 📭 No token found, auth initialization complete`);
             setIsLoading(false);
         }
     }, []);

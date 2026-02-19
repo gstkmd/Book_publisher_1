@@ -13,9 +13,9 @@ import Link from 'next/link';
 // Our monitoring routes are under /monitoring
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
-// Global lock to persist across component remounts in the same tab
-let globalFetchLock = false;
-let lastFetchTimestamp = 0;
+// Global variables to track the *first* mount in this JS environment
+let globalInstanceId = typeof window !== 'undefined' ? Math.random().toString(36).substring(7) : 'server';
+let mountCount = 0;
 
 export default function MonitoringDashboardPage() {
     const { token, user } = useAuth();
@@ -29,21 +29,30 @@ export default function MonitoringDashboardPage() {
     const screenshotsSectionRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        mountCount++;
+        console.log(`[${globalInstanceId}] 🏗️ MonitoringDashboardPage mounted (Mount #${mountCount})`);
         if (token) {
+            console.log(`[${globalInstanceId}] 🚀 Initial fetch trigger (token present)`);
             fetchData();
         }
     }, [token]);
 
     const fetchData = async () => {
         const now = Date.now();
-        if (globalFetchLock || (now - lastFetchTimestamp < 1000)) {
-            console.log('🔄 Fetch blocked (global lock or debounce)');
+
+        // 1. Check module-level lock (shared in this tab's memory)
+        // 2. Check localStorage lock (shared across ALL tabs for this origin)
+        const lastGlobalFetch = parseInt(localStorage.getItem('last_monitoring_fetch') || '0');
+
+        if (now - lastGlobalFetch < 2000) {
+            console.log(`[${globalInstanceId}] 🔄 Fetch blocked (Debounce: ${now - lastGlobalFetch}ms ago)`);
             return;
         }
 
-        globalFetchLock = true;
-        lastFetchTimestamp = now;
+        localStorage.setItem('last_monitoring_fetch', now.toString());
         setIsLoading(true);
+        console.log(`[${globalInstanceId}] 📡 Fetching monitoring data...`);
+
         try {
             const [summaryData, agentsData, screenshotsData] = await Promise.all([
                 api.get('/monitoring/dashboard/summary', token || undefined),
@@ -53,26 +62,26 @@ export default function MonitoringDashboardPage() {
             setSummary(summaryData);
             setAgents(agentsData);
             setScreenshots(screenshotsData);
+            console.log(`[${globalInstanceId}] ✅ Data received`);
         } catch (err: any) {
-            console.error('Failed to fetch monitoring data:', err);
+            console.error(`[${globalInstanceId}] ❌ Fetch failed:`, err);
             setError('Could not load monitoring data. Please ensure the backend is running.');
         } finally {
             setIsLoading(false);
-            globalFetchLock = false;
         }
     };
 
     useEffect(() => {
         if (!token) return;
 
-        console.log('⏱️ Setting up monitoring polling (30s)');
+        console.log(`[${globalInstanceId}] ⏱️ Setting up monitoring polling (30s)`);
         const intervalId = setInterval(() => {
-            console.log('🔔 Polling monitoring data...');
+            console.log(`[${globalInstanceId}] 🔔 Polling trigger...`);
             fetchData();
         }, 30000); // Poll every 30 seconds
 
         return () => {
-            console.log('🛑 Clearing monitoring polling');
+            console.log(`[${globalInstanceId}] 🛑 Clearing monitoring polling`);
             clearInterval(intervalId);
         };
     }, [token]);
