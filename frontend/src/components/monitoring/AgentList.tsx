@@ -39,10 +39,16 @@ export function AgentList({ agents }: AgentListProps) {
                                 <td className="px-6 py-4 text-gray-600 text-sm">
                                     {(() => {
                                         try {
-                                            const d = new Date(agent.last_seen);
+                                            // Ensure we treat the input as UTC
+                                            let dateStr = agent.last_seen;
+                                            if (dateStr && !dateStr.includes('Z')) {
+                                                dateStr = dateStr.replace(' ', 'T') + 'Z';
+                                            }
+                                            const d = new Date(dateStr);
                                             // Add 5.5 hours to UTC time to get IST
                                             const istTime = new Date(d.getTime() + (5.5 * 60 * 60 * 1000));
-                                            return istTime.toISOString().replace('T', ' ').substring(0, 19);
+                                            const finalStr = istTime.toISOString().replace('T', ' ').substring(0, 19);
+                                            return <span title={`Raw: ${agent.last_seen} | Parsed: ${d.toISOString()}`}>{finalStr}</span>;
                                         } catch (e) {
                                             return agent.last_seen;
                                         }
