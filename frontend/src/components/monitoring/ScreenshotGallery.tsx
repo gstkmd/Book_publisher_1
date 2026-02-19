@@ -28,7 +28,7 @@ export function ScreenshotGallery({ screenshots, apiUrl }: ScreenshotGalleryProp
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-end p-3">
                             <div className="text-white opacity-0 group-hover:opacity-100 transition-opacity">
                                 <p className="text-xs font-bold truncate">{shot.computer_name}</p>
-                                <p className="text-[10px]">{new Date(shot.timestamp).toLocaleString()}</p>
+                                <p className="text-[10px]">{new Date(shot.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
                             </div>
                         </div>
                     </div>
