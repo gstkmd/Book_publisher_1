@@ -31,7 +31,6 @@ export function ScreenshotGallery({ screenshots, apiUrl }: ScreenshotGalleryProp
                                 <p className="text-[10px]">
                                     {(() => {
                                         try {
-                                            // Ensure we treat the input as UTC
                                             let dateStr = shot.timestamp;
                                             if (dateStr && !dateStr.includes('Z')) {
                                                 dateStr = dateStr.replace(' ', 'T') + 'Z';
@@ -39,8 +38,7 @@ export function ScreenshotGallery({ screenshots, apiUrl }: ScreenshotGalleryProp
                                             const d = new Date(dateStr);
                                             // Add 5.5 hours to UTC time to get IST
                                             const istTime = new Date(d.getTime() + (5.5 * 60 * 60 * 1000));
-                                            const finalStr = istTime.toISOString().replace('T', ' ').substring(0, 19);
-                                            return <span title={`Raw: ${shot.timestamp} | Parsed: ${d.toISOString()}`}>{finalStr}</span>;
+                                            return istTime.toISOString().replace('T', ' ').substring(0, 19);
                                         } catch (e) {
                                             return shot.timestamp;
                                         }

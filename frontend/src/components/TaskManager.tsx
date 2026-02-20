@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import Link from 'next/link';
 import { TaskDetail } from './TaskDetail';
-import { Plus } from 'lucide-react';
+import { Plus, LayoutList, LayoutGrid, Filter, Search } from 'lucide-react';
+import { TaskList } from './TaskList';
+import { TaskBoard } from './TaskBoard';
 
 interface Task {
     id: string;
@@ -22,32 +23,58 @@ interface Task {
     assigner_name?: string;
     content_id?: any;
     total_time?: number;
-}
-
-interface TaskWithComments extends Task {
     unresolvedComments?: number;
 }
 
 export const TaskManager = () => {
-    const [tasks, setTasks] = useState<TaskWithComments[]>([]);
+    const [tasks, setTasks] = useState<Task[]>([]);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
-    const { token } = useAuth();
+    const { token, user } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
 
-    const formatTime = (seconds: number) => {
-        const hrs = Math.floor(seconds / 3600);
-        const mins = Math.floor((seconds % 3600) / 60);
-        if (hrs > 0) return `${hrs}h ${mins}m`;
-        return `${mins}m`;
-    };
+    // Filters
+    const [filterAssignee, setFilterAssignee] = useState<string>('');
+    const [filterAssigner, setFilterAssigner] = useState<string>('');
+    const [filterScope, setFilterScope] = useState<'my' | 'all'>('my');
+    const [members, setMembers] = useState<any[]>([]);
 
     useEffect(() => {
-        if (token) fetchTasks();
-    }, [token]);
+        if (token) {
+            fetchTasks();
+            fetchMembers();
+        }
+    }, [token, filterAssignee, filterAssigner, filterScope]);
+
+    const fetchMembers = async () => {
+        try {
+            const data = await api.get('/core/members', token!);
+            setMembers(data);
+        } catch (err) {
+            console.error('Failed to fetch members:', err);
+        }
+    };
 
     const fetchTasks = async () => {
         try {
-            const data = await api.get('/generic/tasks', token!);
+            setLoading(true);
+            let url = '/generic/tasks';
+            const params = new URLSearchParams();
+
+            if (filterScope === 'my' && user) {
+                // "My Tasks" implies explicitly assigned to me
+                params.append('assignee', user.id);
+            } else {
+                // All Tasks - apply individual filters if set
+                if (filterAssignee) params.append('assignee', filterAssignee);
+                if (filterAssigner) params.append('assigner', filterAssigner);
+            }
+
+            if (params.toString()) {
+                url += `?${params.toString()}`;
+            }
+
+            const data = await api.get(url, token!);
 
             // Fetch comment stats for each task with content
             const tasksWithComments = await Promise.all(
@@ -71,153 +98,106 @@ export const TaskManager = () => {
             setTasks(tasksWithComments);
         } catch (err) {
             console.error('Fetch tasks failed:', err);
+        } finally {
+            setLoading(false);
         }
     };
 
-
-    const handleUpdateTask = async (task: Task, updates: Partial<Task>) => {
-        try {
-            // Stripping fields not accepted by TaskCreate schema if necessary
-            // But usually Pydantic ignores extra fields.
-            const payload = {
-                title: updates.title ?? task.title,
-                description: updates.description ?? task.description,
-                status: updates.status ?? task.status,
-                priority: updates.priority ?? task.priority,
-                stage: updates.stage ?? task.stage,
-                tags: updates.tags ?? task.tags ?? [],
-                due_date: updates.due_date ?? task.due_date,
-                assignee: updates.assignee ?? (task.assignee ? (typeof task.assignee === 'string' ? task.assignee : task.assignee._id || task.assignee.id) : null),
-                content_id: updates.content_id ?? (task.content_id ? (typeof task.content_id === 'string' ? task.content_id : task.content_id._id || task.content_id.id) : null)
-            };
-
-            await api.put(`/generic/tasks/${task.id}`, payload, token!);
-            setEditingTask(null);
-            fetchTasks();
-        } catch (err) {
-            console.error('Update task failed:', err);
-            alert('Failed to update task');
-        }
-    };
-
-    const getPriorityColor = (priority: string) => {
-        switch (priority) {
-            case 'urgent': return 'bg-red-100 text-red-700 border-red-200';
-            case 'high': return 'bg-orange-100 text-orange-700 border-orange-200';
-            case 'medium': return 'bg-blue-100 text-blue-700 border-blue-200';
-            case 'low': return 'bg-gray-100 text-gray-700 border-gray-200';
-            default: return 'bg-gray-100 text-gray-700 border-gray-200';
-        }
-    };
-
-    const getStageColor = (stage: string) => {
-        switch (stage) {
-            case 'Done': return 'bg-green-100 text-green-700';
-            case 'Review': return 'bg-purple-100 text-purple-700';
-            case 'In Progress': return 'bg-blue-100 text-blue-700';
-            default: return 'bg-gray-100 text-gray-700';
-        }
-    };
-
-    const getContentId = (task: Task): string | null => {
-        if (!task.content_id) return null;
-        if (typeof task.content_id === 'string') return task.content_id;
-        return task.content_id._id || task.content_id.id || null;
-    };
+    const canViewAll = user?.role === 'admin' || user?.role === 'editor_in_chief';
 
     return (
-        <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-black text-gray-900 tracking-tight">Team Tasks</h2>
-                <div className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-full">
-                    {tasks.length} Total
+        <div className="space-y-6">
+            {/* Header & Controls */}
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <div className="flex bg-gray-100 rounded-lg p-1">
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                            title="List View"
+                        >
+                            <LayoutList className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('board')}
+                            className={`p-2 rounded-md transition-all ${viewMode === 'board' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                            title="Board View"
+                        >
+                            <LayoutGrid className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    <div className="h-8 w-px bg-gray-200 hidden md:block"></div>
+
+                    <div className="flex bg-gray-100 rounded-lg p-1">
+                        <button
+                            onClick={() => setFilterScope('my')}
+                            className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${filterScope === 'my' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            My Tasks
+                        </button>
+                        {canViewAll && (
+                            <button
+                                onClick={() => setFilterScope('all')}
+                                className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${filterScope === 'all' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                All Tasks
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                    {filterScope === 'all' && (
+                        <>
+                            <select
+                                value={filterAssignee}
+                                onChange={(e) => setFilterAssignee(e.target.value)}
+                                className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                            >
+                                <option value="">Filter by Assignee</option>
+                                {members.map(m => (
+                                    <option key={m.id} value={m.id}>{m.full_name || m.email}</option>
+                                ))}
+                            </select>
+
+                            <select
+                                value={filterAssigner}
+                                onChange={(e) => setFilterAssigner(e.target.value)}
+                                className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                            >
+                                <option value="">Filter by Assigner</option>
+                                {members.map(m => (
+                                    <option key={m.id} value={m.id}>{m.full_name || m.email}</option>
+                                ))}
+                            </select>
+                        </>
+                    )}
+
+                    <button
+                        onClick={() => setEditingTask({ id: '' } as Task)}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-sm flex items-center gap-2 shadow-lg shadow-indigo-200 transition-all active:scale-95"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Create Task
+                    </button>
                 </div>
             </div>
 
-            {/* Create Bar replaced with Full Add Button */}
-            <div className="mb-8">
-                <button
-                    onClick={() => setEditingTask({ id: '' } as Task)}
-                    className="w-full py-4 bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-xl flex items-center justify-center gap-3 text-indigo-600 hover:bg-indigo-100 hover:border-indigo-300 transition-all group"
-                >
-                    <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                        <Plus className="w-5 h-5" />
-                    </div>
-                    <span className="font-bold text-sm uppercase tracking-widest">Add New Task</span>
-                </button>
-            </div>
-
-
-            {/* Task List */}
-            <div className="space-y-3">
-                {tasks.length === 0 && (
-                    <div className="text-center py-12 border-2 border-dashed border-gray-100 rounded-xl">
-                        <div className="text-4xl mb-2 opacity-50">✨</div>
-                        <p className="text-sm font-medium text-gray-400 tracking-tight">All clear! No tasks assigned.</p>
-                    </div>
-                )}
-                {tasks.map(task => {
-                    const contentId = getContentId(task);
-                    return (
-                        <div key={task.id} className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border border-gray-100 rounded-xl hover:border-indigo-200 hover:shadow-md transition-all duration-200 cursor-pointer" onClick={() => setEditingTask(task)}>
-                            <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-1">
-                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${getPriorityColor(task.priority)}`}>
-                                        {task.priority || 'medium'}
-                                    </span>
-                                    <h3 className="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{task.title}</h3>
-                                </div>
-                                {task.description && (
-                                    <p className="text-xs text-gray-500 line-clamp-1 mb-2">{task.description}</p>
-                                )}
-                                <div className="flex flex-wrap items-center gap-2 mt-2">
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getStageColor(task.stage)}`}>
-                                        {task.stage || 'To Do'}
-                                    </span>
-                                    {task.unresolvedComments !== undefined && task.unresolvedComments > 0 && (
-                                        <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-50 text-amber-600 rounded-full flex items-center gap-1">
-                                            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
-                                            {task.unresolvedComments} Comments
-                                        </span>
-                                    )}
-                                    {contentId && (
-                                        <Link
-                                            href={`/dashboard/library/${contentId}/review`}
-                                            className="text-[10px] font-black text-teal-600 hover:text-teal-700 uppercase tracking-widest bg-teal-50 px-2 py-0.5 rounded-full transition-colors"
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            Review Page
-                                        </Link>
-                                    )}
-                                    {task.total_time !== undefined && task.total_time > 0 && (
-                                        <span className="text-[10px] font-bold px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full flex items-center gap-1">
-                                            ⏱️ {formatTime(task.total_time)}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="mt-4 sm:mt-0 flex items-center gap-4 text-right">
-                                <div className="text-right">
-                                    <div className={`text-[10px] font-black uppercase tracking-wider ${task.due_date && new Date(task.due_date) < new Date() ? 'text-red-500' : 'text-gray-400'}`}>
-                                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No Deadline'}
-                                    </div>
-                                    <div className="text-[10px] font-bold uppercase tracking-widest mt-0.5 text-gray-500">
-                                        {task.assignee_name ? `For: ${task.assignee_name}` : 'Unassigned'}
-                                    </div>
-                                    {task.assigner_name && (
-                                        <div className="text-[9px] text-gray-400 font-medium italic">
-                                            By: {task.assigner_name}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-[10px] font-black text-gray-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all">
-                                    →
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
+            {/* Content Area */}
+            {loading ? (
+                <div className="flex justify-center py-20">
+                    <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                </div>
+            ) : (
+                <>
+                    {viewMode === 'list' ? (
+                        <TaskList tasks={tasks} onEdit={setEditingTask} />
+                    ) : (
+                        <TaskBoard tasks={tasks} onEdit={setEditingTask} />
+                    )}
+                </>
+            )}
 
             {/* Task Detail View */}
             {editingTask && (

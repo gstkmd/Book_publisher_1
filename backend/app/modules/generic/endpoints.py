@@ -547,9 +547,23 @@ async def create_task(
     )
 
 @router.get("/tasks", response_model=list[TaskSchema])
-async def get_tasks(current_user: User = Depends(get_current_user)):
+async def get_tasks(
+    assignee: Optional[str] = None,
+    assigner: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
     # Filter by organization_id for security
-    tasks = await Task.find(Task.organization_id == current_user.organization_id).to_list()
+    query = {Task.organization_id: current_user.organization_id}
+    
+    if assignee:
+        # Assuming assignee is passed as the string ID from the frontend
+        query[Task.assignee.id] = ObjectId(assignee)
+    
+    if assigner:
+        # "assigner" field in Task model stores the Link to User
+        query[Task.assigner.id] = ObjectId(assigner)
+
+    tasks = await Task.find(query).to_list()
     
     now = datetime.now(timezone.utc)
     task_map = {}
