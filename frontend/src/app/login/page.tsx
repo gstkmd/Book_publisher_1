@@ -25,7 +25,19 @@ export default function LoginPage() {
             login(res.access_token);
         } catch (err: any) {
             console.error(err);
-            setError('Invalid email or password');
+            // Try to extract detailed error from API
+            let errorMessage = 'Invalid email or password';
+            try {
+                // If it's a string, it might be the error body from api.ts (e.g., "400: {...}")
+                if (typeof err.message === 'string' && err.message.includes(':')) {
+                    const jsonStr = err.message.split(':').slice(1).join(':').trim();
+                    const detail = JSON.parse(jsonStr).detail;
+                    if (detail) errorMessage = detail;
+                }
+            } catch (innerErr) {
+                console.error("Failed to parse error detail", innerErr);
+            }
+            setError(errorMessage);
         }
     };
 

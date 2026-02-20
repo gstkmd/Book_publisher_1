@@ -67,8 +67,15 @@ export default function RightsPortal() {
                                     <td className="p-3">{license.territory}</td>
                                     <td className="p-3">{license.type}</td>
                                     <td className="p-3">{new Date(license.end_date).toLocaleDateString()}</td>
-                                    <td className={`p-3 font-bold ${license.status === 'active' ? 'text-green-600' : 'text-gray-500'}`}>
-                                        {license.status}
+                                    <td className="p-3">
+                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${license.status === 'active'
+                                                ? 'bg-green-100 text-green-700'
+                                                : license.status === 'expiring_soon'
+                                                    ? 'bg-yellow-100 text-yellow-700 animate-pulse'
+                                                    : 'bg-red-100 text-red-700'
+                                            }`}>
+                                            {license.status}
+                                        </span>
                                     </td>
                                 </tr>
                             ))}
