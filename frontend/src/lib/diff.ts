@@ -4,9 +4,35 @@ export type DiffChange = {
     removed?: boolean;
 };
 
+export function normalizeText(text: string): string {
+    if (!text) return '';
+    let normalized = text;
+
+    // Try to parse as JSON if it looks like a JSON object string
+    if (text.trim().startsWith('{') && text.trim().endsWith('}')) {
+        try {
+            const parsed = JSON.parse(text);
+            if (typeof parsed === 'object' && parsed !== null) {
+                // Common keys for content
+                normalized = parsed.text || parsed.content || parsed.body || text;
+            }
+        } catch (e) {
+            // Not partial JSON or malformed, continue with raw text
+        }
+    }
+
+    // Handle literal \n or \r\n characters which might appear in some db records/imports
+    // and convert them back to actual control characters for rendering
+    return normalized
+        .replace(/\\n/g, '\n')
+        .replace(/\\r/g, '\r');
+}
+
 export function diffWords(oldStr: string, newStr: string): DiffChange[] {
-    const oldWords = oldStr.split(/(\s+)/);
-    const newWords = newStr.split(/(\s+)/);
+    const s1 = normalizeText(oldStr);
+    const s2 = normalizeText(newStr);
+    const oldWords = s1.split(/(\s+)/);
+    const newWords = s2.split(/(\s+)/);
 
     const matrix: number[][] = Array(oldWords.length + 1)
         .fill(null)

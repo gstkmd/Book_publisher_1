@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import Link from 'next/link';
+import { diffWords, DiffChange } from '@/lib/diff';
 
 export default function ContentVersionsPage() {
     const { token } = useAuth();
@@ -151,83 +152,28 @@ export default function ContentVersionsPage() {
                             {JSON.stringify(older.body) !== JSON.stringify(newer.body) && (
                                 <div className="mt-3 pt-3 border-t border-blue-200">
                                     <div className="text-xs text-gray-600 mb-2">Content Changes</div>
-                                    <div className="bg-gray-50 p-3 rounded text-xs font-mono max-h-96 overflow-auto">
+                                    <div className="bg-gray-50 p-3 rounded text-xs font-serif max-h-96 overflow-auto">
                                         {(() => {
-                                            // Extract text content from Rich Text JSON
-                                            const extractText = (body: any): string => {
-                                                if (!body) return '';
-                                                if (typeof body === 'string') return body;
-                                                if (body.content && Array.isArray(body.content)) {
-                                                    return body.content.map((node: any) => {
-                                                        if (node.type === 'text') return node.text || '';
-                                                        if (node.content) return extractText(node);
-                                                        if (node.text) return node.text;
-                                                        return '';
-                                                    }).join('');
-                                                }
-                                                return JSON.stringify(body);
-                                            };
-
-                                            const oldText = extractText(older.body);
-                                            const newText = extractText(newer.body);
-
-                                            // Custom Word-Level Diff Algorithm (LCS based)
-                                            const diffWords = (oldStr: string, newStr: string) => {
-                                                const oldWords = oldStr.split(/(\s+)/); // Preserve whitespace
-                                                const newWords = newStr.split(/(\s+)/);
-
-                                                const n = oldWords.length;
-                                                const m = newWords.length;
-                                                const dp = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
-
-                                                for (let i = 1; i <= n; i++) {
-                                                    for (let j = 1; j <= m; j++) {
-                                                        if (oldWords[i - 1] === newWords[j - 1]) {
-                                                            dp[i][j] = dp[i - 1][j - 1] + 1;
-                                                        } else {
-                                                            dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-                                                        }
-                                                    }
-                                                }
-
-                                                const result: any[] = [];
-                                                let i = n, j = m;
-
-                                                while (i > 0 || j > 0) {
-                                                    if (i > 0 && j > 0 && oldWords[i - 1] === newWords[j - 1]) {
-                                                        result.unshift({ type: 'unchanged', text: oldWords[i - 1] });
-                                                        i--; j--;
-                                                    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-                                                        result.unshift({ type: 'added', text: newWords[j - 1] });
-                                                        j--;
-                                                    } else {
-                                                        result.unshift({ type: 'removed', text: oldWords[i - 1] });
-                                                        i--;
-                                                    }
-                                                }
-                                                return result;
-                                            };
-
-                                            const wordDiff = diffWords(oldText, newText);
+                                            const wordDiff = diffWords(older.body || '', newer.body || '');
 
                                             return (
                                                 <div className="whitespace-pre-wrap leading-relaxed transition-all">
-                                                    {wordDiff.map((part, i) => {
-                                                        if (part.type === 'added') {
+                                                    {wordDiff.map((part: DiffChange, i: number) => {
+                                                        if (part.added) {
                                                             return (
                                                                 <span key={i} className="bg-green-100 text-green-800 px-0.5 rounded border-b border-green-300 font-bold mx-0.5">
-                                                                    {part.text}
+                                                                    {part.value}
                                                                 </span>
                                                             );
                                                         }
-                                                        if (part.type === 'removed') {
+                                                        if (part.removed) {
                                                             return (
                                                                 <span key={i} className="bg-red-100 text-red-800 px-0.5 rounded border-b border-red-300 line-through opacity-70 mx-0.5">
-                                                                    {part.text}
+                                                                    {part.value}
                                                                 </span>
                                                             );
                                                         }
-                                                        return <span key={i}>{part.text}</span>;
+                                                        return <span key={i}>{part.value}</span>;
                                                     })}
                                                 </div>
                                             );
