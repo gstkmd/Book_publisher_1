@@ -258,10 +258,10 @@ export default function ContentReview({
     if (!content) return <div className="text-center py-12 text-red-500">Content not found</div>;
 
     return (
-        <div className={`grid ${showSidebar ? (isEmbedded ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-3') : 'grid-cols-1'} gap-6`}>
+        <div className={`grid ${showSidebar ? (isEmbedded ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-3') : 'grid-cols-1'} gap-4 md:gap-6`}>
             {/* Main Content Area */}
-            <div className={`${showSidebar ? (isEmbedded ? 'lg:col-span-2' : 'col-span-2') : 'col-span-1'} bg-white rounded-lg shadow-sm p-6 sm:p-8`}>
-                {!isEmbedded && <h1 className="text-3xl font-bold mb-4">{content.title}</h1>}
+            <div className={`${showSidebar ? (isEmbedded ? 'lg:col-span-2' : 'col-span-2') : 'col-span-1'} bg-white rounded-lg shadow-sm p-4 md:p-6 lg:p-8`}>
+                {!isEmbedded && <h1 className="text-2xl md:text-3xl font-bold mb-4 leading-tight">{content.title}</h1>}
                 <div className="text-sm text-gray-400 mb-6 flex items-center justify-between">
                     <span>Last updated: {new Date(content.updated_at).toLocaleString()}</span>
                     {isEmbedded && <Link href={`/dashboard/library/${contentId}/review`} className="text-blue-600 hover:underline">Open Full View</Link>}
@@ -328,10 +328,10 @@ export default function ContentReview({
 
             {/* Comments Sidebar */}
             {showSidebar && (
-                <div className="bg-white rounded-lg shadow-sm h-fit sticky top-24 border border-gray-100">
-                    <div className="p-4 border-b">
-                        <h2 className="font-bold text-lg">Comments</h2>
-                        <div className="flex gap-2 mt-3 text-[10px] font-bold uppercase tracking-wider">
+                <div className="bg-white rounded-lg shadow-sm h-fit sticky top-20 md:top-24 border border-gray-100">
+                    <div className="p-3 md:p-4 border-b">
+                        <h2 className="font-bold text-base md:text-lg">Comments</h2>
+                        <div className="flex gap-2 mt-3 text-[10px] font-bold uppercase tracking-wider overflow-x-auto pb-1">
                             <button
                                 onClick={() => setFilter('all')}
                                 className={`px-2 py-1 rounded ${filter === 'all'
