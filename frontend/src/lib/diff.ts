@@ -4,25 +4,47 @@ export type DiffChange = {
     removed?: boolean;
 };
 
-export function normalizeText(text: string): string {
+export function normalizeText(text: any): string {
     if (!text) return '';
-    let normalized = text;
 
-    // Try to parse as JSON if it looks like a JSON object string
-    if (text.trim().startsWith('{') && text.trim().endsWith('}')) {
-        try {
-            const parsed = JSON.parse(text);
-            if (typeof parsed === 'object' && parsed !== null) {
-                // Common keys for content
-                normalized = parsed.text || parsed.content || parsed.body || text;
+    // Recursive helper to extract text from nested objects (e.g. TipTap/Quill format)
+    const extractText = (input: any): string => {
+        if (!input) return '';
+        if (typeof input === 'string') {
+            const trimmed = input.trim();
+            // If it's a string that looks like JSON, try to parse it once
+            if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+                try {
+                    const parsed = JSON.parse(trimmed);
+                    return extractText(parsed);
+                } catch (e) {
+                    return input;
+                }
             }
-        } catch (e) {
-            // Not partial JSON or malformed, continue with raw text
+            return input;
         }
-    }
+        if (Array.isArray(input)) {
+            return input.map(extractText).join('');
+        }
+        if (typeof input === 'object') {
+            // Priority keys for text content
+            if (input.text && typeof input.text === 'string') return input.text;
+            if (input.content) return extractText(input.content);
+            if (input.body) return extractText(input.body);
 
-    // Handle literal \n or \r\n characters which might appear in some db records/imports
-    // and convert them back to actual control characters for rendering
+            // If it's a TipTap-style node
+            if (input.type === 'text') return input.text || '';
+
+            // Fallback: if it's a plain object with no obvious text key, 
+            // stringifying might be better than crashing, but we want clean text.
+            return '';
+        }
+        return String(input);
+    };
+
+    const normalized = extractText(text);
+
+    // Handle literal \n or \r\n characters which might appear as strings in JSON
     return normalized
         .replace(/\\n/g, '\n')
         .replace(/\\r/g, '\r');
