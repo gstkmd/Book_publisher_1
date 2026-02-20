@@ -8,7 +8,7 @@ from app.core.time_utils import get_ist_now, ensure_ist
 from app.modules.generic.models import Content, ContentVersion, Comment, Task, TaskComment, ActivityLog, Notification
 from app.modules.core.models import User
 from app.api.deps import get_current_user, get_current_active_superuser
-from app.modules.generic.schemas import ContentSchema
+from app.modules.generic.schemas import ContentSchema, CommentSchema
 from app.modules.generic.websockets import manager
 from app.core.storage import s3_client
 
@@ -459,8 +459,7 @@ from app.modules.generic.schemas import (
     TaskCommentCreate, 
     TaskCommentSchema,
     ActivityLogSchema,
-    NotificationSchema,
-    CommentSchema
+    NotificationSchema
 )
 
 def get_link_id(link_field):
