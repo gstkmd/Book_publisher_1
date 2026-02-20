@@ -528,10 +528,10 @@ async def create_task(
         priority=task.priority,
         stage=task.stage,
         tags=task.tags,
-        due_date=task.due_date,
-        start_date=task.start_date,
+        due_date=ensure_ist(task.due_date),
+        start_date=ensure_ist(task.start_date),
         time_estimate=task.time_estimate,
-        timer_start=task.timer_start,
+        timer_start=ensure_ist(task.timer_start),
         track_time=task.track_time,
         custom_fields=task.custom_fields,
         content_id=get_link_id(task.content_id),
@@ -543,8 +543,8 @@ async def create_task(
         organization_id=task.organization_id,
         parent_task_id=get_link_id(task.parent_task_id),
         total_time=task.track_time or 0,
-        created_at=task.created_at,
-        updated_at=task.updated_at
+        created_at=ensure_ist(task.created_at),
+        updated_at=ensure_ist(task.updated_at)
     )
 
 @router.get("/tasks", response_model=list[TaskSchema])
@@ -618,10 +618,10 @@ async def get_tasks(
             priority=task.priority,
             stage=task.stage,
             tags=task.tags,
-            due_date=task.due_date,
-            start_date=task.start_date,
+            due_date=ensure_ist(task.due_date),
+            start_date=ensure_ist(task.start_date),
             time_estimate=task.time_estimate,
-            timer_start=task.timer_start,
+            timer_start=ensure_ist(task.timer_start),
             track_time=task.track_time,
             attachments=task.attachments,
             links=task.links,
@@ -635,8 +635,8 @@ async def get_tasks(
             organization_id=task.organization_id,
             parent_task_id=get_link_id(task.parent_task_id),
             total_time=total_time,
-            created_at=task.created_at,
-            updated_at=task.updated_at
+            created_at=ensure_ist(task.created_at),
+            updated_at=ensure_ist(task.updated_at)
         ))
     
     return results
@@ -784,10 +784,10 @@ async def update_task(
         priority=task.priority,
         stage=task.stage,
         tags=task.tags,
-        due_date=task.due_date,
-        start_date=task.start_date,
+        due_date=ensure_ist(task.due_date),
+        start_date=ensure_ist(task.start_date),
         time_estimate=task.time_estimate,
-        timer_start=task.timer_start,
+        timer_start=ensure_ist(task.timer_start),
         track_time=task.track_time,
         attachments=task.attachments,
         links=task.links,
@@ -799,8 +799,8 @@ async def update_task(
         organization_id=task.organization_id,
         parent_task_id=get_link_id(task.parent_task_id),
         total_time=task.track_time or 0,
-        created_at=task.created_at,
-        updated_at=task.updated_at
+        created_at=ensure_ist(task.created_at),
+        updated_at=ensure_ist(task.updated_at)
     )
 
 @router.delete("/tasks/{id}")

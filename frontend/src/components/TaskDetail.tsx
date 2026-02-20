@@ -482,7 +482,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                     </div>
 
                                     {/* Assigner (Admin/Manager Only) */}
-                                    {(user?.role === 'admin' || user?.role === 'editor_in_chief') && (
+                                    {(user?.role === 'admin' || user?.role === 'editor_in_chief' || user?.role === 'section_editor') && (
                                         <div className="flex items-center group">
                                             <div className="w-32 flex items-center gap-2 text-gray-400">
                                                 <UserIcon className="w-4 h-4 text-indigo-400" />
@@ -772,30 +772,35 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                 </div>
 
                                 {/* Delete Button (Admin Only) */}
-                                {taskId && (user?.role === 'admin' || user?.role === 'editor_in_chief') && (
-                                    <div className="pt-8 border-t border-gray-50 flex justify-end">
-                                        <button
-                                            onClick={async () => {
-                                                if (confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
-                                                    try {
-                                                        const response = await api.delete(`/generic/tasks/${taskId}`, token!);
-                                                        if (response) { // api.delete might return null on 204 or void
-                                                            onClose();
-                                                            onUpdate();
+                                {taskId && (
+                                    user?.role === 'admin' ||
+                                    user?.role === 'editor_in_chief' ||
+                                    user?.role === 'section_editor' ||
+                                    task.created_by === user?.id
+                                ) && (
+                                        <div className="pt-8 border-t border-gray-50 flex justify-end">
+                                            <button
+                                                onClick={async () => {
+                                                    if (confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+                                                        try {
+                                                            const response = await api.delete(`/generic/tasks/${taskId}`, token!);
+                                                            if (response) { // api.delete might return null on 204 or void
+                                                                onClose();
+                                                                onUpdate();
+                                                            }
+                                                        } catch (err) {
+                                                            console.error('Failed to delete task:', err);
+                                                            alert('Failed to delete task');
                                                         }
-                                                    } catch (err) {
-                                                        console.error('Failed to delete task:', err);
-                                                        alert('Failed to delete task');
                                                     }
-                                                }
-                                            }}
-                                            className="px-4 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors flex items-center gap-2 uppercase tracking-wide"
-                                        >
-                                            <X className="w-3 h-3" />
-                                            Delete Task
-                                        </button>
-                                    </div>
-                                )}
+                                                }}
+                                                className="px-4 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors flex items-center gap-2 uppercase tracking-wide"
+                                            >
+                                                <X className="w-3 h-3" />
+                                                Delete Task
+                                            </button>
+                                        </div>
+                                    )}
                             </>
 
                         ) : (
