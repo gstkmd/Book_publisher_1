@@ -171,37 +171,65 @@ export default function ContentVersionsPage() {
                                             const oldText = extractText(older.body);
                                             const newText = extractText(newer.body);
 
-                                            // Simple line-by-line diff
-                                            const oldLines = oldText.split(/[\n.!?]+/).filter(l => l.trim());
-                                            const newLines = newText.split(/[\n.!?]+/).filter(l => l.trim());
+                                            // Custom Word-Level Diff Algorithm (LCS based)
+                                            const diffWords = (oldStr: string, newStr: string) => {
+                                                const oldWords = oldStr.split(/(\s+)/); // Preserve whitespace
+                                                const newWords = newStr.split(/(\s+)/);
 
-                                            const changes: any[] = [];
-                                            const maxLen = Math.max(oldLines.length, newLines.length);
+                                                const n = oldWords.length;
+                                                const m = newWords.length;
+                                                const dp = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
 
-                                            for (let i = 0; i < maxLen; i++) {
-                                                const oldLine = oldLines[i]?.trim() || '';
-                                                const newLine = newLines[i]?.trim() || '';
-
-                                                if (oldLine !== newLine) {
-                                                    if (oldLine && !newLines.includes(oldLine)) {
-                                                        changes.push(
-                                                            <div key={`old-${i}`} className="bg-red-100 border-l-4 border-red-500 p-2 my-1">
-                                                                <span className="text-red-700">- {oldLine}</span>
-                                                            </div>
-                                                        );
-                                                    }
-                                                    if (newLine && !oldLines.includes(newLine)) {
-                                                        changes.push(
-                                                            <div key={`new-${i}`} className="bg-green-100 border-l-4 border-green-500 p-2 my-1">
-                                                                <span className="text-green-700">+ {newLine}</span>
-                                                            </div>
-                                                        );
+                                                for (let i = 1; i <= n; i++) {
+                                                    for (let j = 1; j <= m; j++) {
+                                                        if (oldWords[i - 1] === newWords[j - 1]) {
+                                                            dp[i][j] = dp[i - 1][j - 1] + 1;
+                                                        } else {
+                                                            dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                                                        }
                                                     }
                                                 }
-                                            }
 
-                                            return changes.length > 0 ? changes : (
-                                                <div className="text-gray-500 italic">Minor formatting changes only</div>
+                                                const result: any[] = [];
+                                                let i = n, j = m;
+
+                                                while (i > 0 || j > 0) {
+                                                    if (i > 0 && j > 0 && oldWords[i - 1] === newWords[j - 1]) {
+                                                        result.unshift({ type: 'unchanged', text: oldWords[i - 1] });
+                                                        i--; j--;
+                                                    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+                                                        result.unshift({ type: 'added', text: newWords[j - 1] });
+                                                        j--;
+                                                    } else {
+                                                        result.unshift({ type: 'removed', text: oldWords[i - 1] });
+                                                        i--;
+                                                    }
+                                                }
+                                                return result;
+                                            };
+
+                                            const wordDiff = diffWords(oldText, newText);
+
+                                            return (
+                                                <div className="whitespace-pre-wrap leading-relaxed transition-all">
+                                                    {wordDiff.map((part, i) => {
+                                                        if (part.type === 'added') {
+                                                            return (
+                                                                <span key={i} className="bg-green-100 text-green-800 px-0.5 rounded border-b border-green-300 font-bold mx-0.5">
+                                                                    {part.text}
+                                                                </span>
+                                                            );
+                                                        }
+                                                        if (part.type === 'removed') {
+                                                            return (
+                                                                <span key={i} className="bg-red-100 text-red-800 px-0.5 rounded border-b border-red-300 line-through opacity-70 mx-0.5">
+                                                                    {part.text}
+                                                                </span>
+                                                            );
+                                                        }
+                                                        return <span key={i}>{part.text}</span>;
+                                                    })}
+                                                </div>
                                             );
                                         })()}
                                     </div>
