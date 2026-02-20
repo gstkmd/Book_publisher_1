@@ -117,7 +117,11 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, onEdit }) => {
                                         <div className="text-right">
                                             {task.due_date && (
                                                 <div className={`text-[10px] font-bold ${new Date(task.due_date) < new Date() ? 'text-red-500' : 'text-gray-400'}`}>
-                                                    {new Date(task.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                    {new Date(task.due_date).toLocaleDateString('en-IN', {
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        timeZone: 'Asia/Kolkata'
+                                                    })}
                                                 </div>
                                             )}
                                         </div>

@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict
 from datetime import datetime, timezone
 from bson import ObjectId, DBRef
+from app.core.time_utils import get_ist_now, ensure_ist
 from app.modules.generic.models import Content, ContentVersion, Comment, Task, TaskComment, ActivityLog, Notification
 from app.modules.core.models import User
 from app.api.deps import get_current_user, get_current_active_superuser
@@ -179,7 +180,7 @@ async def update_content(id: PydanticObjectId, content_in: Content):
     content.status = content_in.status
     if content_in.organization_id:
         content.organization_id = content_in.organization_id
-    content.updated_at = datetime.now(timezone.utc)
+    content.updated_at = get_ist_now()
     await content.save()
 
     # Create new version
@@ -229,7 +230,7 @@ async def restore_version(id: PydanticObjectId, version_id: PydanticObjectId):
     
     content.title = version.title
     content.body = version.body
-    content.updated_at = datetime.now(timezone.utc)
+    content.updated_at = get_ist_now()
     await content.save()
     
     # Create a restoration version? Optional but good practice.
@@ -247,7 +248,7 @@ async def update_content_status(
         raise HTTPException(status_code=404, detail="Content not found")
         
     content.status = status
-    content.updated_at = datetime.now(timezone.utc)
+    content.updated_at = get_ist_now()
     await content.save()
     
     # Create new version to track the status change
@@ -418,7 +419,7 @@ async def share_content(
     
     if created_tasks:
         content.status = "review"
-        content.updated_at = datetime.now(timezone.utc)
+        content.updated_at = get_ist_now()
         await content.save()
     
     return {
@@ -477,12 +478,12 @@ async def create_task(
         created_by=current_user,
         assigner=current_user,
         organization_id=current_user.organization_id,
-        updated_at=datetime.now(timezone.utc)
+        updated_at=get_ist_now()
     )
     
     # Time Tracking Logic for initial stage
     if task_in.stage == "In Progress":
-        task.timer_start = datetime.now(timezone.utc)
+        task.timer_start = get_ist_now()
     
     # Handle optional fields
     if task_in.content_id:
@@ -659,11 +660,11 @@ async def update_task(
     if old_stage != task_in.stage:
         if task_in.stage == "In Progress":
             # Starting timer
-            task.timer_start = datetime.now(timezone.utc)
+            task.timer_start = get_ist_now()
         elif old_stage == "In Progress":
             # Stopping timer
             if task.timer_start:
-                delta = datetime.now(timezone.utc) - ensure_utc(task.timer_start)
+                delta = get_ist_now() - ensure_ist(task.timer_start)
                 task.track_time = (task.track_time or 0) + int(delta.total_seconds())
             task.timer_start = None
     
@@ -681,7 +682,7 @@ async def update_task(
     task.attachments = task_in.attachments or []
     task.links = task_in.links or []
     task.custom_fields = task_in.custom_fields or {}
-    task.updated_at = datetime.now(timezone.utc)
+    task.updated_at = get_ist_now()
     
     # Handle Links
     if task_in.assignee:
@@ -728,7 +729,7 @@ async def update_task(
                 content = await Content.get(content_id)
                 if content and content.status == "review":
                     content.status = "approved"
-                    content.updated_at = datetime.now(timezone.utc)
+                    content.updated_at = get_ist_now()
                     await content.save()
 
     await task.save()
@@ -796,9 +797,36 @@ async def update_task(
         assigner=get_link_id(task.assigner),
         created_by=get_link_id(task.created_by),
         organization_id=task.organization_id,
+        parent_task_id=get_link_id(task.parent_task_id),
+        total_time=task.track_time or 0,
         created_at=task.created_at,
         updated_at=task.updated_at
     )
+
+@router.delete("/tasks/{id}")
+async def delete_task(
+    id: PydanticObjectId,
+    current_user: User = Depends(get_current_user)
+):
+    task = await Task.get(id)
+    if not task or task.organization_id != current_user.organization_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Optional: Check for permissions (e.g., only admin or creator can delete)
+    if current_user.role not in ["admin", "editor_in_chief"] and task.created_by.id != current_user.id:
+         raise HTTPException(status_code=403, detail="Not authorized to delete this task")
+
+    await task.delete()
+    
+    # Broadcast deletion
+    import json
+    await manager.broadcast(
+        json.dumps({"type": "task_deleted", "taskId": str(task.id)}),
+        "tasks_list"
+    )
+    
+    return {"message": "Task deleted successfully"}
+
 
 @router.post("/tasks/{id}/comments", response_model=TaskCommentSchema)
 async def create_task_comment(

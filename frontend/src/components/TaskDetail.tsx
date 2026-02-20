@@ -458,7 +458,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                     <div className="flex items-center group">
                                         <div className="w-32 flex items-center gap-2 text-gray-400">
                                             <UserIcon className="w-4 h-4" />
-                                            <span className="text-xs font-bold uppercase tracking-wider">Assignees</span>
+                                            <span className="text-xs font-bold uppercase tracking-wider">Assignee</span>
                                         </div>
                                         <div className="flex items-center gap-2 cursor-pointer group relative">
                                             <select
@@ -481,6 +481,36 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                         </div>
                                     </div>
 
+                                    {/* Assigner (Admin/Manager Only) */}
+                                    {(user?.role === 'admin' || user?.role === 'editor_in_chief') && (
+                                        <div className="flex items-center group">
+                                            <div className="w-32 flex items-center gap-2 text-gray-400">
+                                                <UserIcon className="w-4 h-4 text-indigo-400" />
+                                                <span className="text-xs font-bold uppercase tracking-wider text-indigo-400">Assigner</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 cursor-pointer group relative">
+                                                <select
+                                                    value={task.assigner?._id || task.assigner?.id || task.assigner || ''}
+                                                    onChange={(e) => {
+                                                        const selectedId = e.target.value;
+                                                        const member = members.find(m => (m._id || m.id) === selectedId);
+                                                        handleUpdateField({
+                                                            assigner: selectedId,
+                                                            assigner_name: member?.full_name || ''
+                                                        });
+                                                    }}
+                                                    className="text-xs font-bold text-gray-700 bg-transparent border-none focus:ring-0 p-0"
+                                                >
+                                                    <option value="">Unknown</option>
+                                                    {members.map(m => (
+                                                        <option key={m._id || m.id} value={m._id || m.id}>{m.full_name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    )}
+
+
                                     {/* Dates */}
                                     <div className="flex items-center group">
                                         <div className="w-32 flex items-center gap-2 text-gray-400">
@@ -490,15 +520,23 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                         <div className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-indigo-600 cursor-pointer transition-colors">
                                             <input
                                                 type="date"
-                                                value={task.start_date ? new Date(task.start_date).toISOString().split('T')[0] : ''}
-                                                onChange={(e) => handleUpdateField('start_date', e.target.value)}
+                                                title="Start Date (IST)"
+                                                value={task.start_date ? new Date(new Date(task.start_date).toLocaleString("en-US", { timeZone: "Asia/Kolkata" })).toISOString().split('T')[0] : ''}
+                                                onChange={(e) => {
+                                                    // Send as ISO string, backend converts to IST/UTC
+                                                    handleUpdateField('start_date', e.target.valueAsDate?.toISOString())
+                                                }}
                                                 className="bg-transparent border-none focus:ring-0 p-0 text-xs font-bold w-24"
                                             />
                                             <span className="mx-1">→</span>
                                             <input
                                                 type="date"
-                                                value={task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : ''}
-                                                onChange={(e) => handleUpdateField('due_date', e.target.value)}
+                                                title="Due Date (IST)"
+                                                value={task.due_date ? new Date(new Date(task.due_date).toLocaleString("en-US", { timeZone: "Asia/Kolkata" })).toISOString().split('T')[0] : ''}
+                                                onChange={(e) => {
+                                                    // Send as ISO string
+                                                    handleUpdateField('due_date', e.target.valueAsDate?.toISOString())
+                                                }}
                                                 className="bg-transparent border-none focus:ring-0 p-0 text-xs font-bold w-24"
                                             />
                                         </div>
@@ -732,7 +770,34 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                         />
                                     </div>
                                 </div>
+
+                                {/* Delete Button (Admin Only) */}
+                                {taskId && (user?.role === 'admin' || user?.role === 'editor_in_chief') && (
+                                    <div className="pt-8 border-t border-gray-50 flex justify-end">
+                                        <button
+                                            onClick={async () => {
+                                                if (confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+                                                    try {
+                                                        const response = await api.delete(`/generic/tasks/${taskId}`, token!);
+                                                        if (response) { // api.delete might return null on 204 or void
+                                                            onClose();
+                                                            onUpdate();
+                                                        }
+                                                    } catch (err) {
+                                                        console.error('Failed to delete task:', err);
+                                                        alert('Failed to delete task');
+                                                    }
+                                                }
+                                            }}
+                                            className="px-4 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors flex items-center gap-2 uppercase tracking-wide"
+                                        >
+                                            <X className="w-3 h-3" />
+                                            Delete Task
+                                        </button>
+                                    </div>
+                                )}
                             </>
+
                         ) : (
                             <ContentReview
                                 contentId={task.content_id?._id || task.content_id?.id || task.content_id}

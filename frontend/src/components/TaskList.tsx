@@ -133,7 +133,12 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit }) => {
                                 <td className="py-4 px-6 align-top">
                                     {task.due_date ? (
                                         <div className={`text-sm font-medium ${new Date(task.due_date) < new Date() ? 'text-red-600' : 'text-gray-600'}`}>
-                                            {new Date(task.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            {new Date(task.due_date).toLocaleDateString('en-IN', {
+                                                month: 'short',
+                                                day: 'numeric',
+                                                year: 'numeric',
+                                                timeZone: 'Asia/Kolkata'
+                                            })}
                                         </div>
                                     ) : (
                                         <span className="text-sm text-gray-300">-</span>

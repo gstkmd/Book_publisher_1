@@ -48,7 +48,7 @@ export const TaskManager = () => {
 
     const fetchMembers = async () => {
         try {
-            const data = await api.get('/core/members', token!);
+            const data = await api.get('/organizations/members', token!);
             setMembers(data);
         } catch (err) {
             console.error('Failed to fetch members:', err);
