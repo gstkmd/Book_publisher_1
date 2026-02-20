@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { UserAvatar } from './UserAvatar';
 
 interface Comment {
     id?: string;
@@ -12,6 +13,7 @@ interface Comment {
     text: string;
     selection_range?: { from: number; to: number };
     author: any;
+    author_name?: string;
     resolved: boolean;
     created_at: string;
 }
@@ -384,21 +386,28 @@ export default function ContentReview({
                                     } ${comment.resolved ? 'opacity-60' : ''}`}
                             >
                                 <div className="flex items-start justify-between mb-2">
-                                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">
-                                        {new Date(comment.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">
+                                            {new Date(comment.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        </div>
                                     </div>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            toggleResolve((comment.id || comment._id)!, comment.resolved);
-                                        }}
-                                        className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border transition-colors ${comment.resolved
-                                            ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
-                                            : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
-                                            }`}
-                                    >
-                                        {comment.resolved ? '✓ Resolved' : 'Resolve'}
-                                    </button>
+                                    <div className="flex items-center gap-2 mb-2 mt-1">
+                                        <UserAvatar name={comment.author_name || 'Unknown'} size="xs" />
+                                        <span className="text-xs font-bold text-gray-700">{comment.author_name || 'Unknown'}</span>
+                                        <div className="flex-1"></div>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleResolve((comment.id || comment._id)!, comment.resolved);
+                                            }}
+                                            className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border transition-colors ${comment.resolved
+                                                ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                                                : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                                                }`}
+                                        >
+                                            {comment.resolved ? '✓ Resolved' : 'Resolve'}
+                                        </button>
+                                    </div>
                                 </div>
                                 <p className={`text-sm text-gray-700 leading-snug ${comment.resolved ? 'line-through' : ''}`}>
                                     {comment.text}

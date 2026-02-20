@@ -327,12 +327,35 @@ async def create_comment(req: CreateCommentRequest):
 
     return comment
 
-@router.get("/content/{id}/comments", response_model=List[Comment])
+@router.get("/content/{id}/comments", response_model=List[CommentSchema])
 async def get_content_comments(id: PydanticObjectId):
     """Fetch comments for content with reliable filtering"""
     try:
         # Use Beanie's native filtering which is optimized for Link fields
-        return await Comment.find(Comment.content_id.id == id).to_list()
+        comments = await Comment.find(Comment.content_id.id == id).to_list()
+        
+        results = []
+        for comment in comments:
+            author_name = "Unknown"
+            author_id = str(comment.author.ref.id) if comment.author and hasattr(comment.author, 'ref') else str(comment.author)
+            
+            if comment.author:
+                u = await User.get(get_link_id(comment.author))
+                if u: 
+                    author_name = u.full_name
+            
+            results.append(CommentSchema(
+                id=str(comment.id),
+                content_id=str(comment.content_id.ref.id) if comment.content_id and hasattr(comment.content_id, 'ref') else str(comment.content_id),
+                text=comment.text,
+                selection_range=comment.selection_range,
+                resolved=comment.resolved,
+                author=author_id,
+                author_name=author_name,
+                created_at=ensure_ist(comment.created_at)
+            ))
+            
+        return results
     except Exception as e:
         print(f"DEBUG: Error fetching comments for {id}: {e}")
         return []
@@ -436,7 +459,8 @@ from app.modules.generic.schemas import (
     TaskCommentCreate, 
     TaskCommentSchema,
     ActivityLogSchema,
-    NotificationSchema
+    NotificationSchema,
+    CommentSchema
 )
 
 def get_link_id(link_field):

@@ -94,3 +94,15 @@ class ContentSchema(BaseModel):
     pending_reviewers: Optional[List[str]] = []
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+class CommentSchema(BaseModel):
+    id: str
+    content_id: str
+    text: str
+    selection_range: Optional[Dict] = None
+    resolved: bool
+    author: str
+    author_name: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

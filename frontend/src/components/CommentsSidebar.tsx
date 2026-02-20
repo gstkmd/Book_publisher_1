@@ -3,12 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { UserAvatar } from './UserAvatar';
 
 interface Comment {
     id?: string;
     _id?: string;
     text: string;
     author: any; // In real app, User type
+    author_name?: string;
     created_at: string;
     resolved: boolean;
 }
@@ -87,10 +89,14 @@ export const CommentsSidebar: React.FC<CommentsSidebarProps> = ({ documentId, ws
                 {comments.length === 0 && <p className="text-gray-400 italic text-sm">No comments yet.</p>}
                 {comments.map((c) => (
                     <div key={c.id || c._id} className="bg-white p-3 rounded shadow-sm border text-sm">
-                        <p className="mb-2">{c.text}</p>
+                        <div className="flex items-center gap-2 mb-2">
+                            <UserAvatar name={c.author_name || 'Unknown'} size="xs" />
+                            <span className="text-xs font-bold text-gray-700">{c.author_name || 'Unknown'}</span>
+                            <span className="text-[10px] text-gray-400 ml-auto">{new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <p className="mb-2 text-gray-800">{c.text}</p>
                         <div className="text-xs text-gray-400 flex justify-between">
-                            <span>{new Date(c.created_at).toLocaleString()}</span>
-                            {/* <span>{c.author?.email}</span> */}
+                            <span>{new Date(c.created_at).toLocaleDateString()}</span>
                         </div>
                     </div>
                 ))}

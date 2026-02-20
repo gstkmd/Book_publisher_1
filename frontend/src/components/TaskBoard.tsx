@@ -1,5 +1,6 @@
 import React from 'react';
 import { MoreHorizontal, MessageSquare, Clock, Plus } from 'lucide-react';
+import { UserAvatar } from './UserAvatar';
 
 interface Task {
     id: string;
@@ -100,12 +101,7 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, onEdit }) => {
                                     <div className="flex items-center justify-between pt-3 border-t border-gray-50 mt-3">
                                         <div className="flex items-center gap-2">
                                             {task.assignee_name ? (
-                                                <div
-                                                    className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold"
-                                                    title={`Assigned to ${task.assignee_name}`}
-                                                >
-                                                    {task.assignee_name.charAt(0)}
-                                                </div>
+                                                <UserAvatar name={task.assignee_name} size="xs" />
                                             ) : (
                                                 <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
                                                     <span className="sr-only">Unassigned</span>

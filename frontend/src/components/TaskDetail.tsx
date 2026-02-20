@@ -27,6 +27,7 @@ import {
     MessageSquare
 } from 'lucide-react';
 import ContentReview from './ContentReview';
+import { UserAvatar } from './UserAvatar';
 
 interface TaskDetailProps {
     taskId?: string;
@@ -461,6 +462,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                             <span className="text-xs font-bold uppercase tracking-wider">Assignee</span>
                                         </div>
                                         <div className="flex items-center gap-2 cursor-pointer group relative">
+                                            {task.assignee_name && <UserAvatar name={task.assignee_name} size="xs" />}
                                             <select
                                                 value={task.assignee?._id || task.assignee?.id || task.assignee || ''}
                                                 onChange={(e) => {
@@ -489,6 +491,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                                 <span className="text-xs font-bold uppercase tracking-wider text-indigo-400">Assigner</span>
                                             </div>
                                             <div className="flex items-center gap-2 cursor-pointer group relative">
+                                                {task.assigner_name && <UserAvatar name={task.assigner_name} size="xs" />}
                                                 <select
                                                     value={task.assigner?._id || task.assigner?.id || task.assigner || ''}
                                                     onChange={(e) => {
@@ -831,9 +834,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                         {feed.map((item: any, idx: number) => (
                             item.feedType === 'activity' ? (
                                 <div key={`activity-${item.id}`} className="flex gap-4">
-                                    <div className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-gray-500">
-                                        {item.user_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
-                                    </div>
+                                    <UserAvatar name={item.user_name} size="md" className="border-2 border-white flex-shrink-0" />
                                     <div className="space-y-1">
                                         <p className="text-xs text-gray-500">
                                             <span className="font-bold text-gray-700 mr-1">{item.user_name === user?.full_name ? 'You' : item.user_name}</span>
@@ -848,9 +849,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                 </div>
                             ) : (
                                 <div key={`comment-${item.id}`} className="flex gap-4 group">
-                                    <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] text-white font-bold flex-shrink-0">
-                                        {item.author_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
-                                    </div>
+                                    <UserAvatar name={item.author_name} size="md" className="flex-shrink-0" />
                                     <div className="space-y-1.5 flex-1">
                                         <div className="flex items-center justify-between">
                                             <span className="text-xs font-bold text-gray-900">{item.author_name}</span>

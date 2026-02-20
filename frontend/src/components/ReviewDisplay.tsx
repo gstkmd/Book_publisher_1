@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
+import { UserAvatar } from './UserAvatar';
 
 interface Comment {
     id?: string;
@@ -10,6 +11,7 @@ interface Comment {
     text: string;
     selection_range?: { from: number; to: number };
     author: any;
+    author_name?: string;
     resolved: boolean;
     created_at: string;
 }
@@ -291,14 +293,20 @@ export const ReviewDisplay: React.FC<ReviewDisplayProps> = ({ contentId, onClose
                                 className={`border rounded p-3 text-sm cursor-pointer transition-colors ${selectedCommentId === (comment.id || comment._id) ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-400' : 'border-gray-200 hover:border-blue-300'
                                     } ${comment.resolved ? 'opacity-60' : ''}`}
                             >
-                                <div className="flex justify-between mb-1">
-                                    <span className="text-xs text-gray-500">{new Date(comment.created_at).toLocaleString()}</span>
+                                <div className="flex justify-between mb-1 items-start">
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-2">
+                                            <UserAvatar name={comment.author_name || 'Unknown'} size="xs" />
+                                            <span className="text-xs font-bold text-gray-700">{comment.author_name || 'Unknown'}</span>
+                                        </div>
+                                        <span className="text-[10px] text-gray-400">{new Date(comment.created_at).toLocaleString()}</span>
+                                    </div>
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             toggleResolve((comment.id || comment._id)!, comment.resolved);
                                         }}
-                                        className="text-xs text-blue-600 hover:underline"
+                                        className="text-[10px] text-blue-600 hover:underline whitespace-nowrap ml-2"
                                     >
                                         {comment.resolved ? 'Mark Unresolved' : 'Mark Resolved'}
                                     </button>

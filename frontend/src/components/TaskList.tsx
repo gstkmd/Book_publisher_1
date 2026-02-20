@@ -1,5 +1,6 @@
 import React from 'react';
 import { MoreHorizontal, MessageSquare, Clock } from 'lucide-react';
+import { UserAvatar } from './UserAvatar';
 
 interface Task {
     id: string;
@@ -121,9 +122,7 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit }) => {
                                 <td className="py-4 px-6 align-top">
                                     {task.assignee_name ? (
                                         <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">
-                                                {task.assignee_name.charAt(0)}
-                                            </div>
+                                            <UserAvatar name={task.assignee_name} size="sm" />
                                             <span className="text-sm font-medium text-gray-700">{task.assignee_name}</span>
                                         </div>
                                     ) : (
