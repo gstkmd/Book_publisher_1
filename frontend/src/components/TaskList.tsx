@@ -73,7 +73,7 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit }) => {
                             <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-widest">Status</th>
                             <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-widest">Assignee</th>
                             <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-widest">Due Date</th>
-                            <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                            {/* Actions column removed */}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -144,11 +144,7 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit }) => {
                                         <span className="text-sm text-gray-300">-</span>
                                     )}
                                 </td>
-                                <td className="py-4 px-6 align-top text-right">
-                                    <button className="text-gray-300 hover:text-indigo-600 p-2 hover:bg-indigo-50 rounded-lg transition-all">
-                                        <MoreHorizontal className="w-5 h-5" />
-                                    </button>
-                                </td>
+                                {/* Actions column removed */}
                             </tr>
                         ))}
                     </tbody>
