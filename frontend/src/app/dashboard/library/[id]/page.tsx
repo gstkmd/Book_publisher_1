@@ -61,13 +61,8 @@ export default function ContentDetailPage() {
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
             <div className="bg-white border-b px-6 py-4 flex items-center justify-between sticky top-0 z-20">
-                <button
-                    onClick={() => router.push('/dashboard/library')}
-                    className="flex items-center gap-2 text-gray-400 hover:text-indigo-600 transition-colors font-bold uppercase tracking-widest text-xs"
-                >
-                    <ChevronLeft className="w-4 h-4" />
-                    Back to Library
-                </button>
+                <div></div> {/* Spacer to keep the Edit button on the right */}
+
                 <div className="flex items-center gap-3">
                     <Link
                         href={`/dashboard/editor/${id}`}
