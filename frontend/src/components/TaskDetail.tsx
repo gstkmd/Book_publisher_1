@@ -336,7 +336,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
     };
 
     if (loading) return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/20 backdrop-blur-sm">
+        <div className="flex items-center justify-center h-screen bg-gray-50">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         </div>
     );
@@ -344,8 +344,8 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
     if (!task) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-[2px] p-4">
-            <div className="bg-white w-full max-w-[1200px] h-[90vh] rounded-2xl shadow-2xl flex overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div className="w-full bg-white rounded-2xl shadow-sm flex flex-col overflow-hidden animate-in fade-in duration-300 min-h-screen">
+            <div className="flex flex-1 overflow-hidden">
 
                 {/* Left Section: Task Info */}
                 <div className="flex-1 overflow-y-auto border-r border-gray-100 flex flex-col bg-white">
@@ -413,9 +413,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                 Create Task
                             </button>
                         )}
-                        <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all">
-                            <X className="w-6 h-6" />
-                        </button>
+                        {/* Close button removed as we use navigation */}
                     </div>
 
                     <div className="p-8 space-y-8">
@@ -774,36 +772,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                     </div>
                                 </div>
 
-                                {/* Delete Button (Admin Only) */}
-                                {taskId && (
-                                    user?.role === 'admin' ||
-                                    user?.role === 'editor_in_chief' ||
-                                    user?.role === 'section_editor' ||
-                                    task.created_by === user?.id
-                                ) && (
-                                        <div className="pt-8 border-t border-gray-50 flex justify-end">
-                                            <button
-                                                onClick={async () => {
-                                                    if (confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
-                                                        try {
-                                                            const response = await api.delete(`/generic/tasks/${taskId}`, token!);
-                                                            if (response) { // api.delete might return null on 204 or void
-                                                                onClose();
-                                                                onUpdate();
-                                                            }
-                                                        } catch (err) {
-                                                            console.error('Failed to delete task:', err);
-                                                            alert('Failed to delete task');
-                                                        }
-                                                    }
-                                                }}
-                                                className="px-4 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors flex items-center gap-2 uppercase tracking-wide"
-                                            >
-                                                <X className="w-3 h-3" />
-                                                Delete Task
-                                            </button>
-                                        </div>
-                                    )}
+
                             </>
 
                         ) : (

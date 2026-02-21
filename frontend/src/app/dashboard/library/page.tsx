@@ -292,7 +292,12 @@ export default function ContentLibrary() {
                             {filteredContent.map((c) => (
                                 <tr key={c._id || Math.random()} className="border-b hover:bg-gray-50 transition">
                                     <td className="px-6 py-4">
-                                        <div className="font-medium text-gray-900">{c.title || 'Untitled'}</div>
+                                        <Link
+                                            href={`/dashboard/library/${c.id || c._id}`}
+                                            className="font-black text-gray-900 hover:text-indigo-600 transition-colors uppercase tracking-tight"
+                                        >
+                                            {c.title || 'Untitled'}
+                                        </Link>
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className="text-sm text-gray-600">{getTypeLabel(c.type)}</span>

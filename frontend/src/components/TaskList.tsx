@@ -1,5 +1,5 @@
 import React from 'react';
-import { MoreHorizontal, MessageSquare, Clock } from 'lucide-react';
+import { Trash2, MessageSquare, Clock } from 'lucide-react';
 import { UserAvatar } from './UserAvatar';
 
 interface Task {
@@ -23,9 +23,10 @@ interface Task {
 interface TaskListProps {
     tasks: Task[];
     onEdit: (task: Task) => void;
+    onDelete: (taskId: string) => void;
 }
 
-export const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit }) => {
+export const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit, onDelete }) => {
     const getPriorityColor = (priority: string) => {
         switch (priority) {
             case 'urgent': return 'bg-red-50 text-red-700 ring-1 ring-red-600/20';
@@ -74,7 +75,7 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit }) => {
                             <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-widest">Status</th>
                             <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-widest">Assignee</th>
                             <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-widest">Due Date</th>
-                            {/* Actions column removed */}
+                            <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -143,7 +144,19 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit }) => {
                                         <span className="text-sm text-gray-300">-</span>
                                     )}
                                 </td>
-                                {/* Actions column removed */}
+                                <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm('Are you sure you want to delete this task?')) {
+                                                onDelete(task.id);
+                                            }
+                                        }}
+                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        title="Delete Task"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>

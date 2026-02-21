@@ -7,6 +7,7 @@ import { TaskDetail } from './TaskDetail';
 import { Plus, LayoutList, LayoutGrid, Filter, Search } from 'lucide-react';
 import { TaskList } from './TaskList';
 import { TaskBoard } from './TaskBoard';
+import { useRouter } from 'next/navigation';
 
 interface Task {
     id: string;
@@ -30,6 +31,7 @@ export const TaskManager = () => {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const { token, user } = useAuth();
+    const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
 
@@ -100,6 +102,16 @@ export const TaskManager = () => {
             console.error('Fetch tasks failed:', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteTask = async (taskId: string) => {
+        try {
+            await api.delete(`/generic/tasks/${taskId}`, token!);
+            setTasks(tasks.filter(t => t.id !== taskId));
+        } catch (err) {
+            console.error('Failed to delete task:', err);
+            alert('Failed to delete task');
         }
     };
 
@@ -175,7 +187,7 @@ export const TaskManager = () => {
                     )}
 
                     <button
-                        onClick={() => setEditingTask({ id: '' } as Task)}
+                        onClick={() => router.push('/dashboard/tasks/new')}
                         className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-sm flex items-center gap-2 shadow-lg shadow-indigo-200 transition-all active:scale-95"
                     >
                         <Plus className="w-4 h-4" />
@@ -192,21 +204,14 @@ export const TaskManager = () => {
             ) : (
                 <>
                     {viewMode === 'list' ? (
-                        <TaskList tasks={tasks} onEdit={setEditingTask} />
+                        <TaskList tasks={tasks} onEdit={(task) => router.push(`/dashboard/tasks/${task.id}`)} onDelete={handleDeleteTask} />
                     ) : (
-                        <TaskBoard tasks={tasks} onEdit={setEditingTask} />
+                        <TaskBoard tasks={tasks} onEdit={(task) => router.push(`/dashboard/tasks/${task.id}`)} />
                     )}
                 </>
             )}
 
-            {/* Task Detail View */}
-            {editingTask && (
-                <TaskDetail
-                    taskId={editingTask.id || undefined}
-                    onClose={() => setEditingTask(null)}
-                    onUpdate={fetchTasks}
-                />
-            )}
+            {/* Modal removed in favor of page-based navigation */}
         </div>
     );
 };
