@@ -350,7 +350,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                 {/* Left Section: Task Info */}
                 <div className="flex-1 overflow-y-auto border-r border-gray-100 flex flex-col bg-white">
                     {/* Header */}
-                    <div className="p-6 border-b border-gray-50 flex items-center justify-between sticky top-0 bg-white z-10">
+                    <div className="p-4 border-b border-gray-50 flex items-center justify-between sticky top-0 bg-white z-10">
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors">
                                 <span className="w-2 h-2 rounded-full bg-gray-400"></span>
@@ -416,25 +416,25 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                         {/* Close button removed as we use navigation */}
                     </div>
 
-                    <div className="p-8 space-y-8">
+                    <div className="p-6 space-y-4">
                         {activeTab === 'details' ? (
                             <>
                                 {/* Title */}
-                                <div className="space-y-4">
+                                <div>
                                     <input
                                         type="text"
                                         value={task.title}
                                         onChange={(e) => handleUpdateField('title', e.target.value)}
-                                        className="text-4xl font-extrabold text-gray-900 w-full border-none focus:ring-0 p-0 placeholder:text-gray-200"
+                                        className="text-2xl font-extrabold text-gray-900 w-full border-none focus:ring-0 p-0 placeholder:text-gray-200"
                                         placeholder="Task Title"
                                     />
                                 </div>
 
                                 {/* Metadata Grid */}
-                                <div className="grid grid-cols-2 gap-y-6 gap-x-12">
+                                <div className="grid grid-cols-3 gap-y-3 gap-x-8">
                                     {/* Status */}
                                     <div className="flex items-center group">
-                                        <div className="w-32 flex items-center gap-2 text-gray-400">
+                                        <div className="w-24 flex items-center gap-2 text-gray-400">
                                             <CheckCircle2 className="w-4 h-4" />
                                             <span className="text-xs font-bold uppercase tracking-wider">Status</span>
                                         </div>
@@ -455,7 +455,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
 
                                     {/* Assignees */}
                                     <div className="flex items-center group">
-                                        <div className="w-32 flex items-center gap-2 text-gray-400">
+                                        <div className="w-24 flex items-center gap-2 text-gray-400">
                                             <UserIcon className="w-4 h-4" />
                                             <span className="text-xs font-bold uppercase tracking-wider">Assignee</span>
                                         </div>
@@ -484,7 +484,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                     {/* Assigner (Admin/Manager Only) */}
                                     {(user?.role === 'admin' || user?.role === 'editor_in_chief' || user?.role === 'section_editor') && (
                                         <div className="flex items-center group">
-                                            <div className="w-32 flex items-center gap-2 text-gray-400">
+                                            <div className="w-24 flex items-center gap-2 text-gray-400">
                                                 <UserIcon className="w-4 h-4 text-indigo-400" />
                                                 <span className="text-xs font-bold uppercase tracking-wider text-indigo-400">Assigner</span>
                                             </div>
@@ -514,7 +514,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
 
                                     {/* Dates */}
                                     <div className="flex items-center group">
-                                        <div className="w-32 flex items-center gap-2 text-gray-400">
+                                        <div className="w-24 flex items-center gap-2 text-gray-400">
                                             <Calendar className="w-4 h-4" />
                                             <span className="text-xs font-bold uppercase tracking-wider">Dates</span>
                                         </div>
@@ -545,7 +545,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
 
                                     {/* Priority */}
                                     <div className="flex items-center group">
-                                        <div className="w-32 flex items-center gap-2 text-gray-400">
+                                        <div className="w-24 flex items-center gap-2 text-gray-400">
                                             <Flag className="w-4 h-4" />
                                             <span className="text-xs font-bold uppercase tracking-wider">Priority</span>
                                         </div>
@@ -566,7 +566,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
 
                                     {/* Time Estimate */}
                                     <div className="flex items-center group">
-                                        <div className="w-32 flex items-center gap-2 text-gray-400">
+                                        <div className="w-24 flex items-center gap-2 text-gray-400">
                                             <Clock className="w-4 h-4" />
                                             <span className="text-xs font-bold uppercase tracking-wider">Time estimate</span>
                                         </div>
@@ -592,7 +592,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
 
                                     {/* Track Time */}
                                     <div className="flex items-center group">
-                                        <div className="w-32 flex items-center gap-2 text-gray-400">
+                                        <div className="w-24 flex items-center gap-2 text-gray-400">
                                             <Play className="w-4 h-4" />
                                             <span className="text-xs font-bold uppercase tracking-wider">Track time</span>
                                         </div>
@@ -610,7 +610,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
 
                                     {/* Tags */}
                                     <div className="flex items-center group">
-                                        <div className="w-32 flex items-center gap-2 text-gray-400">
+                                        <div className="w-24 flex items-center gap-2 text-gray-400">
                                             <Tag className="w-4 h-4" />
                                             <span className="text-xs font-bold uppercase tracking-wider">Tags</span>
                                         </div>
@@ -636,8 +636,8 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                     </div>
 
                                     {/* Linked Content */}
-                                    <div className="flex items-center group col-span-2 border-t border-gray-50 pt-4 mt-2">
-                                        <div className="w-32 flex items-center gap-2 text-gray-400">
+                                    <div className="flex items-center group col-span-3 border-t border-gray-50 pt-2 mt-1">
+                                        <div className="w-24 flex items-center gap-2 text-gray-400">
                                             <FileText className="w-4 h-4" />
                                             <span className="text-xs font-bold uppercase tracking-wider">Linked Content</span>
                                         </div>
@@ -658,7 +658,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                 </div>
 
                                 {/* Attachments & Links */}
-                                <div className="grid grid-cols-2 gap-8 pt-4 border-t border-gray-50">
+                                <div className="grid grid-cols-2 gap-8 pt-2 border-t border-gray-50">
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2 text-gray-400">
@@ -760,13 +760,13 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                 </div>
 
                                 {/* Description */}
-                                <div className="space-y-4 pt-4 border-t border-gray-50">
+                                <div className="space-y-4 pt-2 border-t border-gray-50">
                                     <div className="flex flex-col gap-2">
                                         <span className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Description</span>
                                         <textarea
                                             value={task.description}
                                             onChange={(e) => handleUpdateField('description', e.target.value)}
-                                            className="w-full border border-gray-100 rounded-xl p-4 text-sm leading-relaxed text-gray-600 min-h-[150px] placeholder:text-gray-300 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none bg-gray-50/10"
+                                            className="w-full border border-gray-100 rounded-xl p-4 text-sm leading-relaxed text-gray-600 min-h-[100px] placeholder:text-gray-300 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none bg-gray-50/10"
                                             placeholder="Add a more detailed description..."
                                         />
                                     </div>
@@ -786,8 +786,8 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                 </div>
 
                 {/* Right Section: Activity Feed */}
-                <div className="w-[400px] flex flex-col bg-gray-50/50">
-                    <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white">
+                <div className="w-[320px] flex flex-col bg-gray-50/50">
+                    <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white">
                         <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Activity</h3>
                         <div className="flex items-center gap-3">
                             <Search className="w-4 h-4 text-gray-400" />
