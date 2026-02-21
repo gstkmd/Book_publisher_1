@@ -26,17 +26,7 @@ export default function DashboardLayout({
                             </span>
                         </Link>
 
-                        {!isMainDashboard && (
-                            <button
-                                onClick={() => router.push('/dashboard')}
-                                className="hidden sm:flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-indigo-600 transition-colors py-1 px-3 rounded-full hover:bg-indigo-50"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                </svg>
-                                Back to Dashboard
-                            </button>
-                        )}
+
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -62,16 +52,7 @@ export default function DashboardLayout({
             </header>
 
             {/* Mobile Back Button (Floating) */}
-            {!isMainDashboard && (
-                <button
-                    onClick={() => router.push('/dashboard')}
-                    className="sm:hidden fixed bottom-6 right-6 z-50 bg-indigo-600 text-white w-12 h-12 rounded-full shadow-2xl flex items-center justify-center active:scale-95 transition-transform"
-                >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                </button>
-            )}
+
 
             {/* Main Content */}
             <main className="flex-1">
