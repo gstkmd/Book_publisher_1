@@ -8,6 +8,7 @@ from app.api.api_v1.endpoints.auth import router as auth_router
 
 from app.api.api_v1.endpoints import sso
 from app.api.api_v1.endpoints import monitoring
+from app.modules.generic import integrity_endpoints
 from app.api.api_v1.endpoints import timesheet
 from app.modules.generic import rights_endpoints
 
@@ -27,5 +28,6 @@ api_router.include_router(timesheet.router, prefix="/timesheets", tags=["timeshe
 api_router.include_router(timesheet.router, prefix="/monitoring/timesheet", tags=["timesheet"])
 api_router.include_router(timesheet.router, prefix="/monitoring/time-sheet", tags=["timesheet"])
 api_router.include_router(rights_endpoints.router, prefix="/rights", tags=["rights"])
+api_router.include_router(integrity_endpoints.router, prefix="/integrity", tags=["integrity"])
 
 
