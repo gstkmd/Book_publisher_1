@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { api } from '@/lib/api';
 import { RichTextEditor } from '@/components/RichTextEditor';
 import Link from 'next/link';
@@ -19,7 +19,7 @@ interface Comment {
 
 import { ReviewDisplay } from '@/components/ReviewDisplay';
 
-export default function EditorEditPage() {
+function EditorEditContent() {
     const { user, isLoading, token } = useAuth();
     const router = useRouter();
     const params = useParams();
@@ -355,5 +355,13 @@ export default function EditorEditPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function EditorEditPage() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading editor...</div>}>
+            <EditorEditContent />
+        </Suspense>
     );
 }

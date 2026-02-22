@@ -2,11 +2,11 @@
 
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { api } from '@/lib/api';
 import { RichTextEditor } from '@/components/RichTextEditor';
 
-export default function EditorNewPage() {
+function EditorNewContent() {
     const { user, isLoading, token } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -217,5 +217,13 @@ export default function EditorNewPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function EditorNewPage() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading editor...</div>}>
+            <EditorNewContent />
+        </Suspense>
     );
 }
