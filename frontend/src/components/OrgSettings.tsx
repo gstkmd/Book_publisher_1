@@ -13,6 +13,8 @@ export const OrgSettings = () => {
     const [error, setError] = useState(''); // NEW: Error state
     const [contentSettings, setContentSettings] = useState<any>({
         labels: { title: 'Title', body: 'Content' },
+        titleOptions: '',
+        contentTypeOptions: 'article, book_chapter, lesson, resource',
         customFields: []
     });
 
@@ -35,6 +37,8 @@ export const OrgSettings = () => {
                 if (data.content_settings) {
                     setContentSettings({
                         labels: data.content_settings.labels || { title: 'Title', body: 'Content' },
+                        titleOptions: data.content_settings.titleOptions || '',
+                        contentTypeOptions: data.content_settings.contentTypeOptions || 'article, book_chapter, lesson, resource',
                         customFields: data.content_settings.customFields || []
                     });
                 }
@@ -186,12 +190,20 @@ export const OrgSettings = () => {
             </div>
 
             <div className="bg-white p-6 rounded-lg shadow">
-                <h2 className="text-xl font-bold mb-4">Content Form Configuration</h2>
-                <p className="text-sm text-gray-600 mb-6">Customize labels and add specific fields for your organization's content.</p>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold">Content Form Configuration</h2>
+                    <a
+                        href="/dashboard/settings/mappings"
+                        className="text-sm bg-purple-50 text-purple-600 px-4 py-2 rounded-lg border border-purple-200 hover:bg-purple-100 font-medium transition-colors"
+                    >
+                        Manage Preset Mappings →
+                    </a>
+                </div>
+                <p className="text-sm text-gray-600 mb-6">Customize labels, define content types, and provide ready-made suggestions for your organization's content forms.</p>
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
                     <div>
-                        <label className="block text-sm font-medium mb-1">Title Label (e.g., Book Name)</label>
+                        <label className="block text-sm font-medium mb-1">{contentSettings.labels.title} Label</label>
                         <input
                             type="text"
                             value={contentSettings.labels.title}
@@ -203,13 +215,39 @@ export const OrgSettings = () => {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium mb-1">Body Label (e.g., Content)</label>
+                        <label className="block text-sm font-medium mb-1">{contentSettings.labels.title} Options (comma separated)</label>
+                        <input
+                            type="text"
+                            value={contentSettings.titleOptions}
+                            placeholder="e.g. Science Part 1, Science Part 2"
+                            onChange={e => setContentSettings({
+                                ...contentSettings,
+                                titleOptions: e.target.value
+                            })}
+                            className="w-full p-2 border rounded text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Body (Content) Label</label>
                         <input
                             type="text"
                             value={contentSettings.labels.body}
                             onChange={e => setContentSettings({
                                 ...contentSettings,
                                 labels: { ...contentSettings.labels, body: e.target.value }
+                            })}
+                            className="w-full p-2 border rounded text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Allowed Content Types (comma separated)</label>
+                        <input
+                            type="text"
+                            value={contentSettings.contentTypeOptions}
+                            placeholder="e.g. Main Book, Supplementary, Worksheet"
+                            onChange={e => setContentSettings({
+                                ...contentSettings,
+                                contentTypeOptions: e.target.value
                             })}
                             className="w-full p-2 border rounded text-sm"
                         />
@@ -284,6 +322,6 @@ export const OrgSettings = () => {
                     {loading ? 'Saving...' : 'Save Organization Settings'}
                 </button>
             </div>
-        </div>
+        </div >
     );
 };

@@ -62,6 +62,25 @@ export default function EditorEditPage() {
         }
     };
 
+    // Auto-fill logic based on title mappings
+    useEffect(() => {
+        if (orgSettings?.mappings && title) {
+            const mapping = orgSettings.mappings.find((m: any) => m.trigger === title);
+            if (mapping) {
+                if (mapping.fields.type) setType(mapping.fields.type);
+
+                // Merge other fields into customValues
+                const newValues = { ...customValues };
+                Object.keys(mapping.fields).forEach(key => {
+                    if (key !== 'type') {
+                        newValues[key] = mapping.fields[key];
+                    }
+                });
+                setCustomValues(newValues);
+            }
+        }
+    }, [title, orgSettings]);
+
     const fetchContent = async () => {
         try {
             const data = await api.get(`/generic/content/${contentId}`, token!);
@@ -215,11 +234,19 @@ export default function EditorEditPage() {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">{labels.title} *</label>
                                 <input
                                     type="text"
+                                    list="title-options"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     placeholder={`Enter ${labels.title.toLowerCase()}...`}
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
                                 />
+                                {orgSettings?.titleOptions && (
+                                    <datalist id="title-options">
+                                        {orgSettings.titleOptions.split(',').map((opt: string) => (
+                                            <option key={opt.trim()} value={opt.trim()} />
+                                        ))}
+                                    </datalist>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -230,10 +257,20 @@ export default function EditorEditPage() {
                                         value={type}
                                         onChange={(e) => setType(e.target.value)}
                                     >
-                                        <option value="article">Article</option>
-                                        <option value="book_chapter">Textbook Chapter</option>
-                                        <option value="lesson">Lesson</option>
-                                        <option value="resource">Activity</option>
+                                        {orgSettings?.contentTypeOptions ? (
+                                            orgSettings.contentTypeOptions.split(',').map((opt: string) => (
+                                                <option key={opt.trim()} value={opt.trim().toLowerCase()}>
+                                                    {opt.trim()}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <>
+                                                <option value="article">Article</option>
+                                                <option value="book_chapter">Textbook Chapter</option>
+                                                <option value="lesson">Lesson</option>
+                                                <option value="resource">Activity</option>
+                                            </>
+                                        )}
                                     </select>
                                 </div>
                                 {/* Custom Fields */}
