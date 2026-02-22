@@ -106,3 +106,8 @@ class CommentSchema(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class ActiveTaskStatus(BaseModel):
+    active_count: int
+    last_activity_at: Optional[datetime] = None
+    server_time: datetime

@@ -459,7 +459,8 @@ from app.modules.generic.schemas import (
     TaskCommentCreate, 
     TaskCommentSchema,
     ActivityLogSchema,
-    NotificationSchema
+    NotificationSchema,
+    ActiveTaskStatus
 )
 
 def get_link_id(link_field):
@@ -477,6 +478,51 @@ def ensure_utc(dt):
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
+
+async def revert_other_in_progress_tasks(user: User, current_task_id: Optional[PydanticObjectId] = None):
+    """
+    Ensure only one task is in progress for a user.
+    Moves other 'In Progress' tasks to 'To Do' and stops their timers.
+    """
+    query = {
+        Task.assignee.id: user.id,
+        Task.stage: "In Progress",
+    }
+    if current_task_id:
+        query[Task.id] = {"$ne": current_task_id}
+    
+    other_tasks = await Task.find(query).to_list()
+    
+    for t in other_tasks:
+        t.stage = "To Do"
+        # Stop timer if running
+        if t.timer_start:
+            delta = get_ist_now() - ensure_ist(t.timer_start)
+            t.track_time = (t.track_time or 0) + int(delta.total_seconds())
+            t.timer_start = None
+        t.updated_at = get_ist_now()
+        await t.save()
+        
+        # Log activity
+        await ActivityLog(
+            resource_type="task",
+            resource_id=str(t.id),
+            action="reverted_to_todo",
+            old_value="In Progress",
+            new_value="To Do",
+            user=user,
+            organization_id=user.organization_id
+        ).create()
+        
+        # Notify user
+        await Notification(
+            user_id=user.id,
+            title="Task Reverted",
+            message=f"Task '{t.title}' was reverted to 'To Do' because you started another task.",
+            type="task_reversion",
+            link=f"/dashboard/tasks?taskId={t.id}",
+            organization_id=user.organization_id
+        ).create()
 
 @router.post("/tasks", response_model=TaskSchema)
 async def create_task(
@@ -507,6 +553,11 @@ async def create_task(
     # Time Tracking Logic for initial stage
     if task_in.stage == "In Progress":
         task.timer_start = get_ist_now()
+        # Enforce "One In-Progress Task" rule for the assignee
+        if task_in.assignee:
+            assignee_user = await User.get(task_in.assignee)
+            if assignee_user:
+                await revert_other_in_progress_tasks(assignee_user)
     
     # Handle optional fields
     if task_in.content_id:
@@ -684,6 +735,11 @@ async def update_task(
         if task_in.stage == "In Progress":
             # Starting timer
             task.timer_start = get_ist_now()
+            # Enforce "One In-Progress Task" rule for the assignee
+            if task_in.assignee:
+                assignee_user = await User.get(task_in.assignee)
+                if assignee_user:
+                    await revert_other_in_progress_tasks(assignee_user, id)
         elif old_stage == "In Progress":
             # Stopping timer
             if task.timer_start:
@@ -799,6 +855,17 @@ async def update_task(
         f"task_{task.id}"
     )
     
+    # Fetch names for response
+    assignee_name = None
+    if task.assignee:
+        u = await User.get(get_link_id(task.assignee))
+        if u: assignee_name = u.full_name
+    
+    assigner_name = None
+    if task.assigner:
+        u = await User.get(get_link_id(task.assigner))
+        if u: assigner_name = u.full_name
+
     return TaskSchema(
         id=str(task.id),
         title=task.title,
@@ -817,13 +884,37 @@ async def update_task(
         custom_fields=task.custom_fields,
         content_id=get_link_id(task.content_id),
         assignee=get_link_id(task.assignee),
+        assignee_name=assignee_name,
         assigner=get_link_id(task.assigner),
+        assigner_name=assigner_name,
         created_by=get_link_id(task.created_by),
         organization_id=task.organization_id,
         parent_task_id=get_link_id(task.parent_task_id),
         total_time=task.track_time or 0,
         created_at=ensure_ist(task.created_at),
         updated_at=ensure_ist(task.updated_at)
+    )
+
+@router.get("/tasks/active-status", response_model=ActiveTaskStatus)
+async def get_active_task_status(current_user: User = Depends(get_current_user)):
+    """
+    Check if the user has any active tasks in progress.
+    Returns the count and time since last activity.
+    """
+    active_count = await Task.find(
+        Task.assignee.id == current_user.id,
+        Task.stage == "In Progress"
+    ).count()
+    
+    # Get last activity where they were working on a task
+    last_action = await ActivityLog.find(
+        ActivityLog.user.id == current_user.id
+    ).sort(-ActivityLog.created_at).first_or_none()
+    
+    return ActiveTaskStatus(
+        active_count=active_count,
+        last_activity_at=last_action.created_at if last_action else None,
+        server_time=get_ist_now()
     )
 
 @router.delete("/tasks/{id}")
