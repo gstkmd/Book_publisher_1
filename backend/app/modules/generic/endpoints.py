@@ -455,10 +455,12 @@ async def share_content(
 # --- Tasks ---
 from app.modules.generic.schemas import (
     TaskCreate, 
+    TaskUpdate,
     TaskSchema, 
     TaskCommentCreate, 
     TaskCommentSchema,
     ActivityLogSchema,
+    ActivityLog,
     NotificationSchema,
     ActiveTaskStatus
 )
@@ -724,7 +726,7 @@ async def get_tasks(
 @router.put("/tasks/{id}", response_model=TaskSchema)
 async def update_task(
     id: PydanticObjectId,
-    task_in: TaskCreate,
+    task_in: TaskUpdate,
     current_user: User = Depends(get_current_user)
 ):
     task = await Task.get(id)
@@ -737,13 +739,16 @@ async def update_task(
     old_assignee = get_link_id(task.assignee)
     old_assigner = get_link_id(task.assigner)
     
+    # Partial Update Logic
+    update_data = task_in.model_dump(exclude_unset=True)
+
     # Time Tracking Logic
-    if old_stage != task_in.stage:
-        if task_in.stage == "In Progress":
+    if "stage" in update_data and old_stage != update_data["stage"]:
+        new_stage = update_data["stage"]
+        if new_stage == "In Progress":
             # Starting timer
             task.timer_start = get_ist_now()
             # Enforce "One In-Progress Task" rule for the assignee
-            # Use task_in.assignee if provided, otherwise current task.assignee
             assignee_id_for_check = update_data.get("assignee", get_link_id(task.assignee))
             if assignee_id_for_check:
                 assignee_user = await User.get(assignee_id_for_check)
@@ -756,16 +761,17 @@ async def update_task(
                 task.track_time = (task.track_time or 0) + int(delta.total_seconds())
             task.timer_start = None
     
-    # Simple Fields
+    # Simple Fields Update
     for field in ["title", "description", "status", "priority", "stage", "tags", "due_date", "start_date", "time_estimate", "attachments", "links", "custom_fields"]:
         if field in update_data:
-            # Handle tags, attachments, links, custom_fields which might be None but should default to empty list/dict
-            if field in ["tags", "attachments", "links"] and update_data[field] is None:
+            val = update_data[field]
+            # Handle defaults for containers if they are None in input
+            if val is None and field in ["tags", "attachments", "links"]:
                 setattr(task, field, [])
-            elif field == "custom_fields" and update_data[field] is None:
+            elif val is None and field == "custom_fields":
                 setattr(task, field, {})
             else:
-                setattr(task, field, update_data[field])
+                setattr(task, field, val)
 
     # Handle Links (only if present in update_data)
     if "assignee" in update_data:
