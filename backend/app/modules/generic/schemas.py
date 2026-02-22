@@ -24,6 +24,26 @@ class TaskCreate(TaskBase):
     assignee: Optional[str] = None
     assigner: Optional[str] = None
 
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+    priority: Optional[str] = None
+    stage: Optional[str] = None
+    tags: Optional[List[str]] = None
+    due_date: Optional[datetime] = None
+    start_date: Optional[datetime] = None
+    time_estimate: Optional[str] = None
+    timer_start: Optional[datetime] = None
+    track_time: Optional[int] = None
+    attachments: Optional[List[Dict[str, str]]] = None
+    links: Optional[List[Dict[str, str]]] = None
+    custom_fields: Optional[Dict[str, str]] = None
+    content_id: Optional[str] = None
+    assignee: Optional[str] = None
+    assigner: Optional[str] = None
+    parent_task_id: Optional[str] = None
+
 class TaskSchema(TaskBase):
     id: str
     content_id: Optional[str] = None

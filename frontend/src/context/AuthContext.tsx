@@ -164,14 +164,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const handleUpdateTaskStatus = async (taskId: string, stage: string) => {
+        // Optimistically close popup
+        setShowTwoHourWorkCheck(null);
+
         try {
-            await api.put(`/generic/tasks/${taskId}`, { stage }, token!);
-            setShowTwoHourWorkCheck(null);
+            const updates: any = { stage };
+            if (stage === 'Done') {
+                updates.status = 'completed';
+            }
+
+            await api.put(`/generic/tasks/${taskId}`, updates, token!);
             await refreshActiveStatus();
             toast.success(`Task moved to ${stage}`);
         } catch (err) {
             console.error("Failed to update task status:", err);
             toast.error("Failed to update task status");
+            // Re-open check or refresh status if failed? 
+            // For now, refreshing status is safer
+            await refreshActiveStatus();
         }
     };
 

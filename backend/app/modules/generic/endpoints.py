@@ -743,8 +743,10 @@ async def update_task(
             # Starting timer
             task.timer_start = get_ist_now()
             # Enforce "One In-Progress Task" rule for the assignee
-            if task_in.assignee:
-                assignee_user = await User.get(task_in.assignee)
+            # Use task_in.assignee if provided, otherwise current task.assignee
+            assignee_id_for_check = update_data.get("assignee", get_link_id(task.assignee))
+            if assignee_id_for_check:
+                assignee_user = await User.get(assignee_id_for_check)
                 if assignee_user:
                     await revert_other_in_progress_tasks(assignee_user, id)
         elif old_stage == "In Progress":
@@ -754,42 +756,35 @@ async def update_task(
                 task.track_time = (task.track_time or 0) + int(delta.total_seconds())
             task.timer_start = None
     
-    # Update core fields
-    task.title = task_in.title
-    task.description = task_in.description
-    task.status = task_in.status
-    task.priority = task_in.priority
-    task.stage = task_in.stage
-    task.tags = task_in.tags or []
-    task.due_date = task_in.due_date
-    task.start_date = task_in.start_date
-    task.time_estimate = task_in.time_estimate
-    # task.track_time = task_in.track_time or 0 # DON'T OVERWRITE - Backend is source of truth
-    task.attachments = task_in.attachments or []
-    task.links = task_in.links or []
-    task.custom_fields = task_in.custom_fields or {}
+    # Simple Fields
+    for field in ["title", "description", "status", "priority", "stage", "tags", "due_date", "start_date", "time_estimate", "attachments", "links", "custom_fields"]:
+        if field in update_data:
+            # Handle tags, attachments, links, custom_fields which might be None but should default to empty list/dict
+            if field in ["tags", "attachments", "links"] and update_data[field] is None:
+                setattr(task, field, [])
+            elif field == "custom_fields" and update_data[field] is None:
+                setattr(task, field, {})
+            else:
+                setattr(task, field, update_data[field])
+
+    # Handle Links (only if present in update_data)
+    if "assignee" in update_data:
+        val = update_data["assignee"]
+        task.assignee = Link(ref=DBRef(collection="users", id=ObjectId(val)), document_class=User) if val else None
+        
+    if "content_id" in update_data:
+        val = update_data["content_id"]
+        task.content_id = Link(ref=DBRef(collection="content", id=ObjectId(val)), document_class=Content) if val else None
+        
+    if "assigner" in update_data:
+        val = update_data["assigner"]
+        task.assigner = Link(ref=DBRef(collection="users", id=ObjectId(val)), document_class=User) if val else None
+        
+    if "parent_task_id" in update_data:
+        val = update_data["parent_task_id"]
+        task.parent_task_id = Link(ref=DBRef(collection="tasks", id=ObjectId(val)), document_class=Task) if val else None
+
     task.updated_at = get_ist_now()
-    
-    # Handle Links
-    if task_in.assignee:
-        task.assignee = Link(ref=DBRef(collection="users", id=ObjectId(task_in.assignee)), document_class=User)
-    else:
-        task.assignee = None
-        
-    if task_in.content_id:
-        task.content_id = Link(ref=DBRef(collection="content", id=ObjectId(task_in.content_id)), document_class=Content)
-    else:
-        task.content_id = None
-        
-    if task_in.assigner:
-        task.assigner = Link(ref=DBRef(collection="users", id=ObjectId(task_in.assigner)), document_class=User)
-    else:
-        task.assigner = None
-        
-    if task_in.parent_task_id:
-        task.parent_task_id = Link(ref=DBRef(collection="tasks", id=ObjectId(task_in.parent_task_id)), document_class=Task)
-    else:
-        task.parent_task_id = None
 
     # --- Auto Re-assignment Logic ---
     # If task is moved to "Needs Edit" or "Changes Requested", re-assign to original author
