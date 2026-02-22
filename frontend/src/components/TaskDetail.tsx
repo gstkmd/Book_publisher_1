@@ -507,8 +507,9 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                         type="text"
                                         value={task.title}
                                         onChange={(e) => handleUpdateField('title', e.target.value)}
-                                        className="text-lg font-extrabold text-gray-900 w-full border-none focus:ring-0 p-0 placeholder:text-gray-200"
-                                        placeholder="Task Title"
+                                        className="text-lg font-extrabold text-orange-500 w-full border-none focus:ring-0 p-0 placeholder:text-orange-200"
+                                        placeholder="Task Title (Mandatory)"
+                                        required
                                     />
                                 </div>
 
@@ -624,22 +625,26 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                     <div className="flex flex-col gap-1.5 p-2 rounded-2xl bg-slate-50/50 border border-slate-100/50 hover:bg-white hover:shadow-lg hover:shadow-slate-100 transition-all duration-300 group">
                                         <div className="flex items-center gap-2 text-slate-400">
                                             <Calendar className="w-3 h-3 group-hover:text-blue-500 transition-colors" />
-                                            <span className="text-[9px] font-black uppercase tracking-[0.15em]">Timeline</span>
+                                            <span className="text-[9px] font-black uppercase tracking-[0.15em]">Start & Due Dates</span>
                                         </div>
                                         <div className="flex items-center gap-1 px-1">
-                                            <input
-                                                type="date"
-                                                value={task.start_date ? new Date(new Date(task.start_date).toLocaleString("en-US", { timeZone: "Asia/Kolkata" })).toISOString().split('T')[0] : ''}
-                                                onChange={(e) => handleUpdateField('start_date', e.target.valueAsDate?.toISOString())}
-                                                className="bg-slate-100/50 hover:bg-white px-2 py-1 rounded-lg border border-transparent hover:border-slate-100 focus:ring-2 focus:ring-blue-100 text-[10px] font-black text-slate-600 uppercase tracking-tighter w-full transition-all"
-                                            />
+                                            <div className="relative flex-1">
+                                                <input
+                                                    type="date"
+                                                    value={task.start_date ? new Date(new Date(task.start_date).toLocaleString("en-US", { timeZone: "Asia/Kolkata" })).toISOString().split('T')[0] : ''}
+                                                    onChange={(e) => handleUpdateField('start_date', e.target.valueAsDate?.toISOString())}
+                                                    className="bg-slate-100/50 hover:bg-white px-2 py-1 rounded-lg border border-transparent hover:border-slate-100 focus:ring-2 focus:ring-blue-100 text-[10px] font-black text-slate-600 uppercase tracking-tighter w-full transition-all"
+                                                />
+                                            </div>
                                             <span className="text-slate-300 font-bold text-[10px]">→</span>
-                                            <input
-                                                type="date"
-                                                value={task.due_date ? new Date(new Date(task.due_date).toLocaleString("en-US", { timeZone: "Asia/Kolkata" })).toISOString().split('T')[0] : ''}
-                                                onChange={(e) => handleUpdateField('due_date', e.target.valueAsDate?.toISOString())}
-                                                className="bg-slate-100/50 hover:bg-white px-2 py-1 rounded-lg border border-transparent hover:border-slate-100 focus:ring-2 focus:ring-blue-100 text-[10px] font-black text-slate-600 uppercase tracking-tighter w-full transition-all"
-                                            />
+                                            <div className="relative flex-1">
+                                                <input
+                                                    type="date"
+                                                    value={task.due_date ? new Date(new Date(task.due_date).toLocaleString("en-US", { timeZone: "Asia/Kolkata" })).toISOString().split('T')[0] : ''}
+                                                    onChange={(e) => handleUpdateField('due_date', e.target.valueAsDate?.toISOString())}
+                                                    className="bg-slate-100/50 hover:bg-white px-2 py-1 rounded-lg border border-transparent hover:border-slate-100 focus:ring-2 focus:ring-blue-100 text-[10px] font-black text-slate-600 uppercase tracking-tighter w-full transition-all"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
 
@@ -693,119 +698,34 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                     </div>
                                 </div>
 
-                                {/* Tags & Linked Content Full Width Row */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                                    {/* Tags Container */}
-                                    <div className="flex flex-col gap-2 p-3 rounded-2xl bg-slate-50/30 border border-slate-100/50 hover:bg-white hover:shadow-md transition-all group">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2 text-slate-400">
-                                                <Tag className="w-3 h-3" />
-                                                <span className="text-[9px] font-black uppercase tracking-[0.15em]">Classifiers</span>
-                                            </div>
-                                            <input
-                                                type="text"
-                                                placeholder="+ Add"
-                                                className="text-[9px] font-black text-indigo-400 placeholder:text-slate-300 bg-transparent border-none focus:ring-0 p-0 w-20 text-right uppercase tracking-widest hover:text-indigo-600 transition-colors"
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        handleAddTag(e.currentTarget.value);
-                                                        e.currentTarget.value = '';
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {task.tags?.map((t: string) => (
-                                                <span key={t} className="px-2 py-1 bg-indigo-50/50 text-indigo-600 rounded-lg border border-indigo-100/50 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 group/tag hover:bg-indigo-600 hover:text-white transition-all duration-300 transform hover:scale-105 cursor-default">
-                                                    {t}
-                                                    <X className="w-2.5 h-2.5 cursor-pointer hover:rotate-90 transition-transform" onClick={() => handleRemoveTag(t)} />
-                                                </span>
-                                            ))}
-                                            {(!task.tags || task.tags.length === 0) && (
-                                                <span className="text-[9px] font-black text-slate-300 uppercase italic tracking-widest leading-[20px]">None</span>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Linked Workspace Content */}
-                                    <div className="flex flex-col gap-2 p-3 rounded-2xl bg-slate-50/30 border border-slate-100/50 hover:bg-white hover:shadow-md transition-all group">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2 text-slate-400">
-                                                <FileText className="w-3 h-3" />
-                                                <span className="text-[9px] font-black uppercase tracking-[0.15em]">Target Content</span>
-                                            </div>
-                                            {!isCreatingContent ? (
-                                                <button
-                                                    onClick={() => setIsCreatingContent(true)}
-                                                    className="text-[9px] font-black text-indigo-400 hover:text-indigo-600 uppercase tracking-widest transition-colors"
-                                                >
-                                                    + Quick Create
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={() => setIsCreatingContent(false)}
-                                                    className="text-[9px] font-black text-rose-400 hover:text-rose-600 uppercase tracking-widest transition-colors"
-                                                >
-                                                    Cancel
-                                                </button>
-                                            )}
-                                        </div>
-
-                                        {isCreatingContent ? (
-                                            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                                                <input
-                                                    autoFocus
-                                                    type="text"
-                                                    value={newContentTitle}
-                                                    onChange={(e) => setNewContentTitle(e.target.value)}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') handleQuickCreateContent();
-                                                        if (e.key === 'Escape') setIsCreatingContent(false);
-                                                    }}
-                                                    placeholder="Enter content title..."
-                                                    className="flex-1 bg-white px-3 py-1.5 rounded-xl border border-indigo-100 text-[10px] font-black text-slate-600 uppercase tracking-widest outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all"
-                                                />
-                                                <button
-                                                    onClick={handleQuickCreateContent}
-                                                    disabled={!newContentTitle.trim() || isSaving}
-                                                    className="p-1.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50 transition-all shadow-sm"
-                                                >
-                                                    <CheckCircle2 className="w-3 h-3" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="relative group/select">
-                                                <select
-                                                    value={task.content_id?._id || task.content_id?.id || task.content_id || ''}
-                                                    onChange={(e) => handleUpdateField('content_id', e.target.value || null)}
-                                                    className="w-full appearance-none bg-slate-100/50 hover:bg-white px-3 py-1.5 rounded-xl border border-transparent hover:border-indigo-100 transition-all text-[10px] font-black text-slate-600 uppercase tracking-widest outline-none pr-8"
-                                                >
-                                                    <option value="">None Linked</option>
-                                                    {libraryContent.map(c => (
-                                                        <option key={c._id || c.id} value={c._id || c.id}>{c.title}</option>
-                                                    ))}
-                                                </select>
-                                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300 pointer-events-none group-hover/select:text-indigo-400 transition-colors" />
-                                            </div>
-                                        )}
+                                {/* Description */}
+                                <div className="space-y-4 pt-4 border-t border-slate-100">
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Detailed Description</span>
+                                        <textarea
+                                            value={task.description}
+                                            onChange={(e) => handleUpdateField('description', e.target.value)}
+                                            className="w-full border border-slate-200 rounded-2xl p-4 text-sm leading-relaxed text-slate-600 min-h-[120px] placeholder:text-slate-300 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none bg-slate-50/30"
+                                            placeholder="Add a more detailed description..."
+                                        />
                                     </div>
                                 </div>
 
                                 {/* Attachments & Links */}
-                                <div className="grid grid-cols-2 gap-8 pt-2 border-t border-gray-50">
+                                <div className="grid grid-cols-2 gap-8 pt-6 border-t border-slate-100">
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2 text-gray-400">
+                                            <div className="flex items-center gap-2 text-slate-400">
                                                 <Paperclip className="w-4 h-4" />
-                                                <span className="text-xs font-bold uppercase tracking-widest text-gray-500">Attachments</span>
+                                                <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Attachments</span>
                                             </div>
                                             <button
                                                 onClick={() => fileInputRef.current?.click()}
-                                                className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                                className="p-1 hover:bg-slate-100 rounded-md transition-colors"
                                                 disabled={!taskId}
                                                 title={!taskId ? "Save task first to add attachments" : "Upload File"}
                                             >
-                                                <Plus className={`w-3.5 h-3.5 ${!taskId ? 'text-gray-300' : 'text-indigo-600'}`} />
+                                                <Plus className={`w-3.5 h-3.5 ${!taskId ? 'text-slate-300' : 'text-indigo-600'}`} />
                                             </button>
                                             <input
                                                 type="file"
@@ -816,34 +736,34 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                         </div>
                                         <div className="space-y-2">
                                             {task.attachments?.map((a: any, idx: number) => (
-                                                <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg group">
+                                                <div key={idx} className="flex items-center justify-between p-2 bg-slate-50/50 rounded-lg group border border-slate-100/50">
                                                     <div className="flex items-center gap-2 min-w-0">
-                                                        <div className="w-8 h-8 rounded bg-white flex items-center justify-center border border-gray-100 text-[10px] font-bold text-gray-400 uppercase">
+                                                        <div className="w-8 h-8 rounded bg-white flex items-center justify-center border border-slate-100 text-[10px] font-bold text-slate-400 uppercase">
                                                             {a.name.split('.').pop()}
                                                         </div>
-                                                        <a href={a.url} target="_blank" rel="noreferrer" className="text-xs font-bold text-gray-700 truncate hover:text-indigo-600 transition-colors">{a.name}</a>
+                                                        <a href={a.url} target="_blank" rel="noreferrer" className="text-xs font-bold text-slate-700 truncate hover:text-indigo-600 transition-colors">{a.name}</a>
                                                     </div>
                                                     <button
                                                         onClick={() => handleUpdateField('attachments', task.attachments.filter((_: any, i: number) => i !== idx))}
-                                                        className="p-1 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                                                        className="p-1 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
                                                     >
                                                         <X className="w-3 h-3" />
                                                     </button>
                                                 </div>
                                             ))}
                                             {(!task.attachments || task.attachments.length === 0) && (
-                                                <div className="text-[10px] font-bold text-gray-300 uppercase italic">No files attached</div>
+                                                <div className="text-[10px] font-bold text-slate-300 uppercase italic px-1">No files attached</div>
                                             )}
                                         </div>
                                     </div>
 
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2 text-gray-400">
+                                            <div className="flex items-center gap-2 text-slate-400">
                                                 <AtSign className="w-4 h-4" />
-                                                <span className="text-xs font-bold uppercase tracking-widest text-gray-500">External Links</span>
+                                                <span className="text-xs font-bold uppercase tracking-widest text-slate-500">External Links</span>
                                             </div>
-                                            <button onClick={() => setShowLinkInput(true)} className="p-1 hover:bg-gray-100 rounded-md transition-colors">
+                                            <button onClick={() => setShowLinkInput(true)} className="p-1 hover:bg-slate-100 rounded-md transition-colors">
                                                 <Plus className="w-3.5 h-3.5 text-indigo-600" />
                                             </button>
                                         </div>
@@ -855,54 +775,41 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                                         placeholder="Link Label (e.g. Drive)"
                                                         value={newLink.label}
                                                         onChange={(e) => setNewLink({ ...newLink, label: e.target.value })}
-                                                        className="w-full text-xs p-2 border border-gray-100 rounded focus:ring-1 focus:ring-indigo-500 outline-none"
+                                                        className="w-full text-xs p-2 border border-slate-100 rounded focus:ring-1 focus:ring-indigo-500 outline-none"
                                                     />
                                                     <input
                                                         type="text"
                                                         placeholder="URL"
                                                         value={newLink.url}
                                                         onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
-                                                        className="w-full text-xs p-2 border border-gray-100 rounded focus:ring-1 focus:ring-indigo-500 outline-none"
+                                                        className="w-full text-xs p-2 border border-slate-100 rounded focus:ring-1 focus:ring-indigo-500 outline-none"
                                                     />
                                                     <div className="flex justify-end gap-2">
-                                                        <button onClick={() => setShowLinkInput(false)} className="text-[10px] font-bold text-gray-400 uppercase">Cancel</button>
+                                                        <button onClick={() => setShowLinkInput(false)} className="text-[10px] font-bold text-slate-400 uppercase">Cancel</button>
                                                         <button onClick={handleAddLink} className="text-[10px] font-bold text-indigo-600 uppercase">Add</button>
                                                     </div>
                                                 </div>
                                             )}
                                             {task.links?.map((l: any, idx: number) => (
-                                                <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg group">
+                                                <div key={idx} className="flex items-center justify-between p-2 bg-slate-50/50 rounded-lg group border border-slate-100/50">
                                                     <div className="flex items-center gap-2 min-w-0">
-                                                        <div className="w-8 h-8 rounded bg-white flex items-center justify-center border border-gray-100">
-                                                            <Maximize2 className="w-3 h-3 text-indigo-500" />
+                                                        <div className="w-8 h-8 rounded bg-white flex items-center justify-center border border-slate-100">
+                                                            <ExternalLink className="w-3 h-3 text-indigo-500" />
                                                         </div>
-                                                        <a href={l.url} target="_blank" rel="noreferrer" className="text-xs font-bold text-gray-700 truncate hover:text-indigo-600 transition-colors">{l.label}</a>
+                                                        <a href={l.url} target="_blank" rel="noreferrer" className="text-xs font-bold text-slate-700 truncate hover:text-indigo-600 transition-colors">{l.label}</a>
                                                     </div>
                                                     <button
                                                         onClick={() => handleUpdateField('links', task.links.filter((_: any, i: number) => i !== idx))}
-                                                        className="p-1 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                                                        className="p-1 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
                                                     >
                                                         <X className="w-3 h-3" />
                                                     </button>
                                                 </div>
                                             ))}
                                             {(!task.links || task.links.length === 0) && (
-                                                <div className="text-[10px] font-bold text-gray-300 uppercase italic">No external links</div>
+                                                <div className="text-[10px] font-bold text-slate-300 uppercase italic px-1">No external links</div>
                                             )}
                                         </div>
-                                    </div>
-                                </div>
-
-                                {/* Description */}
-                                <div className="space-y-4 pt-2 border-t border-gray-50">
-                                    <div className="flex flex-col gap-2">
-                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Description</span>
-                                        <textarea
-                                            value={task.description}
-                                            onChange={(e) => handleUpdateField('description', e.target.value)}
-                                            className="w-full border border-gray-100 rounded-xl p-4 text-sm leading-relaxed text-gray-600 min-h-[100px] placeholder:text-gray-300 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none bg-gray-50/10"
-                                            placeholder="Add a more detailed description..."
-                                        />
                                     </div>
                                 </div>
 

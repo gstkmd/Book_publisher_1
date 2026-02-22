@@ -1,5 +1,6 @@
 from typing import Optional, List, Dict
 from beanie import Document, Link
+from pymongo import IndexModel, ASCENDING
 from pydantic import Field
 from datetime import datetime, timezone
 from app.modules.core.models import User
@@ -87,6 +88,15 @@ class ActivityLog(Document):
     user: Link[User]
     organization_id: Optional[str] = None
     created_at: datetime = datetime.now(timezone.utc)
+
+    class Settings:
+        name = "activity_logs"
+        indexes = [
+            IndexModel(
+                [("created_at", ASCENDING)],
+                expireAfterSeconds=7776000 # 3 months (90 days)
+            )
+        ]
 
 class Notification(Document):
     user_id: Link[User]

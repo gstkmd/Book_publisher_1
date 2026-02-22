@@ -530,6 +530,9 @@ async def create_task(
     current_user: User = Depends(get_current_user)
 ):
     # Create task with proper user association
+    if not task_in.title or not task_in.title.strip():
+        raise HTTPException(status_code=400, detail="Task title is mandatory")
+
     task = Task(
         title=task_in.title,
         description=task_in.description,
@@ -732,6 +735,7 @@ async def update_task(
     old_status = task.status
     old_stage = task.stage
     old_assignee = get_link_id(task.assignee)
+    old_assigner = get_link_id(task.assigner)
     
     # Time Tracking Logic
     if old_stage != task_in.stage:
@@ -833,6 +837,17 @@ async def update_task(
             organization_id=current_user.organization_id
         ).create()
 
+    if old_stage != task.stage:
+        await ActivityLog(
+            resource_type="task",
+            resource_id=str(task.id),
+            action="stage_change",
+            old_value=old_stage,
+            new_value=task.stage,
+            user=current_user,
+            organization_id=current_user.organization_id
+        ).create()
+
     new_assignee = get_link_id(task.assignee)
     if old_assignee != new_assignee:
         await ActivityLog(
@@ -841,6 +856,18 @@ async def update_task(
             action="assignee_change",
             old_value=old_assignee,
             new_value=new_assignee,
+            user=current_user,
+            organization_id=current_user.organization_id
+        ).create()
+
+    new_assigner = get_link_id(task.assigner)
+    if old_assigner != new_assigner:
+        await ActivityLog(
+            resource_type="task",
+            resource_id=str(task.id),
+            action="assigner_change",
+            old_value=old_assigner,
+            new_value=new_assigner,
             user=current_user,
             organization_id=current_user.organization_id
         ).create()
