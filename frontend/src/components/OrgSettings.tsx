@@ -8,6 +8,7 @@ export const OrgSettings = () => {
     const { token } = useAuth();
     const [org, setOrg] = useState<any>(null);
     const [name, setName] = useState('');
+    const [slug, setSlug] = useState('');
     const [loading, setLoading] = useState(true); // Start true
     const [error, setError] = useState(''); // NEW: Error state
 
@@ -26,6 +27,7 @@ export const OrgSettings = () => {
             setOrg(data);
             if (data) {
                 setName(data.name);
+                setSlug(data.slug || '');
             } else {
                 setOrg(null);
             }
@@ -47,7 +49,7 @@ export const OrgSettings = () => {
     const handleUpdate = async () => {
         setLoading(true);
         try {
-            await api.put('/organizations/me', { name }, token!);
+            await api.put('/organizations/me', { name, slug }, token!);
             alert('Organization updated!');
         } catch (err) {
             alert('Failed to update.');
@@ -141,10 +143,12 @@ export const OrgSettings = () => {
                 <label className="block text-sm font-medium mb-1">Slug (URL)</label>
                 <input
                     type="text"
-                    value={org.slug}
-                    disabled
-                    className="w-full p-2 border rounded bg-gray-100 text-gray-500"
+                    value={slug}
+                    onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
+                    className="w-full p-2 border rounded font-mono text-sm"
+                    placeholder="my-org-slug"
                 />
+                <p className="text-xs text-amber-600 mt-1">⚠️ Changing the slug may break existing shared links.</p>
             </div>
             <button
                 onClick={handleUpdate}

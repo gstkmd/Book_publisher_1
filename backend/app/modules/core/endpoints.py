@@ -73,10 +73,14 @@ async def update_organization(
     # Allow partial updates
     if "name" in update_data:
         org.name = update_data["name"]
-    if "slug" in update_data:
-        org.slug = update_data["slug"]
+    if "slug" in update_data and update_data["slug"] != org.slug:
+        new_slug = update_data["slug"]
+        # Check uniqueness
+        existing = await Organization.find_one(Organization.slug == new_slug)
+        if existing and str(existing.id) != str(org.id):
+            raise HTTPException(status_code=400, detail="Organization slug already taken")
+        org.slug = new_slug
     
-    await org.save()
     await org.save()
     return org
 
