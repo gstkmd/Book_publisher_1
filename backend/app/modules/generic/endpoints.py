@@ -567,6 +567,9 @@ async def create_task(
     if task_in.parent_task_id:
         task.parent_task_id = Link(ref=DBRef(collection="tasks", id=ObjectId(task_in.parent_task_id)), document_class=Task)
     
+    if task_in.assigner:
+        task.assigner = Link(ref=DBRef(collection="users", id=ObjectId(task_in.assigner)), document_class=User)
+    
     await task.create()
 
     # Log creation
@@ -773,6 +776,11 @@ async def update_task(
         task.content_id = Link(ref=DBRef(collection="content", id=ObjectId(task_in.content_id)), document_class=Content)
     else:
         task.content_id = None
+        
+    if task_in.assigner:
+        task.assigner = Link(ref=DBRef(collection="users", id=ObjectId(task_in.assigner)), document_class=User)
+    else:
+        task.assigner = None
         
     if task_in.parent_task_id:
         task.parent_task_id = Link(ref=DBRef(collection="tasks", id=ObjectId(task_in.parent_task_id)), document_class=Task)

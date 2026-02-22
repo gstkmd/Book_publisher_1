@@ -80,7 +80,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                 setLoading(false);
             }
         }
-    }, [token, taskId]);
+    }, [token, taskId, user]);
 
     // WebSocket for real-time updates
     useEffect(() => {

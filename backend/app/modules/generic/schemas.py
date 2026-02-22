@@ -22,6 +22,7 @@ class TaskBase(BaseModel):
 class TaskCreate(TaskBase):
     content_id: Optional[str] = None
     assignee: Optional[str] = None
+    assigner: Optional[str] = None
 
 class TaskSchema(TaskBase):
     id: str
