@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -29,7 +29,21 @@ export const Sidebar = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const pathname = usePathname();
-    const { user, logout } = useAuth();
+    const { user, logout, token } = useAuth();
+    const [orgName, setOrgName] = useState<string>('');
+
+    useEffect(() => {
+        if (token) {
+            fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/organizations/me`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+                .then(r => r.ok ? r.json() : null)
+                .then(data => { if (data?.name) setOrgName(data.name); })
+                .catch(() => { });
+        }
+    }, [token]);
+
+    const displayName = orgName || user?.full_name?.split(' ')[0] || 'My Org';
 
     const menuItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -57,7 +71,7 @@ export const Sidebar = () => {
             {/* Mobile Header / Hamburger */}
             <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 z-50 px-4 flex items-center justify-between">
                 <span className="text-xl font-black bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
-                    Trojan Horse
+                    {displayName}
                 </span>
                 <button
                     onClick={toggleSidebar}
@@ -86,7 +100,7 @@ export const Sidebar = () => {
                 <div className="hidden lg:flex h-20 items-center justify-between px-6 border-b border-slate-50">
                     {!isCollapsed && (
                         <span className="text-xl font-black bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate">
-                            Trojan Horse
+                            {displayName}
                         </span>
                     )}
                     <button
