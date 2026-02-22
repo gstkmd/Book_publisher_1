@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import { api } from '@/lib/api';
 import { RichTextEditor } from '@/components/RichTextEditor';
+import { SupportingDocuments } from '@/components/SupportingDocuments';
 
 function EditorNewContent() {
     const { user, isLoading, token } = useAuth();
@@ -17,6 +18,7 @@ function EditorNewContent() {
     const [saving, setSaving] = useState(false);
     const [orgSettings, setOrgSettings] = useState<any>(null);
     const [customValues, setCustomValues] = useState<Record<string, string>>({});
+    const [attachments, setAttachments] = useState<{ name: string; url: string }[]>([]);
 
     useEffect(() => {
         if (!isLoading && !user) {
@@ -85,7 +87,8 @@ function EditorNewContent() {
                 status: 'draft',
                 author: user?.id,
                 organization_id: user?.organization_id || null,
-                custom_fields: customValues
+                custom_fields: customValues,
+                attachments: attachments
             }, token!);
 
             alert('Draft saved successfully!');
@@ -192,6 +195,11 @@ function EditorNewContent() {
                             placeholder="Start writing..."
                         />
                     </div>
+
+                    <SupportingDocuments
+                        attachments={attachments}
+                        onChange={setAttachments}
+                    />
 
                     <div className="flex justify-end gap-3">
                         <button

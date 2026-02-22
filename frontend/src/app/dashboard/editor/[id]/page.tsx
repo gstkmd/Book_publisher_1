@@ -5,6 +5,7 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import { api } from '@/lib/api';
 import { RichTextEditor } from '@/components/RichTextEditor';
+import { SupportingDocuments } from '@/components/SupportingDocuments';
 import Link from 'next/link';
 
 interface Comment {
@@ -38,6 +39,7 @@ function EditorEditContent() {
     const [newComment, setNewComment] = useState('');
     const [orgSettings, setOrgSettings] = useState<any>(null);
     const [customValues, setCustomValues] = useState<Record<string, string>>({});
+    const [attachments, setAttachments] = useState<{ name: string; url: string }[]>([]);
 
     useEffect(() => {
         if (!isLoading && !user) {
@@ -92,6 +94,7 @@ function EditorEditContent() {
             setContent(data.body?.text || '');
             setAuthor(data.author || user?.id || '');
             setCustomValues(data.custom_fields || {});
+            setAttachments(data.attachments || []);
         } catch (err: any) {
             console.error(err);
             alert('Failed to load content: ' + (err.message || 'Unknown error'));
@@ -153,7 +156,8 @@ function EditorEditContent() {
                 status: 'draft',
                 author: author || user?.id,
                 organization_id: user?.organization_id || null,
-                custom_fields: customValues
+                custom_fields: customValues,
+                attachments: attachments
             }, token!);
 
             alert('Content updated successfully!');
@@ -188,7 +192,8 @@ function EditorEditContent() {
                 status: 'published',
                 author: author || user?.id,
                 organization_id: user?.organization_id || null,
-                custom_fields: customValues
+                custom_fields: customValues,
+                attachments: attachments
             }, token!);
 
             alert('Content published successfully!');
@@ -315,6 +320,11 @@ function EditorEditContent() {
                                     placeholder="Start writing..."
                                 />
                             </div>
+
+                            <SupportingDocuments
+                                attachments={attachments}
+                                onChange={setAttachments}
+                            />
                             <div className="flex gap-3">
                                 <button
                                     onClick={handleSave}

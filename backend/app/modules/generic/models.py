@@ -17,6 +17,7 @@ class Content(Document):
     organization_id: Optional[str] = None
     latest_integrity_report: Optional[Dict] = None # Stores AI score and Plagiarism matches
     custom_fields: Dict[str, str] = {} # Custom field values (subject, class, board, etc.)
+    attachments: List[Dict[str, str]] = [] # [{"name": "file.pdf", "url": "/uploads/..."}]
     created_at: datetime = datetime.now(timezone.utc)
     updated_at: datetime = datetime.now(timezone.utc)
 

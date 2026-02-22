@@ -176,7 +176,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
         content: content || '',
         editorProps: {
             attributes: {
-                class: 'prose prose-indigo focus:outline-none max-w-none p-4 min-h-[200px] bg-white custom-scrollbar rounded-b-lg border border-t-0 border-gray-100',
+                class: 'tiptap prose prose-indigo focus:outline-none max-w-none p-4 min-h-[200px] bg-white custom-scrollbar rounded-b-lg border border-t-0 border-gray-100',
             },
         },
         onUpdate: ({ editor }) => {

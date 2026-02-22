@@ -112,6 +112,7 @@ class ContentSchema(BaseModel):
     tags: List[str] = []
     organization_id: Optional[str] = None
     custom_fields: Dict[str, str] = {}
+    attachments: Optional[List[Dict[str, str]]] = []
     created_at: datetime
     updated_at: datetime
     pending_reviewers: Optional[List[str]] = []
