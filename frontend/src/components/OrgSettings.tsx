@@ -90,7 +90,7 @@ export const OrgSettings = () => {
     const addCustomField = () => {
         setContentSettings({
             ...contentSettings,
-            customFields: [...contentSettings.customFields, { name: '', label: '' }]
+            customFields: [...contentSettings.customFields, { name: '', label: '', options: '' }]
         });
     };
 
@@ -246,6 +246,16 @@ export const OrgSettings = () => {
                                     value={field.label}
                                     placeholder="e.g. Subject"
                                     onChange={e => updateCustomField(index, 'label', e.target.value)}
+                                    className="w-full p-2 border rounded text-sm"
+                                />
+                            </div>
+                            <div className="flex-[2]">
+                                <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Options (comma separated)</label>
+                                <input
+                                    type="text"
+                                    value={field.options || ''}
+                                    placeholder="e.g. Math, Science, History"
+                                    onChange={e => updateCustomField(index, 'options', e.target.value)}
                                     className="w-full p-2 border rounded text-sm"
                                 />
                             </div>
