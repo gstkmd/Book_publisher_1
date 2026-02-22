@@ -14,8 +14,16 @@ interface User {
     organization_id?: string;
 }
 
+interface Org {
+    id: string;
+    name: string;
+    slug: string;
+    plan?: string;
+}
+
 interface AuthContextType {
     user: User | null;
+    org: Org | null;
     token: string | null;
     login: (token: string) => void;
     logout: () => void;
@@ -27,6 +35,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
+    const [org, setOrg] = useState<Org | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [showTwoHourWorkCheck, setShowTwoHourWorkCheck] = useState<{ taskId: string, taskTitle: string } | null>(null);
@@ -45,6 +54,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 .then((userData) => {
                     console.log(`[AUTH-${instanceId}] ✅ User profile fetched for: ${userData.email}`);
                     setUser(userData);
+                    // Fetch org after user is loaded
+                    if (userData.organization_id) {
+                        api.get('/organizations/me', storedToken)
+                            .then((orgData) => { if (orgData) setOrg(orgData); })
+                            .catch(() => { });
+                    }
                 })
                 .catch((err) => {
                     console.error(`[AUTH-${instanceId}] ❌ User profile fetch failed:`, err);
@@ -63,7 +78,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const login = (newToken: string) => {
         localStorage.setItem('token', newToken);
         setToken(newToken);
-        api.get('/users/me', newToken).then((userData) => setUser(userData));
+        api.get('/users/me', newToken).then((userData) => {
+            setUser(userData);
+            if (userData.organization_id) {
+                api.get('/organizations/me', newToken)
+                    .then((orgData) => { if (orgData) setOrg(orgData); })
+                    .catch(() => { });
+            }
+        });
         router.push('/dashboard');
     };
 
@@ -71,6 +93,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.removeItem('token');
         setToken(null);
         setUser(null);
+        setOrg(null);
         router.push('/login');
     };
 
@@ -186,7 +209,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, isLoading, refreshActiveStatus }}>
+        <AuthContext.Provider value={{ user, org, token, login, logout, isLoading, refreshActiveStatus }}>
             {children}
 
             {/* 2-Hour Continuous Work Confirmation Modal */}

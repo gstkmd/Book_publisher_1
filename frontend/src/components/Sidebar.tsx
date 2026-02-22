@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -29,21 +29,9 @@ export const Sidebar = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const pathname = usePathname();
-    const { user, logout, token } = useAuth();
-    const [orgName, setOrgName] = useState<string>('');
+    const { user, org, logout, token } = useAuth();
 
-    useEffect(() => {
-        if (token) {
-            fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/organizations/me`, {
-                headers: { Authorization: `Bearer ${token}` }
-            })
-                .then(r => r.ok ? r.json() : null)
-                .then(data => { if (data?.name) setOrgName(data.name); })
-                .catch(() => { });
-        }
-    }, [token]);
-
-    const displayName = orgName || user?.full_name?.split(' ')[0] || 'My Org';
+    const displayName = org?.name || user?.full_name?.split(' ')[0] || 'My Org';
 
     const menuItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
