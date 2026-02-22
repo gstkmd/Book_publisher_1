@@ -20,6 +20,7 @@ interface AuthContextType {
     login: (token: string) => void;
     logout: () => void;
     isLoading: boolean;
+    refreshActiveStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,6 +29,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [showTwoHourWorkCheck, setShowTwoHourWorkCheck] = useState<{ taskId: string, taskTitle: string } | null>(null);
+    const [activeStatus, setActiveStatus] = useState<any>(null);
     const router = useRouter();
     const [instanceId] = useState(() => Math.random().toString(36).substring(7));
 
@@ -75,13 +78,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         if (!token || !user) return;
 
-        const checkActiveTask = async () => {
+        const checkActiveStatus = async () => {
             try {
                 // Only monitor roles that typically perform tasks
                 const taskRoles = ['admin', 'editor_in_chief', 'section_editor', 'author', 'reviewer', 'illustrator'];
                 if (!taskRoles.includes(user.role)) return;
 
                 const status = await api.get('/generic/tasks/active-status', token);
+                setActiveStatus(status);
+
                 if (status.active_count === 0) {
                     const lastActivityAt = status.last_activity_at ? new Date(status.last_activity_at) : null;
                     const serverTime = new Date(status.server_time);
@@ -121,14 +126,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                             }
                         );
                     }
+                } else if (status.active_count === 1 && status.active_task_timer_start) {
+                    // Check for 2-hour continuous work
+                    const timerStart = new Date(status.active_task_timer_start);
+                    const serverTime = new Date(status.server_time);
+                    const diffHrs = (serverTime.getTime() - timerStart.getTime()) / 3600000;
+
+                    if (diffHrs >= 2) {
+                        setShowTwoHourWorkCheck({
+                            taskId: status.active_task_id,
+                            taskTitle: status.active_task_title
+                        });
+                    }
                 }
             } catch (err) {
                 console.error("Failed to check active task status:", err);
             }
         };
 
-        const interval = setInterval(checkActiveTask, 3600000); // 1 hour
-        const timeout = setTimeout(checkActiveTask, 10000); // Check 10s after login/mount
+        const interval = setInterval(checkActiveStatus, 3600000); // 1 hour
+        const timeout = setTimeout(checkActiveStatus, 10000); // Check 10s after login/mount
 
         return () => {
             clearInterval(interval);
@@ -136,9 +153,76 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         };
     }, [token, user, router]);
 
+    const refreshActiveStatus = async () => {
+        if (!token || !user) return;
+        try {
+            const status = await api.get('/generic/tasks/active-status', token);
+            setActiveStatus(status);
+        } catch (err) {
+            console.error("Failed to refresh active status:", err);
+        }
+    };
+
+    const handleUpdateTaskStatus = async (taskId: string, stage: string) => {
+        try {
+            await api.put(`/generic/tasks/${taskId}`, { stage }, token!);
+            setShowTwoHourWorkCheck(null);
+            await refreshActiveStatus();
+            toast.success(`Task moved to ${stage}`);
+        } catch (err) {
+            console.error("Failed to update task status:", err);
+            toast.error("Failed to update task status");
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
+        <AuthContext.Provider value={{ user, token, login, logout, isLoading, refreshActiveStatus }}>
             {children}
+
+            {/* 2-Hour Continuous Work Confirmation Modal */}
+            {showTwoHourWorkCheck && (
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-100">
+                        <div className="p-8 text-center text-slate-900">
+                            <div className="w-20 h-20 rounded-full bg-indigo-50 flex items-center justify-center mx-auto mb-6 border-4 border-indigo-100">
+                                <AlertCircle className="w-10 h-10 text-indigo-500" />
+                            </div>
+                            <h3 className="text-xl font-black uppercase tracking-tighter mb-3">Still Working?</h3>
+                            <p className="text-sm font-medium text-slate-500 leading-relaxed mb-6">
+                                You've been working on <span className="font-black text-slate-900 italic">"{showTwoHourWorkCheck.taskTitle}"</span> for over 2 hours.
+                                <br />Are you still actively working on this task?
+                            </p>
+
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button
+                                        onClick={() => setShowTwoHourWorkCheck(null)}
+                                        className="px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest bg-emerald-500 text-white shadow-lg shadow-emerald-200 hover:-translate-y-0.5 active:translate-y-0 transition-all font-bold"
+                                    >
+                                        YES, STILL WORKING
+                                    </button>
+                                    <div className="relative group">
+                                        <select
+                                            onChange={(e) => {
+                                                if (e.target.value) {
+                                                    handleUpdateTaskStatus(showTwoHourWorkCheck.taskId, e.target.value);
+                                                }
+                                            }}
+                                            className="w-full px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all appearance-none cursor-pointer text-center outline-none font-bold"
+                                            defaultValue=""
+                                        >
+                                            <option value="" disabled>NO, UPDATE STATUS</option>
+                                            <option value="Done" className="font-bold">DONE</option>
+                                            <option value="Review" className="font-bold">REVIEW</option>
+                                            <option value="To Do" className="font-bold">TO DO / PAUSE</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AuthContext.Provider>
     );
 };

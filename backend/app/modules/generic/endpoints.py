@@ -926,6 +926,7 @@ async def get_active_task_status(current_user: User = Depends(get_current_user))
         active_count=active_count,
         active_task_id=str(active_task.id) if active_task else None,
         active_task_title=active_task.title if active_task else None,
+        active_task_timer_start=active_task.timer_start if active_task else None,
         last_activity_at=last_action.created_at if last_action else None,
         server_time=get_ist_now()
     )
