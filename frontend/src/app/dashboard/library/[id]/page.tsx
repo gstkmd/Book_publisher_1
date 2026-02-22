@@ -44,6 +44,10 @@ export default function ContentDetailPage() {
         }
     };
 
+    const handleShareClick = (content: any) => {
+        alert('Share feature is coming soon! You can also share by creating a task for this content.');
+    };
+
     if (loading) return (
         <div className="flex items-center justify-center h-screen bg-gray-50">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -100,6 +104,16 @@ export default function ContentDetailPage() {
                         </div>
                     </div>
 
+                    <div className="p-8 md:p-12 bg-gray-50/30">
+                        <div className="max-w-4xl mx-auto bg-white p-8 md:p-12 rounded-2xl shadow-sm border border-gray-100 min-h-[400px]">
+                            <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-8 pb-4 border-b border-gray-50">Document Content</h2>
+                            <div
+                                className="prose prose-indigo max-w-none text-gray-800"
+                                dangerouslySetInnerHTML={{ __html: typeof content.body === 'string' ? content.body : (content.body?.text || '') }}
+                            />
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-50">
                         <Link href={`/dashboard/library/${id}/review`} className="p-8 hover:bg-teal-50/50 transition-colors group">
                             <div className="w-12 h-12 bg-teal-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
@@ -120,11 +134,20 @@ export default function ContentDetailPage() {
                         <div className="p-8 space-y-6">
                             <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest">Quick Actions</h3>
                             <div className="grid grid-cols-2 gap-3">
-                                <button className="flex flex-col items-center justify-center gap-2 p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors">
+                                <button
+                                    onClick={() => handleShareClick(content)}
+                                    className="flex flex-col items-center justify-center gap-2 p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors"
+                                >
                                     <Share2 className="w-5 h-5 text-gray-600" />
                                     <span className="text-[10px] font-black uppercase text-gray-600">Share</span>
                                 </button>
-                                <button className="flex flex-col items-center justify-center gap-2 p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors">
+                                <button
+                                    onClick={() => {
+                                        const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+                                        window.open(`${apiUrl}/generic/export_content/${id}?format=docx`, '_blank');
+                                    }}
+                                    className="flex flex-col items-center justify-center gap-2 p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors"
+                                >
                                     <Download className="w-5 h-5 text-gray-600" />
                                     <span className="text-[10px] font-black uppercase text-gray-600">Export</span>
                                 </button>

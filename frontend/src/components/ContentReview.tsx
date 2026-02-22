@@ -113,7 +113,9 @@ export default function ContentReview({
                 const parsed = JSON.parse(body);
                 return extractTextFromRichText(parsed);
             } catch {
-                return body;
+                // If it's a string and not JSON, it's likely the new HTML format
+                // Strip tags for offset-based commenting logic
+                return body.replace(/<[^>]+>/g, ' ');
             }
         }
         if (body.text && typeof body.text === 'string') return body.text;

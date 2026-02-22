@@ -71,8 +71,11 @@ async def upload_file(
     """
     Upload a file to object storage.
     """
-    url = await s3_client.upload_file(file)
-    return {"url": url}
+    try:
+        url = await s3_client.upload_file(file)
+        return {"url": url}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Storage upload failed: {str(e)}")
 
 class MultipartInit(BaseModel):
     file_name: str

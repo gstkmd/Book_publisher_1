@@ -30,8 +30,8 @@ class S3Client:
                 ExtraArgs={'ACL': 'public-read', 'ContentType': file.content_type}
             )
             return f"{settings.S3_ENDPOINT_URL}/{self.bucket}/{file_name}"
-        except NoCredentialsError:
-            return "Error: No AWS Credentials"
+        except (NoCredentialsError, Exception) as e:
+            print(f"S3 Upload Error: {e}")
             raise e
 
     def create_multipart_upload(self, file_name: str, content_type: str) -> str:
