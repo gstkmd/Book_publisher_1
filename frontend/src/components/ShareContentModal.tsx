@@ -28,7 +28,7 @@ export default function ShareContentModal({
     onClose,
     onSuccess
 }: ShareContentModalProps) {
-    const { token } = useAuth();
+    const { token, user } = useAuth();
     const [users, setUsers] = useState<User[]>([]);
     const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
     const [description, setDescription] = useState('Please review this content');
@@ -175,8 +175,8 @@ export default function ShareContentModal({
                                             key={userId}
                                             onClick={() => handleToggleUser(userId)}
                                             className={`flex items-center gap-3 p-3 rounded-2xl border transition-all text-left ${isSelected
-                                                    ? 'bg-indigo-50 border-indigo-200 shadow-sm shadow-indigo-100'
-                                                    : 'bg-white border-slate-100 hover:border-indigo-100 hover:bg-slate-50'
+                                                ? 'bg-indigo-50 border-indigo-200 shadow-sm shadow-indigo-100'
+                                                : 'bg-white border-slate-100 hover:border-indigo-100 hover:bg-slate-50'
                                                 }`}
                                         >
                                             <div className="relative">
@@ -248,7 +248,7 @@ export default function ShareContentModal({
                     <div className="flex items-center gap-2 text-slate-400">
                         <UserIcon className="w-4 h-4" />
                         <span className="text-[10px] font-bold uppercase tracking-widest">
-                            Assigner: {loading ? '...' : 'System Automator'}
+                            Assigner: {loading ? '...' : (user?.full_name || user?.email || 'System Automator')}
                         </span>
                     </div>
                     <div className="flex gap-4">
