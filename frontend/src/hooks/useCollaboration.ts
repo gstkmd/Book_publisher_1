@@ -5,9 +5,12 @@ export const useCollaboration = (documentId: string) => {
     const socketRef = useRef<WebSocket | null>(null);
 
     useEffect(() => {
-        // Connect to WebSocket
-        // Note: Adjust URL for production/dev environments
-        const wsUrl = `ws://localhost:8000/api/v1/generic/ws/${documentId}`;
+        // Connect to WebSocket using dynamic API URL
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+        const wsProtocol = apiUrl.startsWith('https') ? 'wss' : 'ws';
+        const wsBase = apiUrl.replace('http://', '').replace('https://', '');
+        const wsUrl = `${wsProtocol}://${wsBase}/generic/ws/${documentId}`;
+
         socketRef.current = new WebSocket(wsUrl);
 
         socketRef.current.onopen = () => {

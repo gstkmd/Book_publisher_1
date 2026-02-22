@@ -2,6 +2,7 @@
 
 import React, { useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { api } from '@/lib/api';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -100,23 +101,14 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
             const formData = new FormData();
             formData.append('file', file);
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/generic/upload`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: formData,
-            });
-
-            if (!response.ok) throw new Error('Upload failed');
-            const data = await response.json();
+            const data = await api.post('/generic/upload', formData, token, true);
 
             if (data.url && editor) {
                 editor.chain().focus().setImage({ src: data.url }).run();
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('Image upload failed:', err);
-            alert('Failed to upload image. Please check your connection.');
+            alert(`Failed to upload image: ${err.message || 'Unknown error'}. Please check your connection and login status.`);
         }
     };
 
