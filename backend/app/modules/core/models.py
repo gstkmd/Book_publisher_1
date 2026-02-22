@@ -1,5 +1,6 @@
 from typing import Optional, List, Dict, Any
 from beanie import Document
+from pymongo import IndexModel, ASCENDING
 from pydantic import EmailStr
 from datetime import datetime, timezone
 
@@ -29,6 +30,11 @@ class User(Document):
         # Enable proper JSON serialization of ObjectId
         use_state_management = True
         validate_on_save = True
+        indexes = [
+            IndexModel([("email", ASCENDING)], unique=True),
+            IndexModel([("organization_id", ASCENDING)]),
+            IndexModel([("role", ASCENDING)])
+        ]
 
 class WebhookSubscription(Document):
     url: str
@@ -52,6 +58,10 @@ class Organization(Document):
 
     class Settings:
         name = "organizations"
+        indexes = [
+            IndexModel([("slug", ASCENDING)], unique=True),
+            IndexModel([("is_active", ASCENDING)])
+        ]
 
 class InviteToken(Document):
     token: str              # UUID token
@@ -64,3 +74,9 @@ class InviteToken(Document):
 
     class Settings:
         name = "invite_tokens"
+        indexes = [
+            IndexModel([("token", ASCENDING)], unique=True),
+            IndexModel([("email", ASCENDING)]),
+            IndexModel([("organization_id", ASCENDING)]),
+            IndexModel([("used", ASCENDING)])
+        ]

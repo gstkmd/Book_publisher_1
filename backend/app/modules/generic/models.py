@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict
 from beanie import Document, Link
-from pymongo import IndexModel, ASCENDING
+from pymongo import IndexModel, ASCENDING, DESCENDING, TEXT
 from pydantic import Field
 from datetime import datetime, timezone
 from app.modules.core.models import User
@@ -22,6 +22,16 @@ class Content(Document):
 
     class Settings:
         name = "content"
+        indexes = [
+            IndexModel([("organization_id", ASCENDING)]),
+            IndexModel([("title", TEXT)]), # Full text search support
+            IndexModel([("slug", ASCENDING)], unique=True),
+            IndexModel([("type", ASCENDING)]),
+            IndexModel([("status", ASCENDING)]),
+            IndexModel([("updated_at", DESCENDING)]),
+            IndexModel([("custom_fields.subject", ASCENDING)]), # Common custom field
+            IndexModel([("custom_fields.class", ASCENDING)])   # Common custom field
+        ]
 
 class ContentVersion(Document):
     content_id: Link[Content]
@@ -33,6 +43,10 @@ class ContentVersion(Document):
 
     class Settings:
         name = "content_versions"
+        indexes = [
+            IndexModel([("content_id", ASCENDING)]),
+            IndexModel([("version_number", DESCENDING)])
+        ]
 
 class Comment(Document):
     content_id: Link[Content]
@@ -45,6 +59,11 @@ class Comment(Document):
 
     class Settings:
         name = "comments"
+        indexes = [
+            IndexModel([("content_id", ASCENDING)]),
+            IndexModel([("organization_id", ASCENDING)]),
+            IndexModel([("resolved", ASCENDING)])
+        ]
 
 class Task(Document):
     title: str
@@ -72,6 +91,15 @@ class Task(Document):
 
     class Settings:
         name = "tasks"
+        indexes = [
+            IndexModel([("organization_id", ASCENDING)]),
+            IndexModel([("content_id", ASCENDING)]),
+            IndexModel([("status", ASCENDING)]),
+            IndexModel([("stage", ASCENDING)]),
+            IndexModel([("assignee", ASCENDING)]),
+            IndexModel([("due_date", ASCENDING)]),
+            IndexModel([("updated_at", DESCENDING)])
+        ]
 
 class TaskComment(Document):
     task_id: Link[Task]
