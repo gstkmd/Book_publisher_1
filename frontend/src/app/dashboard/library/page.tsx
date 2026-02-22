@@ -187,6 +187,21 @@ export default function ContentLibrary() {
         }
     };
 
+    const handleNormalize = async () => {
+        if (!confirm('This will standardize all content types and chapter numbers to match organization settings. Continue?')) return;
+        try {
+            setLoading(true);
+            const res = await api.post('/generic/normalize-data', {}, token!);
+            alert(res.message || 'Normalization successful');
+            fetchContent();
+        } catch (err: any) {
+            console.error(err);
+            alert('Normalization failed: ' + (err.message || 'Unknown error'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const filteredContent = contents.filter(c => {
         if (!c) return false;
 
@@ -344,13 +359,22 @@ export default function ContentLibrary() {
                         </div>
 
                         {user?.role === 'admin' && (
-                            <button
-                                onClick={handleMigrate}
-                                className="px-3 py-2 rounded-lg transition text-amber-600 hover:bg-amber-50 border border-amber-200 text-xs font-semibold"
-                                title="Assign orphaned content to your organization"
-                            >
-                                🛡️ Fix Visibility
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleNormalize}
+                                    className="px-3 py-2 rounded-lg transition text-purple-600 hover:bg-purple-50 border border-purple-200 text-xs font-semibold"
+                                    title="Standardize chapters and types to match org settings"
+                                >
+                                    ✨ Fix Standards
+                                </button>
+                                <button
+                                    onClick={handleMigrate}
+                                    className="px-3 py-2 rounded-lg transition text-amber-600 hover:bg-amber-50 border border-amber-200 text-xs font-semibold"
+                                    title="Assign orphaned content to your organization"
+                                >
+                                    🛡️ Fix Visibility
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>
