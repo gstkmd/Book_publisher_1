@@ -126,23 +126,40 @@ async def read_contents(current_user: User = Depends(get_current_user)):
     """
     contents = await Content.find(Content.organization_id == current_user.organization_id).to_list()
     
+    # 1. Bulk fetch all pending tasks for this organization
+    all_pending_tasks = await Task.find(
+        Task.organization_id == current_user.organization_id,
+        Task.status != "completed",
+        Task.stage != "Done"
+    ).to_list()
+
+    # 2. Collect unique user IDs for reviewers
+    reviewer_ids = set()
+    for task in all_pending_tasks:
+        if task.assignee:
+            reviewer_ids.add(get_link_id(task.assignee))
+    
+    # 3. Bulk fetch user names
+    user_map = {}
+    if reviewer_ids:
+        users = await User.find({"_id": {"$in": [ObjectId(uid) for uid in reviewer_ids]}}).to_list()
+        user_map = {str(u.id): u.full_name for u in users}
+
+    # 4. Group reviewers by content_id
+    content_reviewers = {}
+    for task in all_pending_tasks:
+        cid = get_link_id(task.content_id)
+        if not cid: continue
+        if cid not in content_reviewers:
+            content_reviewers[cid] = []
+        
+        name = user_map.get(get_link_id(task.assignee))
+        if name and name not in content_reviewers[cid]:
+            content_reviewers[cid].append(name)
+    
     results = []
     for content in contents:
-        # Find pending tasks for this content
-        pending_tasks = await Task.find(
-            Task.content_id.id == content.id,
-            Task.status != "completed",
-            Task.stage != "Done"
-        ).to_list()
-        
-        reviewers = []
-        for task in pending_tasks:
-            if task.assignee:
-                # Resolve assignee ID from Link
-                assignee_id = task.assignee.ref.id
-                u = await User.get(assignee_id)
-                if u:
-                    reviewers.append(u.full_name)
+        reviewers = content_reviewers.get(str(content.id), [])
         
         c_dict = content.dict()
         c_dict["id"] = str(content.id)
@@ -697,6 +714,19 @@ async def get_tasks(
 
     tasks = await Task.find(query).to_list()
     
+    # Pre-fetch user names to avoid N+1 queries
+    user_ids = set()
+    for task in tasks:
+        aid = get_link_id(task.assignee)
+        asid = get_link_id(task.assigner)
+        if aid: user_ids.add(aid)
+        if asid: user_ids.add(asid)
+    
+    user_map = {}
+    if user_ids:
+        users = await User.find({"_id": {"$in": [ObjectId(uid) for uid in user_ids]}}).to_list()
+        user_map = {str(u.id): u.full_name for u in users}
+
     now = datetime.now(timezone.utc)
     task_map = {}
     for task in tasks:
@@ -731,15 +761,8 @@ async def get_tasks(
         task = data["task"]
         total_time = get_total_time(tid)
         
-        assignee_name = None
-        if task.assignee:
-            u = await User.get(get_link_id(task.assignee))
-            if u: assignee_name = u.full_name
-        
-        assigner_name = None
-        if task.assigner:
-            u = await User.get(get_link_id(task.assigner))
-            if u: assigner_name = u.full_name
+        assignee_name = user_map.get(get_link_id(task.assignee))
+        assigner_name = user_map.get(get_link_id(task.assigner))
 
         results.append(TaskSchema(
             id=str(task.id),
