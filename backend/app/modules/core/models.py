@@ -48,6 +48,7 @@ class Organization(Document):
     stripe_customer_id: Optional[str] = None
     created_at: datetime = datetime.now(timezone.utc)
     is_active: bool = True
+    content_settings: Dict[str, Any] = {} # Custom labels and custom fields setup
 
     class Settings:
         name = "organizations"

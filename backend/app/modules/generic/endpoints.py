@@ -178,6 +178,7 @@ async def update_content(id: PydanticObjectId, content_in: Content):
     content.body = content_in.body
     content.type = content_in.type
     content.status = content_in.status
+    content.custom_fields = content_in.custom_fields
     if content_in.organization_id:
         content.organization_id = content_in.organization_id
     content.updated_at = get_ist_now()

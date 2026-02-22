@@ -91,6 +91,8 @@ async def update_organization(
         if existing and str(existing.id) != str(org.id):
             raise HTTPException(status_code=400, detail="Organization slug already taken")
         org.slug = new_slug
+    if "content_settings" in update_data:
+        org.content_settings = update_data["content_settings"]
     
     await org.save()
     return org

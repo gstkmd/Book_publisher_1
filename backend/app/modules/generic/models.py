@@ -16,6 +16,7 @@ class Content(Document):
     tags: List[str] = []
     organization_id: Optional[str] = None
     latest_integrity_report: Optional[Dict] = None # Stores AI score and Plagiarism matches
+    custom_fields: Dict[str, str] = {} # Custom field values (subject, class, board, etc.)
     created_at: datetime = datetime.now(timezone.utc)
     updated_at: datetime = datetime.now(timezone.utc)
 

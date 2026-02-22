@@ -33,6 +33,8 @@ export default function EditorEditPage() {
     const [showComments, setShowComments] = useState(false);
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState('');
+    const [orgSettings, setOrgSettings] = useState<any>(null);
+    const [customValues, setCustomValues] = useState<Record<string, string>>({});
 
     useEffect(() => {
         if (!isLoading && !user) {
@@ -40,13 +42,25 @@ export default function EditorEditPage() {
         }
     }, [user, isLoading, router]);
 
-    // Fetch existing content
+    // Fetch existing content and org settings
     useEffect(() => {
         if (token && contentId) {
             fetchContent();
             fetchComments();
+            fetchOrgSettings();
         }
     }, [token, contentId]);
+
+    const fetchOrgSettings = async () => {
+        try {
+            const data = await api.get('/organizations/me', token!);
+            if (data?.content_settings) {
+                setOrgSettings(data.content_settings);
+            }
+        } catch (err) {
+            console.error('Failed to fetch org settings:', err);
+        }
+    };
 
     const fetchContent = async () => {
         try {
@@ -55,6 +69,7 @@ export default function EditorEditPage() {
             setType(data.type || 'article');
             setContent(data.body?.text || '');
             setAuthor(data.author || user?.id || '');
+            setCustomValues(data.custom_fields || {});
         } catch (err: any) {
             console.error(err);
             alert('Failed to load content: ' + (err.message || 'Unknown error'));
@@ -115,7 +130,8 @@ export default function EditorEditPage() {
                 type,
                 status: 'draft',
                 author: author || user?.id,
-                organization_id: user?.organization_id || null
+                organization_id: user?.organization_id || null,
+                custom_fields: customValues
             }, token!);
 
             alert('Content updated successfully!');
@@ -145,7 +161,8 @@ export default function EditorEditPage() {
                 type,
                 status: 'published',
                 author: author || user?.id,
-                organization_id: user?.organization_id || null
+                organization_id: user?.organization_id || null,
+                custom_fields: customValues
             }, token!);
 
             alert('Content published successfully!');
@@ -168,9 +185,11 @@ export default function EditorEditPage() {
 
     const unresolvedCount = comments.filter(c => !c.resolved).length;
 
+    const labels = orgSettings?.labels || { title: 'Title', body: 'Content' };
+    const customFields = orgSettings?.customFields || [];
+
     return (
         <div className="flex min-h-screen bg-gray-50">
-            {/* Main Editor Area */}
             {/* Main Editor Area */}
             <div className={`flex-1 transition-all duration-300 overflow-y-auto ${showComments ? 'w-1/2' : 'w-full'}`}>
                 <div className={`container mx-auto p-8 ${showComments ? 'max-w-none' : ''}`}>
@@ -193,30 +212,47 @@ export default function EditorEditPage() {
                     <div className="bg-white p-6 rounded-lg shadow">
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{labels.title} *</label>
                                 <input
                                     type="text"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="Enter content title..."
+                                    placeholder={`Enter ${labels.title.toLowerCase()}...`}
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                                <select
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={type}
-                                    onChange={(e) => setType(e.target.value)}
-                                >
-                                    <option value="article">Article</option>
-                                    <option value="book_chapter">Textbook Chapter</option>
-                                    <option value="lesson">Lesson</option>
-                                    <option value="resource">Activity</option>
-                                </select>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                                    <select
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        value={type}
+                                        onChange={(e) => setType(e.target.value)}
+                                    >
+                                        <option value="article">Article</option>
+                                        <option value="book_chapter">Textbook Chapter</option>
+                                        <option value="lesson">Lesson</option>
+                                        <option value="resource">Activity</option>
+                                    </select>
+                                </div>
+                                {/* Custom Fields */}
+                                {customFields.map((field: any) => (
+                                    <div key={field.name}>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder={`Enter ${field.label.toLowerCase()}...`}
+                                            value={customValues[field.name] || ''}
+                                            onChange={(e) => setCustomValues({ ...customValues, [field.name]: e.target.value })}
+                                        />
+                                    </div>
+                                ))}
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{labels.body}</label>
                                 <textarea
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md h-64 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     placeholder="Start writing..."
