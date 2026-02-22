@@ -109,5 +109,7 @@ class CommentSchema(BaseModel):
 
 class ActiveTaskStatus(BaseModel):
     active_count: int
+    active_task_id: Optional[str] = None
+    active_task_title: Optional[str] = None
     last_activity_at: Optional[datetime] = None
     server_time: datetime

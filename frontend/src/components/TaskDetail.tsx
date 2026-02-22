@@ -24,7 +24,8 @@ import {
     Play,
     ExternalLink,
     FileText,
-    MessageSquare
+    MessageSquare,
+    AlertCircle
 } from 'lucide-react';
 import ContentReview from './ContentReview';
 import { UserAvatar } from './UserAvatar';
@@ -44,6 +45,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
     const [newComment, setNewComment] = useState('');
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [showReversionConfirm, setShowReversionConfirm] = useState<{ activeTaskId: string, activeTaskTitle: string, nextStage: string } | null>(null);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [displayTime, setDisplayTime] = useState<number>(0);
     const [activeTab, setActiveTab] = useState<'details' | 'review'>('details');
@@ -193,7 +195,24 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
         ...activity.map(a => ({ ...a, feedType: 'activity' }))
     ].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-    const handleUpdateField = (field: string | Record<string, any>, value?: any) => {
+    const handleUpdateField = async (field: string | Record<string, any>, value?: any, force: boolean = false) => {
+        // Enforce "One In-Progress" rule check
+        if (!force && typeof field === 'string' && field === 'stage' && value === 'In Progress') {
+            try {
+                const status = await api.get('/generic/tasks/active-status', token!);
+                if (status.active_count > 0 && status.active_task_id !== taskId) {
+                    setShowReversionConfirm({
+                        activeTaskId: status.active_task_id,
+                        activeTaskTitle: status.active_task_title,
+                        nextStage: value
+                    });
+                    return; // Stop and wait for confirmation
+                }
+            } catch (err) {
+                console.error('Failed to check active status:', err);
+            }
+        }
+
         let updates: Record<string, any>;
         if (typeof field === 'string') {
             updates = { ...task, [field]: value };
@@ -234,10 +253,27 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
         }, 1000); // 1 second lag as requested
     };
 
-    const handleCreateTask = async () => {
+    const handleCreateTask = async (force: boolean = false) => {
         if (!task.title.trim()) {
             alert('Title is required');
             return;
+        }
+
+        // Enforce "One In-Progress" rule check
+        if (!force && task.stage === 'In Progress') {
+            try {
+                const status = await api.get('/generic/tasks/active-status', token!);
+                if (status.active_count > 0) {
+                    setShowReversionConfirm({
+                        activeTaskId: status.active_task_id,
+                        activeTaskTitle: status.active_task_title,
+                        nextStage: 'In Progress'
+                    });
+                    return; // Stop and wait for confirmation
+                }
+            } catch (err) {
+                console.error('Failed to check active status:', err);
+            }
         }
 
         try {
@@ -406,7 +442,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                         </div>
                         {!taskId && (
                             <button
-                                onClick={handleCreateTask}
+                                onClick={() => handleCreateTask()}
                                 className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-sm flex items-center gap-2"
                             >
                                 <Plus className="w-3 h-3" />
@@ -871,6 +907,47 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                     </div>
                 </div>
             </div>
+
+            {/* Reversion Confirmation Modal */}
+            {showReversionConfirm && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center gap-3 text-amber-500 mb-4">
+                            <AlertCircle className="w-6 h-6" />
+                            <h3 className="text-lg font-black uppercase tracking-tight">Existing Task In-Progress</h3>
+                        </div>
+
+                        <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                            You already have a task in progress: <span className="font-bold text-gray-900">"{showReversionConfirm.activeTaskTitle}"</span>.
+                            <br /><br />
+                            Starting this task will automatically move the current one back to <span className="font-bold">"To Do"</span>. Do you want to continue?
+                        </p>
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowReversionConfirm(null)}
+                                className="px-4 py-2 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                CANCEL
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const nextStage = showReversionConfirm.nextStage;
+                                    setShowReversionConfirm(null);
+                                    if (taskId) {
+                                        handleUpdateField('stage', nextStage, true);
+                                    } else {
+                                        handleCreateTask(true);
+                                    }
+                                }}
+                                className="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg active:scale-95"
+                            >
+                                YES, START THIS TASK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

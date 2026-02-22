@@ -901,10 +901,13 @@ async def get_active_task_status(current_user: User = Depends(get_current_user))
     Check if the user has any active tasks in progress.
     Returns the count and time since last activity.
     """
-    active_count = await Task.find(
+    active_tasks = await Task.find(
         Task.assignee.id == current_user.id,
         Task.stage == "In Progress"
-    ).count()
+    ).to_list()
+    
+    active_count = len(active_tasks)
+    active_task = active_tasks[0] if active_count > 0 else None
     
     # Get last activity where they were working on a task
     last_action = await ActivityLog.find(
@@ -913,6 +916,8 @@ async def get_active_task_status(current_user: User = Depends(get_current_user))
     
     return ActiveTaskStatus(
         active_count=active_count,
+        active_task_id=str(active_task.id) if active_task else None,
+        active_task_title=active_task.title if active_task else None,
         last_activity_at=last_action.created_at if last_action else None,
         server_time=get_ist_now()
     )
