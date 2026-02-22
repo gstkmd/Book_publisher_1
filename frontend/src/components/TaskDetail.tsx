@@ -49,6 +49,8 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [displayTime, setDisplayTime] = useState<number>(0);
     const [activeTab, setActiveTab] = useState<'details' | 'review'>('details');
+    const [isCreatingContent, setIsCreatingContent] = useState(false);
+    const [newContentTitle, setNewContentTitle] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
     const { token, user } = useAuth();
@@ -196,6 +198,37 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
         ...comments.map(c => ({ ...c, feedType: 'comment' })),
         ...activity.map(a => ({ ...a, feedType: 'activity' }))
     ].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+    const handleQuickCreateContent = async () => {
+        if (!newContentTitle.trim()) return;
+
+        setIsSaving(true);
+        try {
+            const slug = newContentTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            const newContent = await api.post('/generic/content', {
+                title: newContentTitle,
+                slug,
+                body: { text: '' },
+                type: 'article',
+                status: 'draft',
+                author: user?.id,
+                organization_id: user?.organization_id || null
+            }, token!);
+
+            // Update state
+            await fetchLibraryContent();
+            setNewContentTitle('');
+            setIsCreatingContent(false);
+
+            // Link to current task
+            const contentId = newContent._id || newContent.id;
+            handleUpdateField('content_id', contentId);
+        } catch (err) {
+            console.error('Failed to quick create content:', err);
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const handleUpdateField = async (field: string | Record<string, any>, value?: any, force: boolean = false) => {
         // Enforce "One In-Progress" rule check
@@ -696,23 +729,65 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
 
                                     {/* Linked Workspace Content */}
                                     <div className="flex flex-col gap-2 p-3 rounded-2xl bg-slate-50/30 border border-slate-100/50 hover:bg-white hover:shadow-md transition-all group">
-                                        <div className="flex items-center gap-2 text-slate-400">
-                                            <FileText className="w-3 h-3" />
-                                            <span className="text-[9px] font-black uppercase tracking-[0.15em]">Target Content</span>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 text-slate-400">
+                                                <FileText className="w-3 h-3" />
+                                                <span className="text-[9px] font-black uppercase tracking-[0.15em]">Target Content</span>
+                                            </div>
+                                            {!isCreatingContent ? (
+                                                <button
+                                                    onClick={() => setIsCreatingContent(true)}
+                                                    className="text-[9px] font-black text-indigo-400 hover:text-indigo-600 uppercase tracking-widest transition-colors"
+                                                >
+                                                    + Quick Create
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => setIsCreatingContent(false)}
+                                                    className="text-[9px] font-black text-rose-400 hover:text-rose-600 uppercase tracking-widest transition-colors"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            )}
                                         </div>
-                                        <div className="relative group/select">
-                                            <select
-                                                value={task.content_id?._id || task.content_id?.id || task.content_id || ''}
-                                                onChange={(e) => handleUpdateField('content_id', e.target.value || null)}
-                                                className="w-full appearance-none bg-slate-100/50 hover:bg-white px-3 py-1.5 rounded-xl border border-transparent hover:border-indigo-100 transition-all text-[10px] font-black text-slate-600 uppercase tracking-widest outline-none pr-8"
-                                            >
-                                                <option value="">None Linked</option>
-                                                {libraryContent.map(c => (
-                                                    <option key={c._id || c.id} value={c._id || c.id}>{c.title}</option>
-                                                ))}
-                                            </select>
-                                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300 pointer-events-none group-hover/select:text-indigo-400 transition-colors" />
-                                        </div>
+
+                                        {isCreatingContent ? (
+                                            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                <input
+                                                    autoFocus
+                                                    type="text"
+                                                    value={newContentTitle}
+                                                    onChange={(e) => setNewContentTitle(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') handleQuickCreateContent();
+                                                        if (e.key === 'Escape') setIsCreatingContent(false);
+                                                    }}
+                                                    placeholder="Enter content title..."
+                                                    className="flex-1 bg-white px-3 py-1.5 rounded-xl border border-indigo-100 text-[10px] font-black text-slate-600 uppercase tracking-widest outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all"
+                                                />
+                                                <button
+                                                    onClick={handleQuickCreateContent}
+                                                    disabled={!newContentTitle.trim() || isSaving}
+                                                    className="p-1.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50 transition-all shadow-sm"
+                                                >
+                                                    <CheckCircle2 className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="relative group/select">
+                                                <select
+                                                    value={task.content_id?._id || task.content_id?.id || task.content_id || ''}
+                                                    onChange={(e) => handleUpdateField('content_id', e.target.value || null)}
+                                                    className="w-full appearance-none bg-slate-100/50 hover:bg-white px-3 py-1.5 rounded-xl border border-transparent hover:border-indigo-100 transition-all text-[10px] font-black text-slate-600 uppercase tracking-widest outline-none pr-8"
+                                                >
+                                                    <option value="">None Linked</option>
+                                                    {libraryContent.map(c => (
+                                                        <option key={c._id || c.id} value={c._id || c.id}>{c.title}</option>
+                                                    ))}
+                                                </select>
+                                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300 pointer-events-none group-hover/select:text-indigo-400 transition-colors" />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
