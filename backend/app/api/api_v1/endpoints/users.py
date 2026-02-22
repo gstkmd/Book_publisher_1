@@ -22,7 +22,8 @@ def read_user_me(
         email=current_user.email,
         full_name=current_user.full_name,
         role=current_user.role,
-        is_active=current_user.is_active
+        is_active=current_user.is_active,
+        organization_id=current_user.organization_id
     )
 
 @router.post("/", response_model=UserSchema)

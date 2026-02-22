@@ -18,6 +18,7 @@ class UserUpdate(UserBase):
 
 class UserInDBBase(UserBase):
     id: Optional[str] = None
+    organization_id: Optional[str] = None
     
     model_config = ConfigDict(from_attributes=True)
 
