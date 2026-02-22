@@ -21,13 +21,16 @@ import {
     Menu,
     X,
     Activity,
-    Scale
+    Scale,
+    ChevronDown
 } from 'lucide-react';
 import { UserAvatar } from './UserAvatar';
 
 export const Sidebar = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [adminOpen, setAdminOpen] = useState(false);
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
     const pathname = usePathname();
     const { user, org, logout, token } = useAuth();
 
@@ -132,64 +135,90 @@ export const Sidebar = () => {
                         })}
                     </div>
 
-                    {/* System Section */}
-                    <div className="mt-4 pt-4 border-t border-slate-100 space-y-1">
-                        {!isCollapsed && (
-                            <p className="px-3 mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">System</p>
-                        )}
-                        {systemItems.map((item) => {
-                            const Icon = item.icon;
-                            const isActive = pathname === item.href;
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    onClick={() => setIsOpen(false)}
-                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group
-                                        ${isActive
-                                            ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50'
-                                            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
-                                        ${isCollapsed ? 'justify-center lg:px-0 lg:w-12 lg:mx-auto' : ''}
-                                    `}
-                                    title={isCollapsed ? item.name : ''}
-                                >
-                                    <Icon className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
-                                    <span className={`text-[13px] font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300
-                                        ${isCollapsed ? 'lg:hidden opacity-0 w-0' : 'opacity-100 w-auto'}
-                                    `}>
-                                        {item.name}
-                                    </span>
-                                    {isActive && !isCollapsed && (
-                                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
-                                    )}
-                                </Link>
-                            );
-                        })}
-                    </div>
+                    {/* Admin Accordion (admin role only) */}
+                    {user?.role === 'admin' && (
+                        <div className="mt-4 pt-4 border-t border-slate-100">
+                            <button
+                                onClick={() => setAdminOpen(!adminOpen)}
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group
+                                    text-slate-500 hover:bg-slate-50 hover:text-slate-900
+                                    ${isCollapsed ? 'justify-center lg:px-0 lg:w-12 lg:mx-auto' : ''}
+                                `}
+                                title={isCollapsed ? 'Admin' : ''}
+                            >
+                                <Shield className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${adminOpen ? 'text-indigo-600' : 'text-slate-400'}`} />
+                                {!isCollapsed && (
+                                    <>
+                                        <span className="text-[13px] font-bold uppercase tracking-wider">
+                                            Admin
+                                        </span>
+                                        <ChevronDown className={`ml-auto w-4 h-4 transition-transform duration-200 ${adminOpen ? 'rotate-180 text-indigo-600' : 'text-slate-300'}`} />
+                                    </>
+                                )}
+                            </button>
+
+                            {/* Sub-items */}
+                            {adminOpen && !isCollapsed && (
+                                <div className="ml-4 mt-1 space-y-1 border-l-2 border-indigo-100 pl-3">
+                                    {[
+                                        { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+                                        { name: 'Admin Panel', href: '/dashboard/admin', icon: Shield },
+                                    ].map(item => {
+                                        const Icon = item.icon;
+                                        const isActive = pathname === item.href;
+                                        return (
+                                            <Link key={item.href} href={item.href}
+                                                onClick={() => setIsOpen(false)}
+                                                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all
+                                                    ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
+                                                `}
+                                            >
+                                                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                                                {item.name}
+                                                {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-600" />}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </nav>
 
-                {/* User Section */}
-                <div className="p-4 mt-auto border-t border-slate-50 space-y-2">
-                    <div className={`flex items-center gap-3 p-2 rounded-2xl bg-slate-50/50 transition-all ${isCollapsed ? 'justify-center p-1' : ''}`}>
+                {/* User Avatar Section */}
+                <div className="p-4 mt-auto border-t border-slate-50 relative">
+                    <button
+                        onClick={() => setUserMenuOpen(!userMenuOpen)}
+                        className={`w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-100 transition-all ${isCollapsed ? 'justify-center p-1' : ''}`}
+                    >
                         <UserAvatar name={user?.full_name || ''} size={isCollapsed ? "xs" : "sm"} className="ring-2 ring-white shadow-sm" />
                         {!isCollapsed && (
-                            <div className="min-w-0">
+                            <div className="min-w-0 text-left">
                                 <p className="text-xs font-black text-slate-900 truncate uppercase tracking-tight">{user?.full_name}</p>
                                 <p className="text-[10px] font-bold text-slate-400 truncate uppercase tracking-widest">{user?.role}</p>
                             </div>
                         )}
-                    </div>
-
-                    <button
-                        onClick={() => logout()}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-rose-500 hover:bg-rose-50 transition-all group font-bold text-[13px] uppercase tracking-wider
-                            ${isCollapsed ? 'justify-center p-0 lg:w-12 lg:mx-auto' : ''}
-                        `}
-                        title={isCollapsed ? 'Logout' : ''}
-                    >
-                        <LogOut className="w-5 h-5 shrink-0 group-hover:-translate-x-1 transition-transform" />
-                        {!isCollapsed && <span>Logout</span>}
                     </button>
+
+                    {/* User Popup Menu */}
+                    {userMenuOpen && (
+                        <>
+                            <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
+                            <div className="absolute bottom-full left-3 right-3 mb-2 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-20 animate-in slide-in-from-bottom-2 duration-150">
+                                <div className="px-4 py-3 border-b border-slate-50">
+                                    <p className="text-xs font-black text-slate-900 truncate">{user?.full_name}</p>
+                                    <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
+                                </div>
+                                <button
+                                    onClick={() => { setUserMenuOpen(false); logout(); }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-rose-500 hover:bg-rose-50 transition-all text-[13px] font-bold uppercase tracking-wider"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                    Logout
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </div>
             </aside>
 
