@@ -14,6 +14,55 @@ from app.core.storage import s3_client
 
 router = APIRouter()
 
+@router.post("/normalize-data")
+async def normalize_data(user: User = Depends(get_current_user)):
+    from app.modules.core.models import Organization
+    import re
+    org = await Organization.get(user.organization_id)
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    contents = await Content.find(Content.organization_id == str(org.id)).to_list()
+    
+    # Identify the 'Chapter' field name from settings
+    chapter_field_name = None
+    custom_fields_config = org.content_settings.get("customFields", [])
+    for field in custom_fields_config:
+        if "chapter" in field.get("label", "").lower():
+            chapter_field_name = field.get("name")
+            break
+
+    count = 0
+    for c in contents:
+        updated = False
+        
+        # 1. Normalize Chapter field (strip "chapter " prefix)
+        if chapter_field_name and c.custom_fields and chapter_field_name in c.custom_fields:
+            val = c.custom_fields[chapter_field_name]
+            if val and isinstance(val, str) and (val.lower().startswith("chapter") or val.lower().startswith("chap")):
+                new_val = re.sub(r'(?i)^(chapter|chap)\s*', '', val).strip()
+                if new_val != val:
+                    c.custom_fields[chapter_field_name] = new_val
+                    updated = True
+
+        # 2. Fix Content Types to match org settings
+        allowed_types_str = org.content_settings.get("contentTypeOptions", "")
+        if allowed_types_str:
+            allowed_types = [t.strip().lower() for t in allowed_types_str.split(",") if t.strip()]
+            if c.type and c.type.lower() not in allowed_types:
+                # Try fuzzy match
+                for t in allowed_types:
+                    if t in c.type.lower() or c.type.lower() in t:
+                        c.type = t
+                        updated = True
+                        break
+
+        if updated:
+            await c.save()
+            count += 1
+            
+    return {"message": f"Successfully normalized {count} items"}
+
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     """
