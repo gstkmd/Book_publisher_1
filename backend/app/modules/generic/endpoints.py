@@ -460,7 +460,6 @@ from app.modules.generic.schemas import (
     TaskCommentCreate, 
     TaskCommentSchema,
     ActivityLogSchema,
-    ActivityLog,
     NotificationSchema,
     ActiveTaskStatus
 )
