@@ -479,10 +479,12 @@ export default function ContentLibrary() {
                             </div>
 
                             <div className="pt-4 border-t flex items-center justify-between gap-1">
-                                <Link
-                                    href={`/dashboard/editor/${c.id || c._id}`}
-                                    className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-[11px] font-bold"
-                                >Edit</Link>
+                                <div className="flex items-center gap-1">
+                                    <Link
+                                        href={`/dashboard/library/${c.id || c._id}/versions`}
+                                        className="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded text-[11px] font-bold"
+                                    >Versions</Link>
+                                </div>
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => handleExport(c.id || c._id)}
@@ -562,25 +564,9 @@ export default function ContentLibrary() {
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-3">
                                             <Link
-                                                href={`/dashboard/editor/${c.id || c._id}`}
-                                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                                            >Edit</Link>
-                                            <Link
                                                 href={`/dashboard/library/${c.id || c._id}/versions`}
                                                 className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
                                             >Versions</Link>
-                                            <Link
-                                                href={`/dashboard/library/${c.id || c._id}/review`}
-                                                className={`text-sm font-bold px-2 py-1 rounded transition-colors ${c.status === 'review'
-                                                    ? 'bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200'
-                                                    : 'text-teal-600 hover:text-teal-800'}`}
-                                            >Review</Link>
-                                            {c.status === 'draft' && (
-                                                <button
-                                                    onClick={() => handlePublish(c.id || c._id)}
-                                                    className="text-green-600 hover:text-green-800 text-sm font-medium"
-                                                >Publish</button>
-                                            )}
                                             <button
                                                 onClick={() => handleShareClick(c)}
                                                 className="text-purple-600 hover:text-purple-800 text-sm font-medium"

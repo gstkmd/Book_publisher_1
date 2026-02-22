@@ -8,7 +8,9 @@ import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import {
     Bold, Italic, List, ListOrdered,
-    Image as ImageIcon
+    Image as ImageIcon, Strikethrough, Code,
+    Quote, Heading1, Heading2, Minus,
+    Undo, Redo, Type
 } from 'lucide-react';
 
 interface RichTextEditorProps {
@@ -21,46 +23,139 @@ const MenuBar = ({ editor, onImageUpload }: { editor: any, onImageUpload: () => 
     if (!editor) return null;
 
     return (
-        <div className="flex flex-wrap gap-1 p-2 bg-gray-50 border-b border-gray-100 rounded-t-lg">
-            <button
-                type="button"
-                onClick={() => editor.chain().focus().toggleBold().run()}
-                disabled={!editor.can().chain().focus().toggleBold().run()}
-                className={`p-2 rounded hover:bg-white hover:shadow-sm transition-all ${editor.isActive('bold') ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
-            >
-                <Bold className="w-4 h-4" />
-            </button>
-            <button
-                type="button"
-                onClick={() => editor.chain().focus().toggleItalic().run()}
-                disabled={!editor.can().chain().focus().toggleItalic().run()}
-                className={`p-2 rounded hover:bg-white hover:shadow-sm transition-all ${editor.isActive('italic') ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
-            >
-                <Italic className="w-4 h-4" />
-            </button>
-            <div className="w-[1px] bg-gray-200 mx-1 self-stretch" />
-            <button
-                type="button"
-                onClick={() => editor.chain().focus().toggleBulletList().run()}
-                className={`p-2 rounded hover:bg-white hover:shadow-sm transition-all ${editor.isActive('bulletList') ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
-            >
-                <List className="w-4 h-4" />
-            </button>
-            <button
-                type="button"
-                onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                className={`p-2 rounded hover:bg-white hover:shadow-sm transition-all ${editor.isActive('orderedList') ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
-            >
-                <ListOrdered className="w-4 h-4" />
-            </button>
-            <div className="w-[1px] bg-gray-200 mx-1 self-stretch" />
-            <button
-                type="button"
-                onClick={onImageUpload}
-                className="p-2 rounded hover:bg-white hover:shadow-sm transition-all text-gray-500"
-            >
-                <ImageIcon className="w-4 h-4" />
-            </button>
+        <div className="flex flex-wrap items-center gap-1 p-2 bg-slate-50 border-b border-slate-100 sticky top-0 z-10">
+            <div className="flex items-center gap-0.5 mr-2">
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleBold().run()}
+                    disabled={!editor.can().chain().focus().toggleBold().run()}
+                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('bold') ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    title="Bold"
+                >
+                    <Bold className="w-4 h-4" />
+                </button>
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                    disabled={!editor.can().chain().focus().toggleItalic().run()}
+                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('italic') ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    title="Italic"
+                >
+                    <Italic className="w-4 h-4" />
+                </button>
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleStrike().run()}
+                    disabled={!editor.can().chain().focus().toggleStrike().run()}
+                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('strike') ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    title="Strikethrough"
+                >
+                    <Strikethrough className="w-4 h-4" />
+                </button>
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleCode().run()}
+                    disabled={!editor.can().chain().focus().toggleCode().run()}
+                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('code') ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    title="Inline Code"
+                >
+                    <Code className="w-4 h-4" />
+                </button>
+            </div>
+
+            <div className="h-4 w-[1px] bg-slate-200 mx-1" />
+
+            <div className="flex items-center gap-0.5 mx-2">
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('heading', { level: 1 }) ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    title="Heading 1"
+                >
+                    <Heading1 className="w-4 h-4" />
+                </button>
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('heading', { level: 2 }) ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    title="Heading 2"
+                >
+                    <Heading2 className="w-4 h-4" />
+                </button>
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('blockquote') ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    title="Blockquote"
+                >
+                    <Quote className="w-4 h-4" />
+                </button>
+            </div>
+
+            <div className="h-4 w-[1px] bg-slate-200 mx-1" />
+
+            <div className="flex items-center gap-0.5 mx-2">
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleBulletList().run()}
+                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('bulletList') ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    title="Bullet List"
+                >
+                    <List className="w-4 h-4" />
+                </button>
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('orderedList') ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    title="Ordered List"
+                >
+                    <ListOrdered className="w-4 h-4" />
+                </button>
+            </div>
+
+            <div className="h-4 w-[1px] bg-slate-200 mx-1" />
+
+            <div className="flex items-center gap-0.5 mx-2">
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                    className="p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all text-slate-500"
+                    title="Horizontal Rule"
+                >
+                    <Minus className="w-4 h-4" />
+                </button>
+                <button
+                    type="button"
+                    onClick={onImageUpload}
+                    className="p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all text-slate-500"
+                    title="Insert Image"
+                >
+                    <ImageIcon className="w-4 h-4" />
+                </button>
+            </div>
+
+            <div className="flex-1" />
+
+            <div className="flex items-center gap-0.5 ml-2">
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().undo().run()}
+                    disabled={!editor.can().chain().focus().undo().run()}
+                    className="p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all text-slate-500 disabled:opacity-30"
+                    title="Undo"
+                >
+                    <Undo className="w-4 h-4" />
+                </button>
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().redo().run()}
+                    disabled={!editor.can().chain().focus().redo().run()}
+                    className="p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all text-slate-500 disabled:opacity-30"
+                    title="Redo"
+                >
+                    <Redo className="w-4 h-4" />
+                </button>
+            </div>
         </div>
     );
 };
