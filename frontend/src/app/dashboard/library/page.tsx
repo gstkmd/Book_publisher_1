@@ -92,7 +92,8 @@ export default function ContentLibrary() {
         if (!value) return '';
         const valStr = String(value);
         if (category.toLowerCase().includes('chapter')) {
-            return valStr.toLowerCase().replace(/^chapter\s*/, '').trim();
+            // Remove "chapter" or "chap" prefix case-insensitively
+            return valStr.replace(/^(chapter|chap)\s*/i, '').trim();
         }
         return valStr;
     };
@@ -449,6 +450,65 @@ export default function ContentLibrary() {
                 </div>
             )}
 
+            {/* Grid View */}
+            {view === 'grid' && filteredContent.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {filteredContent.map((c) => (
+                        <div key={c._id || Math.random()} className="bg-white rounded-xl shadow-sm border p-5 hover:shadow-md transition group">
+                            <div className="flex justify-between items-start mb-4">
+                                <Link
+                                    href={`/dashboard/library/${c.id || c._id}`}
+                                    className="font-bold text-sm text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2"
+                                >
+                                    {c.title || 'Untitled'}
+                                </Link>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${getStatusBadge(c.status)}`}>
+                                    {c.status || 'draft'}
+                                </span>
+                            </div>
+
+                            <div className="space-y-2 mb-6">
+                                {orgSettings?.customFields?.slice(0, 3).map((field: any) => (
+                                    <div key={field.name} className="flex justify-between text-xs">
+                                        <span className="text-gray-400">{field.label}:</span>
+                                        <span className="text-gray-700 font-medium truncate ml-2">
+                                            {normalizeValue(field.name, c.custom_fields?.[field.name]) || '-'}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="pt-4 border-t flex items-center justify-between gap-1">
+                                <Link
+                                    href={`/dashboard/editor/${c.id || c._id}`}
+                                    className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-[11px] font-bold"
+                                >Edit</Link>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleExport(c.id || c._id)}
+                                        className="text-gray-400 hover:text-gray-600 p-1"
+                                        title="Export"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                        </svg>
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(c.id || c._id)}
+                                        className="text-gray-400 hover:text-red-500 p-1"
+                                        title="Delete"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
             {/* List View */}
             {view === 'list' && filteredContent.length > 0 && (
                 <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
@@ -463,7 +523,6 @@ export default function ContentLibrary() {
                                         {field.label}
                                     </th>
                                 ))}
-                                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Type</th>
                                 <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Status</th>
                                 <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700 text-nowrap">Last Updated</th>
                                 <th className="text-right px-6 py-3 text-sm font-semibold text-gray-700">Actions</th>
@@ -475,7 +534,7 @@ export default function ContentLibrary() {
                                     <td className="px-6 py-4">
                                         <Link
                                             href={`/dashboard/library/${c.id || c._id}`}
-                                            className="font-black text-gray-900 hover:text-indigo-600 transition-colors uppercase tracking-tight"
+                                            className="font-bold text-sm text-gray-900 hover:text-indigo-600 transition-colors"
                                         >
                                             {c.title || 'Untitled'}
                                         </Link>
@@ -485,9 +544,6 @@ export default function ContentLibrary() {
                                             {normalizeValue(field.name, c.custom_fields?.[field.name]) || '-'}
                                         </td>
                                     ))}
-                                    <td className="px-6 py-4">
-                                        <span className="text-sm text-gray-600">{getTypeLabel(c.type)}</span>
-                                    </td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col gap-1">
                                             <span className={`text-[10px] w-fit px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${getStatusBadge(c.status)}`}>
