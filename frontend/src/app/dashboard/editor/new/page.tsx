@@ -32,6 +32,13 @@ export default function EditorNewPage() {
             const data = await api.get('/organizations/me', token!);
             if (data?.content_settings) {
                 setOrgSettings(data.content_settings);
+                // Set default type to the first option if available
+                if (data.content_settings.contentTypeOptions) {
+                    const options = data.content_settings.contentTypeOptions.split(',').map((t: string) => t.trim().toLowerCase());
+                    if (options.length > 0 && options[0]) {
+                        setType(options[0]);
+                    }
+                }
             }
         } catch (err) {
             console.error('Failed to fetch org settings:', err);
