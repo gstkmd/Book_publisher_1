@@ -11,9 +11,9 @@ export default function ContentLibrary() {
     const router = useRouter();
     const [contents, setContents] = useState<any[]>([]);
     const [view, setView] = useState<'grid' | 'list'>('list');
-    const [filter, setFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
-    const [showMenu, setShowMenu] = useState<string | null>(null);
+    const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
+    const [showFilterPanel, setShowFilterPanel] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -25,7 +25,7 @@ export default function ContentLibrary() {
 
     useEffect(() => {
         if (statusParam) {
-            setFilter(statusParam);
+            setActiveFilters(prev => ({ ...prev, status: [statusParam] }));
         }
     }, [statusParam]);
 
@@ -37,15 +37,6 @@ export default function ContentLibrary() {
             setLoading(false);
         }
     }, [token, authLoading]);
-
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = () => setShowMenu(null);
-        if (showMenu) {
-            document.addEventListener('click', handleClickOutside);
-            return () => document.removeEventListener('click', handleClickOutside);
-        }
-    }, [showMenu]);
 
     const fetchOrgSettings = async () => {
         try {
@@ -72,6 +63,45 @@ export default function ContentLibrary() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleFilterChange = (category: string, value: string) => {
+        setActiveFilters(prev => {
+            const current = prev[category] || [];
+            if (current.includes(value)) {
+                const updated = current.filter(v => v !== value);
+                const next = { ...prev };
+                if (updated.length === 0) {
+                    delete next[category];
+                } else {
+                    next[category] = updated;
+                }
+                return next;
+            } else {
+                return { ...prev, [category]: [...current, value] };
+            }
+        });
+    };
+
+    const clearFilters = () => {
+        setActiveFilters({});
+        setSearchQuery('');
+    };
+
+    const getFilterOptions = (category: string) => {
+        const options = new Set<string>();
+        contents.forEach(c => {
+            if (category === 'status') {
+                if (c.status) options.add(c.status);
+            } else if (category === 'type') {
+                if (c.type) options.add(c.type);
+            } else {
+                // Custom field
+                const val = c.custom_fields?.[category];
+                if (val) options.add(val);
+            }
+        });
+        return Array.from(options).sort();
     };
 
     const handlePublish = async (contentId: string) => {
@@ -146,8 +176,17 @@ export default function ContentLibrary() {
     const filteredContent = contents.filter(c => {
         if (!c) return false;
 
-        // Status filter
-        if (filter !== 'all' && c.status !== filter) return false;
+        // Advanced Filters
+        for (const [category, selectedValues] of Object.entries(activeFilters)) {
+            if (selectedValues.length === 0) continue;
+
+            let itemValue = '';
+            if (category === 'status') itemValue = c.status;
+            else if (category === 'type') itemValue = c.type;
+            else itemValue = c.custom_fields?.[category];
+
+            if (!selectedValues.includes(itemValue)) return false;
+        }
 
         // Search filter
         if (searchQuery) {
@@ -230,6 +269,8 @@ export default function ContentLibrary() {
         );
     }
 
+    const activeFilterCount = Object.values(activeFilters).flat().length;
+
     return (
         <div className="container mx-auto py-8 px-4">
             <div className="flex justify-between items-center mb-8">
@@ -240,68 +281,125 @@ export default function ContentLibrary() {
             </div>
 
             {/* Toolbar */}
-            <div className="flex flex-col md:flex-row justify-between mb-6 bg-white p-4 rounded-lg shadow-sm border gap-4">
-                <div className="flex flex-wrap gap-2">
-                    <button
-                        onClick={() => setFilter('all')}
-                        className={`px-4 py-2 rounded-md transition text-sm ${filter === 'all' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-                    >All</button>
-                    <button
-                        onClick={() => setFilter('draft')}
-                        className={`px-4 py-2 rounded-md transition text-sm ${filter === 'draft' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-                    >Drafts</button>
-                    <button
-                        onClick={() => setFilter('review')}
-                        className={`px-4 py-2 rounded-md transition text-sm ${filter === 'review' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-                    >Review</button>
-                    <button
-                        onClick={() => setFilter('approved')}
-                        className={`px-4 py-2 rounded-md transition text-sm ${filter === 'approved' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-                    >Approved</button>
-                    <button
-                        onClick={() => setFilter('published')}
-                        className={`px-4 py-2 rounded-md transition text-sm ${filter === 'published' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-                    >Published</button>
-
-                    {user?.role === 'admin' && (
+            <div className="flex flex-col mb-6 bg-white p-4 rounded-lg shadow-sm border gap-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                        <div className="relative flex-1 md:w-80">
+                            <input
+                                type="text"
+                                placeholder={`Search ${orgSettings?.labels?.title || 'Title'} or custom fields...`}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            />
+                            <div className="absolute left-3 top-2.5 text-gray-400">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                        </div>
                         <button
-                            onClick={handleMigrate}
-                            className="px-4 py-2 rounded-md transition text-amber-600 hover:bg-amber-50 border border-amber-200 text-sm font-medium"
-                            title="Assign orphaned content to your organization"
+                            onClick={() => setShowFilterPanel(!showFilterPanel)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition ${showFilterPanel ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white hover:bg-gray-50 text-gray-700'}`}
                         >
-                            🛡️ Fix Visibility
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                            </svg>
+                            Filters
+                            {activeFilterCount > 0 && (
+                                <span className="bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                                    {activeFilterCount}
+                                </span>
+                            )}
                         </button>
-                    )}
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-500">View:</span>
+                            <div className="flex border rounded-lg overflow-hidden">
+                                <button
+                                    onClick={() => setView('grid')}
+                                    className={`px-3 py-1.5 text-xs font-medium ${view === 'grid' ? 'bg-gray-100 text-blue-600' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                                >Grid</button>
+                                <button
+                                    onClick={() => setView('list')}
+                                    className={`px-3 py-1.5 text-xs font-medium border-l ${view === 'list' ? 'bg-gray-100 text-blue-600' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                                >List</button>
+                            </div>
+                        </div>
+
+                        {user?.role === 'admin' && (
+                            <button
+                                onClick={handleMigrate}
+                                className="px-3 py-2 rounded-lg transition text-amber-600 hover:bg-amber-50 border border-amber-200 text-xs font-semibold"
+                                title="Assign orphaned content to your organization"
+                            >
+                                🛡️ Fix Visibility
+                            </button>
+                        )}
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="relative flex-1 md:w-64">
-                        <input
-                            type="text"
-                            placeholder={`Search ${orgSettings?.labels?.title || 'Title'} or custom fields...`}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        />
-                        <div className="absolute left-3 top-2.5 text-gray-400">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
+                {/* Advanced Filter Panel */}
+                {showFilterPanel && (
+                    <div className="pt-4 border-t animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            {/* Standard Filters */}
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Status</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {['draft', 'review', 'approved', 'published', 'archived'].map(status => (
+                                        <button
+                                            key={status}
+                                            onClick={() => handleFilterChange('status', status)}
+                                            className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize border transition ${activeFilters.status?.includes(status) ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}
+                                        >
+                                            {status}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Custom Field Filters */}
+                            {orgSettings?.customFields?.map((field: any) => {
+                                const options = getFilterOptions(field.name);
+                                if (options.length === 0) return null;
+                                return (
+                                    <div key={field.name} className="space-y-2">
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">{field.label}</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {options.map(opt => (
+                                                <button
+                                                    key={opt}
+                                                    onClick={() => handleFilterChange(field.name, opt)}
+                                                    className={`px-2.5 py-1 rounded-md text-xs font-medium border transition ${activeFilters[field.name]?.includes(opt) ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}
+                                                >
+                                                    {opt}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="mt-6 flex justify-between items-center bg-gray-50 -mx-4 -mb-4 px-4 py-3 rounded-b-lg border-t">
+                            <span className="text-xs text-gray-500 italic">
+                                Showing {filteredContent.length} of {contents.length} items
+                            </span>
+                            <button
+                                onClick={clearFilters}
+                                className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-1 transition"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Clear All
+                            </button>
                         </div>
                     </div>
-
-                    <div className="flex items-center gap-2 border-l pl-4">
-                        <span className="text-sm text-gray-500">View:</span>
-                        <button
-                            onClick={() => setView('grid')}
-                            className={`px-3 py-1 rounded text-sm ${view === 'grid' ? 'bg-gray-200 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-                        >Grid</button>
-                        <button
-                            onClick={() => setView('list')}
-                            className={`px-3 py-1 rounded text-sm ${view === 'list' ? 'bg-gray-200 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-                        >List</button>
-                    </div>
-                </div>
+                )}
             </div>
 
             {filteredContent.length === 0 && (
