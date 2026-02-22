@@ -12,11 +12,13 @@ export default function ContentLibrary() {
     const [contents, setContents] = useState<any[]>([]);
     const [view, setView] = useState<'grid' | 'list'>('list');
     const [filter, setFilter] = useState('all');
+    const [searchQuery, setSearchQuery] = useState('');
     const [showMenu, setShowMenu] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [shareModalOpen, setShareModalOpen] = useState(false);
     const [selectedContent, setSelectedContent] = useState<any>(null);
+    const [orgSettings, setOrgSettings] = useState<any>(null);
 
     const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const statusParam = searchParams?.get('status');
@@ -30,8 +32,8 @@ export default function ContentLibrary() {
     useEffect(() => {
         if (token) {
             fetchContent();
+            fetchOrgSettings();
         } else if (!authLoading) {
-            // Auth loaded but no token - redirect to login
             setLoading(false);
         }
     }, [token, authLoading]);
@@ -45,15 +47,23 @@ export default function ContentLibrary() {
         }
     }, [showMenu]);
 
+    const fetchOrgSettings = async () => {
+        try {
+            const data = await api.get('/organizations/me', token!);
+            setOrgSettings(data.content_settings || {
+                labels: { title: 'Title', body: 'Content' },
+                customFields: []
+            });
+        } catch (err) {
+            console.error('Failed to fetch org settings:', err);
+        }
+    };
+
     const fetchContent = async () => {
         try {
             setLoading(true);
             setError(null);
-            console.log('Fetching content with token:', token ? 'present' : 'missing');
             const data = await api.get('/generic/content', token!);
-            console.log('Received data:', data);
-            console.log('Is array:', Array.isArray(data));
-            console.log('Data length:', Array.isArray(data) ? data.length : 'not an array');
             setContents(Array.isArray(data) ? data : []);
         } catch (err: any) {
             console.error('Failed to fetch content:', err);
@@ -102,7 +112,6 @@ export default function ContentLibrary() {
     const handleExport = (contentId: string, format: 'pdf' | 'docx' = 'pdf') => {
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-            // Updated to match corrected backend endpoint
             window.open(`${apiUrl}/generic/export_content/${contentId}?format=${format}`, '_blank');
         } catch (err: any) {
             console.error(err);
@@ -116,7 +125,6 @@ export default function ContentLibrary() {
     };
 
     const handleShareSuccess = () => {
-        // Optionally refresh content or show notification
         console.log('Content shared successfully');
     };
 
@@ -137,8 +145,21 @@ export default function ContentLibrary() {
 
     const filteredContent = contents.filter(c => {
         if (!c) return false;
-        if (filter === 'all') return true;
-        return c.status === filter;
+
+        // Status filter
+        if (filter !== 'all' && c.status !== filter) return false;
+
+        // Search filter
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            const matchesTitle = c.title?.toLowerCase().includes(query);
+            const matchesCustomFields = Object.values(c.custom_fields || {}).some(
+                val => String(val).toLowerCase().includes(query)
+            );
+            return matchesTitle || matchesCustomFields;
+        }
+
+        return true;
     });
 
     const getStatusBadge = (status?: string) => {
@@ -172,7 +193,6 @@ export default function ContentLibrary() {
         }
     };
 
-    // Show loading while auth is initializing
     if (authLoading) {
         return (
             <div className="container mx-auto py-8 px-4">
@@ -220,49 +240,67 @@ export default function ContentLibrary() {
             </div>
 
             {/* Toolbar */}
-            <div className="flex justify-between mb-6 bg-white p-4 rounded-lg shadow-sm border">
-                <div className="flex space-x-2">
+            <div className="flex flex-col md:flex-row justify-between mb-6 bg-white p-4 rounded-lg shadow-sm border gap-4">
+                <div className="flex flex-wrap gap-2">
                     <button
                         onClick={() => setFilter('all')}
-                        className={`px-4 py-2 rounded-md transition ${filter === 'all' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                        className={`px-4 py-2 rounded-md transition text-sm ${filter === 'all' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
                     >All</button>
                     <button
                         onClick={() => setFilter('draft')}
-                        className={`px-4 py-2 rounded-md transition ${filter === 'draft' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                        className={`px-4 py-2 rounded-md transition text-sm ${filter === 'draft' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
                     >Drafts</button>
                     <button
                         onClick={() => setFilter('review')}
-                        className={`px-4 py-2 rounded-md transition ${filter === 'review' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                        className={`px-4 py-2 rounded-md transition text-sm ${filter === 'review' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
                     >Review</button>
                     <button
                         onClick={() => setFilter('approved')}
-                        className={`px-4 py-2 rounded-md transition ${filter === 'approved' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                        className={`px-4 py-2 rounded-md transition text-sm ${filter === 'approved' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
                     >Approved</button>
                     <button
                         onClick={() => setFilter('published')}
-                        className={`px-4 py-2 rounded-md transition ${filter === 'published' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                        className={`px-4 py-2 rounded-md transition text-sm ${filter === 'published' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
                     >Published</button>
 
                     {user?.role === 'admin' && (
                         <button
                             onClick={handleMigrate}
-                            className="px-4 py-2 rounded-md transition text-amber-600 hover:bg-amber-50 border border-amber-200 ml-4 text-sm font-medium"
+                            className="px-4 py-2 rounded-md transition text-amber-600 hover:bg-amber-50 border border-amber-200 text-sm font-medium"
                             title="Assign orphaned content to your organization"
                         >
                             🛡️ Fix Visibility
                         </button>
                     )}
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">View:</span>
-                    <button
-                        onClick={() => setView('grid')}
-                        className={`px-3 py-1 rounded ${view === 'grid' ? 'bg-gray-200 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-                    >Grid</button>
-                    <button
-                        onClick={() => setView('list')}
-                        className={`px-3 py-1 rounded ${view === 'list' ? 'bg-gray-200 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-                    >List</button>
+
+                <div className="flex items-center gap-4">
+                    <div className="relative flex-1 md:w-64">
+                        <input
+                            type="text"
+                            placeholder={`Search ${orgSettings?.labels?.title || 'Title'} or custom fields...`}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        />
+                        <div className="absolute left-3 top-2.5 text-gray-400">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 border-l pl-4">
+                        <span className="text-sm text-gray-500">View:</span>
+                        <button
+                            onClick={() => setView('grid')}
+                            className={`px-3 py-1 rounded text-sm ${view === 'grid' ? 'bg-gray-200 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+                        >Grid</button>
+                        <button
+                            onClick={() => setView('list')}
+                            className={`px-3 py-1 rounded text-sm ${view === 'list' ? 'bg-gray-200 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+                        >List</button>
+                    </div>
                 </div>
             </div>
 
@@ -277,14 +315,21 @@ export default function ContentLibrary() {
 
             {/* List View */}
             {view === 'list' && filteredContent.length > 0 && (
-                <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+                <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
                     <table className="w-full">
-                        <thead className="bg-gray-50 border-b">
+                        <thead className="bg-gray-50 border-b text-nowrap">
                             <tr>
-                                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Title</th>
+                                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">
+                                    {orgSettings?.labels?.title || 'Title'}
+                                </th>
+                                {orgSettings?.customFields?.map((field: any) => (
+                                    <th key={field.name} className="text-left px-6 py-3 text-sm font-semibold text-gray-700">
+                                        {field.label}
+                                    </th>
+                                ))}
                                 <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Type</th>
                                 <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Status</th>
-                                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Last Updated</th>
+                                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700 text-nowrap">Last Updated</th>
                                 <th className="text-right px-6 py-3 text-sm font-semibold text-gray-700">Actions</th>
                             </tr>
                         </thead>
@@ -299,6 +344,11 @@ export default function ContentLibrary() {
                                             {c.title || 'Untitled'}
                                         </Link>
                                     </td>
+                                    {orgSettings?.customFields?.map((field: any) => (
+                                        <td key={field.name} className="px-6 py-4 text-sm text-gray-600">
+                                            {c.custom_fields?.[field.name] || '-'}
+                                        </td>
+                                    ))}
                                     <td className="px-6 py-4">
                                         <span className="text-sm text-gray-600">{getTypeLabel(c.type)}</span>
                                     </td>
@@ -314,7 +364,7 @@ export default function ContentLibrary() {
                                             )}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-gray-600">
+                                    <td className="px-6 py-4 text-sm text-gray-600 text-nowrap">
                                         {formatDate(c.updated_at || c.created_at)}
                                     </td>
                                     <td className="px-6 py-4 text-right">
