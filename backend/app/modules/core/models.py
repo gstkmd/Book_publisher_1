@@ -51,3 +51,15 @@ class Organization(Document):
 
     class Settings:
         name = "organizations"
+
+class InviteToken(Document):
+    token: str              # UUID token
+    email: str              # Invited email
+    role: str = "user"      # Role to assign
+    organization_id: str    # Org they'll join
+    expires_at: datetime    # 48-hour expiry
+    used: bool = False      # Consumed after join
+    created_at: datetime = datetime.now(timezone.utc)
+
+    class Settings:
+        name = "invite_tokens"

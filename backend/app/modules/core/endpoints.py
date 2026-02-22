@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
-from app.modules.core.models import User, Organization
+from app.modules.core.models import User, Organization, InviteToken
 from beanie import PydanticObjectId
 from app.api.deps import get_current_user
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr
 from app.core.security import get_password_hash
+import uuid
+from datetime import datetime, timezone, timedelta
 
 router = APIRouter()
 
@@ -17,6 +19,15 @@ class InviteRequest(BaseModel):
 class CreateOrgRequest(BaseModel):
     name: str
     slug: str
+
+class InviteLinkRequest(BaseModel):
+    email: EmailStr
+    role: Optional[str] = "user"
+
+class JoinRequest(BaseModel):
+    token: str
+    full_name: str
+    password: str
 
 @router.post("/", response_model=Organization)
 async def create_organization(
@@ -127,6 +138,96 @@ async def invite_member(
         )
         await new_user.create()
         return {"message": f"Created new user {new_user.email} and added to organization"}
+
+# ─── Token-based Invite Link Endpoints ───────────────────────────────────────
+
+@router.post("/invite-link")
+async def generate_invite_link(
+    req: InviteLinkRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Admin generates a shareable invite link for a specific email + role."""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can generate invite links")
+    if not current_user.organization_id:
+        raise HTTPException(status_code=400, detail="Create an organization first")
+
+    # Invalidate any previous unused tokens for this email + org
+    old_tokens = await InviteToken.find(
+        InviteToken.email == req.email.lower(),
+        InviteToken.organization_id == current_user.organization_id,
+        InviteToken.used == False
+    ).to_list()
+    for t in old_tokens:
+        await t.delete()
+
+    token = str(uuid.uuid4())
+    invite = InviteToken(
+        token=token,
+        email=req.email.lower(),
+        role=req.role or "user",
+        organization_id=current_user.organization_id,
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=48)
+    )
+    await invite.create()
+    return {"token": token}
+
+
+@router.get("/invite/{token}")
+async def validate_invite_token(token: str):
+    """Public endpoint — validates token and returns org name, email, role for the join page."""
+    invite = await InviteToken.find_one(InviteToken.token == token)
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invite link is invalid or expired")
+    if invite.used:
+        raise HTTPException(status_code=400, detail="This invite link has already been used")
+    if invite.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="This invite link has expired")
+
+    org = await Organization.get(invite.organization_id)
+    org_name = org.name if org else "Unknown Organization"
+
+    return {
+        "email": invite.email,
+        "role": invite.role,
+        "org_name": org_name
+    }
+
+
+@router.post("/join")
+async def join_organization(req: JoinRequest):
+    """Public endpoint — creates a user account and joins the org using an invite token."""
+    invite = await InviteToken.find_one(InviteToken.token == req.token)
+    if not invite or invite.used:
+        raise HTTPException(status_code=400, detail="Invalid or already-used invite link")
+    if invite.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Invite link has expired")
+
+    # Check if user already exists
+    existing = await User.find_one(User.email == invite.email)
+    if existing:
+        if existing.organization_id:
+            raise HTTPException(status_code=400, detail="This email already belongs to an organization")
+        # Existing user with no org — just join them
+        existing.organization_id = invite.organization_id
+        existing.role = invite.role
+        await existing.save()
+    else:
+        new_user = User(
+            email=invite.email,
+            hashed_password=get_password_hash(req.password),
+            full_name=req.full_name,
+            organization_id=invite.organization_id,
+            role=invite.role,
+            is_active=True
+        )
+        await new_user.create()
+
+    # Consume the token
+    invite.used = True
+    await invite.save()
+
+    return {"message": "Successfully joined organization. You can now log in."}
 
 @router.get("/members", response_model=List[User])
 async def get_organization_members(current_user: User = Depends(get_current_user)):

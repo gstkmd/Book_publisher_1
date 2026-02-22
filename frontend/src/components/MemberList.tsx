@@ -2,18 +2,30 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { Link2, Copy, Check, X, UserPlus } from 'lucide-react';
+
+const ROLES = [
+    { value: 'user', label: 'Member' },
+    { value: 'author', label: 'Author' },
+    { value: 'illustrator', label: 'Illustrator' },
+    { value: 'reviewer', label: 'Reviewer' },
+    { value: 'section_editor', label: 'Section Editor' },
+    { value: 'editor_in_chief', label: 'Editor-in-Chief' },
+    { value: 'teacher', label: 'Teacher' },
+    { value: 'admin', label: 'Admin' },
+];
 
 export const MemberList = () => {
     const { token } = useAuth();
     const [members, setMembers] = useState<any[]>([]);
 
-    // Invite State
+    // Invite modal state
     const [showInvite, setShowInvite] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
-    const [inviteName, setInviteName] = useState('');
-    const [invitePassword, setInvitePassword] = useState('');
     const [inviteRole, setInviteRole] = useState('user');
     const [inviting, setInviting] = useState(false);
+    const [generatedLink, setGeneratedLink] = useState('');
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         if (token) fetchMembers();
@@ -26,28 +38,38 @@ export const MemberList = () => {
         } catch (err) { console.error(err); }
     };
 
-    const handleInvite = async () => {
+    const handleGenerateLink = async () => {
         if (!inviteEmail) return;
         setInviting(true);
+        setGeneratedLink('');
         try {
-            await api.post('/organizations/invite', {
+            const { token: inviteToken } = await api.post('/organizations/invite-link', {
                 email: inviteEmail,
-                full_name: inviteName,
-                password: invitePassword,
                 role: inviteRole
             }, token!);
-            alert('Member added successfully!');
-            setShowInvite(false);
-            setInviteEmail('');
-            setInviteName('');
-            setInvitePassword('');
-            setInviteRole('user');
-            fetchMembers();
+            const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+            setGeneratedLink(`${baseUrl}/join?token=${inviteToken}`);
         } catch (err: any) {
-            alert(err.message || 'Failed to invite member');
+            let msg = 'Failed to generate link';
+            try { msg = JSON.parse(err.message).detail || msg; } catch { }
+            alert(msg);
         } finally {
             setInviting(false);
         }
+    };
+
+    const handleCopy = async () => {
+        await navigator.clipboard.writeText(generatedLink);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleCloseInvite = () => {
+        setShowInvite(false);
+        setInviteEmail('');
+        setInviteRole('user');
+        setGeneratedLink('');
+        setCopied(false);
     };
 
     const handleToggleStatus = async (userId: string, currentStatus: boolean) => {
@@ -70,7 +92,17 @@ export const MemberList = () => {
 
     return (
         <div className="bg-white p-6 rounded-lg shadow mb-6 relative">
-            <h2 className="text-xl font-bold mb-4">Team Members</h2>
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Team Members</h2>
+                <button
+                    onClick={() => setShowInvite(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-indigo-700 transition-all"
+                >
+                    <UserPlus className="w-4 h-4" />
+                    Invite Member
+                </button>
+            </div>
+
             <div className="space-y-2">
                 {members.map(m => (
                     <div key={m._id || m.email} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50 transition">
@@ -90,13 +122,8 @@ export const MemberList = () => {
                                 onChange={(e) => handleRoleChange(m._id, e.target.value)}
                                 className="text-xs bg-gray-50 border-none px-2 py-1 rounded capitalize focus:ring-1 focus:ring-blue-500"
                             >
-                                <option value="user">User</option>
-                                <option value="author">Author</option>
-                                <option value="section_editor">Section Editor</option>
-                                <option value="teacher">Teacher</option>
-                                <option value="admin">Admin</option>
+                                {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                             </select>
-
                             <button
                                 onClick={() => handleToggleStatus(m._id, m.is_active)}
                                 className={`text-[10px] font-bold uppercase px-2 py-1 rounded transition ${m.is_active ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
@@ -106,90 +133,75 @@ export const MemberList = () => {
                         </div>
                     </div>
                 ))}
+                {members.length === 0 && (
+                    <p className="text-center text-gray-400 text-sm py-8">No team members yet. Invite someone!</p>
+                )}
             </div>
 
-            {showInvite ? (
-                <div className="mt-4 p-4 border rounded bg-gray-50 animate-in fade-in slide-in-from-top-2">
-                    <h3 className="font-semibold mb-2">Add Member</h3>
-                    <p className="text-xs text-gray-500 mb-3">If the user exists, they will be added. If not, a new account will be created with the credentials below.</p>
-
-                    <div className="space-y-3">
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Email *</label>
-                            <input
-                                type="email"
-                                className="w-full p-2 border rounded text-sm"
-                                placeholder="colleague@example.com"
-                                value={inviteEmail}
-                                onChange={(e) => setInviteEmail(e.target.value)}
-                            />
+            {/* Invite Modal */}
+            {showInvite && (
+                <>
+                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50" onClick={handleCloseInvite} />
+                    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 border border-slate-100">
+                        <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 className="font-black text-slate-900 text-lg">Invite a Team Member</h3>
+                                <p className="text-slate-500 text-xs mt-0.5">Generate a secure link — valid for 48 hours</p>
+                            </div>
+                            <button onClick={handleCloseInvite} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-50 transition">
+                                <X className="w-5 h-5" />
+                            </button>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium mb-1">Full Name (Optional)</label>
+                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">Their Email</label>
                                 <input
-                                    type="text"
-                                    className="w-full p-2 border rounded text-sm"
-                                    placeholder="John Doe"
-                                    value={inviteName}
-                                    onChange={(e) => setInviteName(e.target.value)}
+                                    type="email" autoFocus
+                                    value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
+                                    placeholder="colleague@company.com"
+                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1">Password (For new users)</label>
-                                <input
-                                    type="text"
-                                    className="w-full p-2 border rounded text-sm font-mono"
-                                    placeholder="Temporary123!"
-                                    value={invitePassword}
-                                    onChange={(e) => setInvitePassword(e.target.value)}
-                                />
+                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">Role</label>
+                                <select
+                                    value={inviteRole} onChange={e => setInviteRole(e.target.value)}
+                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                >
+                                    {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                                </select>
                             </div>
-                        </div>
 
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Role</label>
-                            <select
-                                className="w-full p-2 border rounded text-sm bg-white"
-                                value={inviteRole}
-                                onChange={(e) => setInviteRole(e.target.value)}
+                            <button
+                                onClick={handleGenerateLink} disabled={inviting || !inviteEmail}
+                                className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl font-black text-sm uppercase tracking-wider hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <option value="user">User (Basic)</option>
-                                <option value="author">Author</option>
-                                <option value="section_editor">Section Editor</option>
-                                <option value="editor_in_chief">Editor in Chief</option>
-                                <option value="reviewer">Reviewer</option>
-                                <option value="illustrator">Illustrator</option>
-                                <option value="teacher">Teacher</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                        </div>
+                                <Link2 className="w-4 h-4" />
+                                {inviting ? 'Generating…' : 'Generate Invite Link'}
+                            </button>
 
-                        <div className="flex gap-2 pt-2">
-                            <button
-                                onClick={handleInvite}
-                                disabled={inviting}
-                                className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 disabled:opacity-50"
-                            >
-                                {inviting ? 'Processing...' : 'Add / Create User'}
-                            </button>
-                            <button
-                                onClick={() => setShowInvite(false)}
-                                className="bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-300"
-                            >
-                                Cancel
-                            </button>
+                            {/* Generated Link */}
+                            {generatedLink && (
+                                <div className="mt-4 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                                    <p className="text-xs font-black text-emerald-700 uppercase tracking-wider mb-2">✅ Link Ready — Share this with your team member</p>
+                                    <div className="flex items-center gap-2">
+                                        <code className="flex-1 text-xs text-emerald-800 bg-white border border-emerald-200 rounded-lg px-3 py-2 truncate font-mono">
+                                            {generatedLink}
+                                        </code>
+                                        <button
+                                            onClick={handleCopy}
+                                            className={`shrink-0 p-2 rounded-lg transition-all ${copied ? 'bg-emerald-600 text-white' : 'bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-100'}`}
+                                        >
+                                            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                    <p className="text-[10px] text-emerald-600 mt-2">⏱ Expires in 48 hours · Can only be used once</p>
+                                </div>
+                            )}
                         </div>
                     </div>
-                </div>
-            ) : (
-                <button
-                    onClick={() => setShowInvite(true)}
-                    className="mt-4 text-blue-600 text-sm hover:underline"
-                >
-                    + Invite Member
-                </button>
+                </>
             )}
         </div>
     );
