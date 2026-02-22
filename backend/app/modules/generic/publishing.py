@@ -2,40 +2,52 @@ import io
 from app.modules.generic.models import Content
 
 class PublishingService:
-    async def export_pdf(self, content: Content) -> bytes:
+    async def export_docx(self, content: Content) -> bytes:
         try:
-            from weasyprint import HTML
+            from docx import Document
+            from docx.shared import Inches
         except ImportError:
-            # Fallback or error if not installed
-            print("WeasyPrint not found. Please install validation dependencies.")
-            return b"%PDF-1.4 ... (Mock specific content due to missing libraries)"
+            print("python-docx not found. Please install dependencies.")
+            return b"DOCX Mock Data"
 
-        # 1. Convert Rich Text JSON to HTML (Simplified for POC)
-        # In prod, use a proper ProseMirror->HTML serializer
-        body_html = f"<div>{str(content.body)}</div>"
+        doc = Document()
+        doc.add_heading(content.title, 0)
         
-        full_html = f"""
-        <html>
-            <head>
-                <style>
-                    body {{ font-family: serif; line-height: 1.5; }}
-                    h1 {{ color: #333; }}
-                </style>
-            </head>
-            <body>
-                <h1>{content.title}</h1>
-                <p><i>By Author (ID: {content.author.ref.id})</i></p>
-                <hr/>
-                {body_html}
-            </body>
-        </html>
-        """
+        import re
+        import httpx
+        from io import BytesIO
+
+        # Simple HTML to DOCX converter for POC
+        # In a real app, use a proper library like htmldocx
+        body_html = str(content.body.get("text", "")) if isinstance(content.body, dict) else str(content.body)
         
-        # 2. Generate PDF
-        pdf_buffer = io.BytesIO()
-        HTML(string=full_html).write_pdf(pdf_buffer)
-        pdf_buffer.seek(0)
-        return pdf_buffer.read()
+        # Split by tags to handle images vs text
+        parts = re.split(r'(<img[^>]+>)', body_html)
+        
+        async with httpx.AsyncClient() as client:
+            for part in parts:
+                if part.startswith('<img'):
+                    # Extract src
+                    src_match = re.search(r'src="([^"]+)"', part)
+                    if src_match:
+                        img_url = src_match.group(1)
+                        try:
+                            img_res = await client.get(img_url)
+                            if img_res.status_code == 200:
+                                img_data = BytesIO(img_res.content)
+                                doc.add_picture(img_data, width=Inches(4))
+                        except Exception as e:
+                            print(f"Failed to download image {img_url}: {e}")
+                else:
+                    # Clean up other tags and add as paragraph
+                    text_cleaned = re.sub('<[^<]+?>', '', part).strip()
+                    if text_cleaned:
+                        doc.add_paragraph(text_cleaned)
+        
+        buffer = io.BytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
+        return buffer.read()
 
     async def export_epub(self, content: Content) -> bytes:
         try:

@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { RichTextEditor } from '@/components/RichTextEditor';
 import Link from 'next/link';
 
 interface Comment {
@@ -298,11 +299,10 @@ export default function EditorEditPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">{labels.body}</label>
-                                <textarea
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md h-64 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                <RichTextEditor
+                                    content={content}
+                                    onChange={(html) => setContent(html)}
                                     placeholder="Start writing..."
-                                    value={content}
-                                    onChange={(e) => setContent(e.target.value)}
                                 />
                             </div>
                             <div className="flex gap-3">

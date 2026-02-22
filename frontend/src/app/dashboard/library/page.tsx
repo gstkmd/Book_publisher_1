@@ -154,7 +154,7 @@ export default function ContentLibrary() {
         }
     };
 
-    const handleExport = (contentId: string, format: 'pdf' | 'docx' = 'pdf') => {
+    const handleExport = (contentId: string, format: 'docx' | 'epub' = 'docx') => {
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
             window.open(`${apiUrl}/generic/export_content/${contentId}?format=${format}`, '_blank');
@@ -586,7 +586,7 @@ export default function ContentLibrary() {
                                                 className="text-purple-600 hover:text-purple-800 text-sm font-medium"
                                             >Share</button>
                                             <button
-                                                onClick={() => handleExport(c.id || c._id, 'pdf')}
+                                                onClick={() => handleExport(c.id || c._id, 'docx')}
                                                 className="text-gray-600 hover:text-gray-800 text-sm"
                                             >Export</button>
                                             <button

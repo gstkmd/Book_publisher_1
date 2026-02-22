@@ -64,7 +64,10 @@ async def normalize_data(user: User = Depends(get_current_user)):
     return {"message": f"Successfully normalized {count} items"}
 
 @router.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
     """
     Upload a file to object storage.
     """
@@ -86,7 +89,10 @@ class MultipartComplete(BaseModel):
     parts: List[dict] # [{ETag, PartNumber}]
 
 @router.post("/upload/multipart/init")
-async def init_multipart(data: MultipartInit):
+async def init_multipart(
+    data: MultipartInit,
+    current_user: User = Depends(get_current_user)
+):
     upload_id = s3_client.create_multipart_upload(data.file_name, data.content_type)
     return {"uploadId": upload_id, "fileName": data.file_name}
 
@@ -95,14 +101,18 @@ async def upload_part(
     upload_id: str = Form(...),
     file_name: str = Form(...),
     part_number: int = Form(...),
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
 ):
     content = await file.read()
     etag = s3_client.upload_part(file_name, upload_id, part_number, content)
     return {"ETag": etag}
 
 @router.post("/upload/multipart/complete")
-async def complete_multipart(data: MultipartComplete):
+async def complete_multipart(
+    data: MultipartComplete,
+    current_user: User = Depends(get_current_user)
+):
     url = s3_client.complete_multipart_upload(data.file_name, data.upload_id, data.parts)
     return {"url": url}
 
@@ -1233,7 +1243,7 @@ async def task_websocket(websocket: WebSocket, task_id: str):
 
 
 @router.get("/export_content/{id}")
-async def export_content(id: PydanticObjectId, format: str = "pdf"):
+async def export_content(id: PydanticObjectId, format: str = "docx"):
     from fastapi.responses import Response
     from app.modules.generic.publishing import publishing_service
     
@@ -1241,10 +1251,10 @@ async def export_content(id: PydanticObjectId, format: str = "pdf"):
     if not content:
         raise HTTPException(status_code=404, detail="Content not found")
         
-    if format == "pdf":
-        data = await publishing_service.export_pdf(content)
-        media_type = "application/pdf"
-        filename = f"{content.slug}.pdf"
+    if format == "docx":
+        data = await publishing_service.export_docx(content)
+        media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        filename = f"{content.slug}.docx"
     elif format == "epub":
         data = await publishing_service.export_epub(content)
         media_type = "application/epub+zip"
