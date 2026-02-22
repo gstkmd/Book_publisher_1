@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { RichTextEditor } from '@/components/RichTextEditor';
@@ -23,7 +23,9 @@ export default function EditorEditPage() {
     const { user, isLoading, token } = useAuth();
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const contentId = params.id as string;
+    const taskId = searchParams.get('taskId');
 
     const [title, setTitle] = useState('');
     const [type, setType] = useState('article');
@@ -155,7 +157,11 @@ export default function EditorEditPage() {
             }, token!);
 
             alert('Content updated successfully!');
-            router.push('/dashboard/library');
+            if (taskId) {
+                router.push(`/dashboard/tasks/${taskId}`);
+            } else {
+                router.push('/dashboard/library');
+            }
         } catch (err: any) {
             console.error(err);
             alert('Failed to update content: ' + (err.message || 'Unknown error'));
@@ -186,7 +192,11 @@ export default function EditorEditPage() {
             }, token!);
 
             alert('Content published successfully!');
-            router.push('/dashboard/library');
+            if (taskId) {
+                router.push(`/dashboard/tasks/${taskId}`);
+            } else {
+                router.push('/dashboard/library');
+            }
         } catch (err: any) {
             console.error(err);
             alert('Failed to publish content: ' + (err.message || 'Unknown error'));
@@ -321,7 +331,13 @@ export default function EditorEditPage() {
                                     {saving ? 'Publishing...' : 'Publish'}
                                 </button>
                                 <button
-                                    onClick={() => router.push('/dashboard/library')}
+                                    onClick={() => {
+                                        if (taskId) {
+                                            router.push(`/dashboard/tasks/${taskId}`);
+                                        } else {
+                                            router.push('/dashboard/library');
+                                        }
+                                    }}
                                     className="bg-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-400 transition"
                                 >
                                     Cancel

@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { RichTextEditor } from '@/components/RichTextEditor';
@@ -9,6 +9,8 @@ import { RichTextEditor } from '@/components/RichTextEditor';
 export default function EditorNewPage() {
     const { user, isLoading, token } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const taskId = searchParams.get('taskId');
     const [title, setTitle] = useState('');
     const [type, setType] = useState('article');
     const [content, setContent] = useState('');
@@ -87,7 +89,11 @@ export default function EditorNewPage() {
             }, token!);
 
             alert('Draft saved successfully!');
-            router.push('/dashboard/library');
+            if (taskId) {
+                router.push(`/dashboard/tasks/${taskId}`);
+            } else {
+                router.push('/dashboard/library');
+            }
         } catch (err: any) {
             console.error(err);
             alert('Failed to save draft: ' + (err.message || 'Unknown error'));
@@ -189,7 +195,13 @@ export default function EditorNewPage() {
 
                     <div className="flex justify-end gap-3">
                         <button
-                            onClick={() => router.push('/dashboard/library')}
+                            onClick={() => {
+                                if (taskId) {
+                                    router.push(`/dashboard/tasks/${taskId}`);
+                                } else {
+                                    router.push('/dashboard/library');
+                                }
+                            }}
                             className="px-6 py-2 text-gray-600 hover:text-gray-800"
                         >
                             Cancel
