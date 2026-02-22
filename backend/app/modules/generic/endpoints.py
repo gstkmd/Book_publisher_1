@@ -510,12 +510,17 @@ async def share_content(
         task = Task(
             title=f"Review: {content.title}",
             description=share_data.message,
-            content_id=ObjectId(id),
-            assignee=ObjectId(user_id),
+            content_id=Link(ref=DBRef(collection="content", id=ObjectId(id)), document_class=Content),
+            assignee=Link(ref=DBRef(collection="users", id=ObjectId(user_id)), document_class=User),
             organization_id=current_user.organization_id,
             status="pending",
+            priority="medium",
+            stage="To Do",
             due_date=share_data.due_date,
-            created_by=current_user.id
+            start_date=get_ist_now(),
+            assigner=Link(ref=DBRef(collection="users", id=ObjectId(str(current_user.id))), document_class=User),
+            created_by=Link(ref=DBRef(collection="users", id=ObjectId(str(current_user.id))), document_class=User),
+            updated_at=get_ist_now()
         )
         await task.create()
         created_tasks.append(str(task.id))
