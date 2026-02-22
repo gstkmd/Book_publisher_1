@@ -449,7 +449,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                             }`}
                                     >
                                         <FileText className="w-3 h-3" />
-                                        Review
+                                        Content
                                     </button>
                                     <Link
                                         href={`/dashboard/editor/${task.content_id?._id || task.content_id?.id || task.content_id}`}
@@ -507,7 +507,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                         type="text"
                                         value={task.title}
                                         onChange={(e) => handleUpdateField('title', e.target.value)}
-                                        className="text-lg font-extrabold text-orange-500 w-full border-none focus:ring-0 p-0 placeholder:text-orange-200"
+                                        className="text-lg font-extrabold text-slate-900 w-full border-none focus:ring-0 p-0 placeholder:text-slate-300"
                                         placeholder="Task Title (Mandatory)"
                                         required
                                     />
@@ -695,6 +695,68 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                                 </div>
                                             )}
                                         </div>
+                                    </div>
+
+                                    {/* Linked Workspace Content (Target Content) */}
+                                    <div className="flex flex-col gap-1.5 p-2 rounded-2xl bg-indigo-50/30 border border-indigo-100/50 hover:bg-white hover:shadow-lg hover:shadow-indigo-100 transition-all duration-300 group">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 text-indigo-400">
+                                                <FileText className="w-3 h-3" />
+                                                <span className="text-[9px] font-black uppercase tracking-[0.15em]">Target Content</span>
+                                            </div>
+                                            {!isCreatingContent ? (
+                                                <button
+                                                    onClick={() => setIsCreatingContent(true)}
+                                                    className="text-[9px] font-black text-indigo-400 hover:text-indigo-600 uppercase tracking-widest transition-colors"
+                                                >
+                                                    + Quick Create
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => setIsCreatingContent(false)}
+                                                    className="text-[9px] font-black text-rose-400 hover:text-rose-600 uppercase tracking-widest transition-colors"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {isCreatingContent ? (
+                                            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200 py-0.5">
+                                                <input
+                                                    autoFocus
+                                                    type="text"
+                                                    value={newContentTitle}
+                                                    onChange={(e) => setNewContentTitle(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') handleQuickCreateContent();
+                                                    }}
+                                                    placeholder="Enter title..."
+                                                    className="flex-1 bg-white px-2 py-1 rounded-lg border border-indigo-100 text-[10px] font-black text-slate-600 uppercase tracking-widest outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all"
+                                                />
+                                                <button
+                                                    onClick={handleQuickCreateContent}
+                                                    disabled={!newContentTitle.trim() || isSaving}
+                                                    className="p-1.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50 transition-all shadow-sm"
+                                                >
+                                                    <CheckCircle2 className="w-2.5 h-2.5" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="relative group/select">
+                                                <select
+                                                    value={task.content_id?._id || task.content_id?.id || task.content_id || ''}
+                                                    onChange={(e) => handleUpdateField('content_id', e.target.value || null)}
+                                                    className="w-full appearance-none bg-slate-100/50 hover:bg-white px-2 py-1.5 rounded-xl border border-transparent hover:border-indigo-100 transition-all text-[10px] font-black text-slate-600 uppercase tracking-widest outline-none pr-8 truncate"
+                                                >
+                                                    <option value="">None Linked</option>
+                                                    {libraryContent.map(c => (
+                                                        <option key={c._id || c.id} value={c._id || c.id}>{c.title}</option>
+                                                    ))}
+                                                </select>
+                                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300 pointer-events-none group-hover/select:text-indigo-400 transition-colors" />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
