@@ -1065,11 +1065,41 @@ async def get_task_activity(id: PydanticObjectId, current_user: User = Depends(g
         ActivityLog.organization_id == current_user.organization_id
     ).sort("-created_at").to_list()
     
+    user_cache = {}
+    async def get_name(uid):
+        if not uid or uid == "None": return "Unassigned"
+        if uid in user_cache: return user_cache[uid]
+        try:
+            u = await User.get(uid)
+            name = u.full_name if u else "Unknown"
+            user_cache[uid] = name
+            return name
+        except:
+            return "Unknown"
+
     results = []
     for log in logs:
-        user_name = "Unknown User"
-        u = await User.get(get_link_id(log.user))
-        if u: user_name = u.full_name
+        user_name = await get_name(get_link_id(log.user))
+        
+        description = ""
+        if log.action == "created":
+            description = "created the task"
+        elif log.action == "status_change":
+            description = f"changed status from {log.old_value} to {log.new_value}"
+        elif log.action == "stage_change":
+            description = f"moved task from {log.old_value} to {log.new_value}"
+        elif log.action == "assignee_change":
+            old_name = await get_name(log.old_value)
+            new_name = await get_name(log.new_value)
+            description = f"reassigned task from {old_name} to {new_name}"
+        elif log.action == "assigner_change":
+            old_name = await get_name(log.old_value)
+            new_name = await get_name(log.new_value)
+            description = f"changed assigner from {old_name} to {new_name}"
+        else:
+            description = f"performed {log.action}"
+            if log.old_value or log.new_value:
+                description += f" ({log.old_value} -> {log.new_value})"
         
         results.append(ActivityLogSchema(
             id=str(log.id),
@@ -1078,6 +1108,7 @@ async def get_task_activity(id: PydanticObjectId, current_user: User = Depends(g
             action=log.action,
             old_value=log.old_value,
             new_value=log.new_value,
+            description=description,
             user_id=get_link_id(log.user),
             user_name=user_name,
             created_at=log.created_at

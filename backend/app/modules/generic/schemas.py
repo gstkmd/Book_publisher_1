@@ -80,6 +80,7 @@ class ActivityLogSchema(BaseModel):
     action: str
     old_value: Optional[str] = None
     new_value: Optional[str] = None
+    description: Optional[str] = None
     user_id: str
     user_name: Optional[str] = None
     created_at: datetime
