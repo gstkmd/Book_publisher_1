@@ -542,7 +542,7 @@ async def create_task(
         stage=task_in.stage,
         tags=task_in.tags or [],
         due_date=task_in.due_date,
-        start_date=task_in.start_date,
+        start_date=task_in.start_date or get_ist_now(),
         time_estimate=task_in.time_estimate,
         track_time=task_in.track_time or 0,
         attachments=task_in.attachments or [],
@@ -1061,7 +1061,7 @@ async def get_task_comments(id: PydanticObjectId, current_user: User = Depends(g
 @router.get("/tasks/{id}/activity", response_model=List[ActivityLogSchema])
 async def get_task_activity(id: PydanticObjectId, current_user: User = Depends(get_current_user)):
     logs = await ActivityLog.find(
-        ActivityLog.resource_id == id,
+        ActivityLog.resource_id == str(id),
         ActivityLog.organization_id == current_user.organization_id
     ).sort("-created_at").to_list()
     

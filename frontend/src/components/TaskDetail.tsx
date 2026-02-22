@@ -76,7 +76,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                     assigner: user?.id || null, // Default to current user
                     assigner_name: user?.full_name || '',
                     due_date: null,
-                    start_date: null,
+                    start_date: new Date().toISOString(),
                     time_estimate: ''
                 });
                 setLoading(false);
