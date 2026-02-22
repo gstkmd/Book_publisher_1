@@ -33,10 +33,9 @@ export const Sidebar = () => {
 
     const displayName = org?.name || user?.full_name?.split(' ')[0] || 'My Org';
 
-    const menuItems = [
+    const mainItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { name: 'Library', href: '/dashboard/library', icon: Library },
-        { name: 'Collaboration', href: '/dashboard/collaboration', icon: Users },
         { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
         { name: 'Workflow', href: '/dashboard/workflow', icon: GitBranch },
         { name: 'Standards', href: '/dashboard/standards', icon: ClipboardList },
@@ -44,12 +43,12 @@ export const Sidebar = () => {
         { name: 'Assessments', href: '/dashboard/assessments', icon: CheckSquare },
         { name: 'Rights', href: '/dashboard/rights', icon: Scale },
         { name: 'Monitoring', href: '/dashboard/monitoring', icon: Activity },
-        { name: 'Settings', href: '/dashboard/settings', icon: Settings },
     ];
 
-    if (user?.role === 'admin') {
-        menuItems.push({ name: 'Admin', href: '/dashboard/admin', icon: Shield });
-    }
+    const systemItems = [
+        { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+        ...(user?.role === 'admin' ? [{ name: 'Admin', href: '/dashboard/admin', icon: Shield }] : []),
+    ];
 
     const toggleSidebar = () => setIsOpen(!isOpen);
     const toggleCollapse = () => setIsCollapsed(!isCollapsed);
@@ -100,36 +99,73 @@ export const Sidebar = () => {
                 </div>
 
                 {/* Navigation Menu */}
-                <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1 custom-scrollbar">
-                    {menuItems.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = pathname === item.href;
-
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                onClick={() => setIsOpen(false)}
-                                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group
+                <nav className="flex-1 overflow-y-auto py-6 px-3 custom-scrollbar">
+                    {/* Main Items */}
+                    <div className="space-y-1">
+                        {mainItems.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = pathname === item.href;
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    onClick={() => setIsOpen(false)}
+                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group
                                     ${isActive
-                                        ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50'
-                                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
+                                            ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50'
+                                            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
                                     ${isCollapsed ? 'justify-center lg:px-0 lg:w-12 lg:mx-auto' : ''}
                                 `}
-                                title={isCollapsed ? item.name : ''}
-                            >
-                                <Icon className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
-                                <span className={`text-[13px] font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300
+                                    title={isCollapsed ? item.name : ''}
+                                >
+                                    <Icon className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                                    <span className={`text-[13px] font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300
                                     ${isCollapsed ? 'lg:hidden opacity-0 w-0' : 'opacity-100 w-auto'}
                                 `}>
-                                    {item.name}
-                                </span>
-                                {isActive && !isCollapsed && (
-                                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
-                                )}
-                            </Link>
-                        );
-                    })}
+                                        {item.name}
+                                    </span>
+                                    {isActive && !isCollapsed && (
+                                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
+                                    )}
+                                </Link>
+                            );
+                        })}
+                    </div>
+
+                    {/* System Section */}
+                    <div className="mt-4 pt-4 border-t border-slate-100 space-y-1">
+                        {!isCollapsed && (
+                            <p className="px-3 mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">System</p>
+                        )}
+                        {systemItems.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = pathname === item.href;
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    onClick={() => setIsOpen(false)}
+                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group
+                                        ${isActive
+                                            ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50'
+                                            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
+                                        ${isCollapsed ? 'justify-center lg:px-0 lg:w-12 lg:mx-auto' : ''}
+                                    `}
+                                    title={isCollapsed ? item.name : ''}
+                                >
+                                    <Icon className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                                    <span className={`text-[13px] font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300
+                                        ${isCollapsed ? 'lg:hidden opacity-0 w-0' : 'opacity-100 w-auto'}
+                                    `}>
+                                        {item.name}
+                                    </span>
+                                    {isActive && !isCollapsed && (
+                                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
+                                    )}
+                                </Link>
+                            );
+                        })}
+                    </div>
                 </nav>
 
                 {/* User Section */}
