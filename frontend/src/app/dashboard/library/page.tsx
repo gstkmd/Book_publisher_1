@@ -88,6 +88,15 @@ export default function ContentLibrary() {
         setSearchQuery('');
     };
 
+    const normalizeValue = (category: string, value: any) => {
+        if (!value) return '';
+        const valStr = String(value);
+        if (category.toLowerCase().includes('chapter')) {
+            return valStr.toLowerCase().replace(/^chapter\s*/, '').trim();
+        }
+        return valStr;
+    };
+
     const getFilterOptions = (category: string) => {
         const options = new Set<string>();
         contents.forEach(c => {
@@ -97,11 +106,16 @@ export default function ContentLibrary() {
                 if (c.type) options.add(c.type);
             } else {
                 // Custom field
-                const val = c.custom_fields?.[category];
+                const val = normalizeValue(category, c.custom_fields?.[category]);
                 if (val) options.add(val);
             }
         });
-        return Array.from(options).sort();
+        return Array.from(options).sort((a, b) => {
+            const na = parseInt(a);
+            const nb = parseInt(b);
+            if (!isNaN(na) && !isNaN(nb)) return na - nb;
+            return a.localeCompare(b);
+        });
     };
 
     const handlePublish = async (contentId: string) => {
@@ -183,7 +197,7 @@ export default function ContentLibrary() {
             let itemValue = '';
             if (category === 'status') itemValue = c.status;
             else if (category === 'type') itemValue = c.type;
-            else itemValue = c.custom_fields?.[category];
+            else itemValue = normalizeValue(category, c.custom_fields?.[category]);
 
             if (!selectedValues.includes(itemValue)) return false;
         }
@@ -444,7 +458,7 @@ export default function ContentLibrary() {
                                     </td>
                                     {orgSettings?.customFields?.map((field: any) => (
                                         <td key={field.name} className="px-6 py-4 text-sm text-gray-600">
-                                            {c.custom_fields?.[field.name] || '-'}
+                                            {normalizeValue(field.name, c.custom_fields?.[field.name]) || '-'}
                                         </td>
                                     ))}
                                     <td className="px-6 py-4">
