@@ -386,70 +386,80 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                 {/* Left Section: Task Info */}
                 <div className="flex-1 overflow-y-auto border-r border-gray-100 flex flex-col bg-white">
                     {/* Header */}
-                    <div className="p-4 border-b border-gray-50 flex items-center justify-between sticky top-0 bg-white z-10">
+                    <div className="p-4 border-b border-gray-100/50 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-20">
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors">
-                                <span className="w-2 h-2 rounded-full bg-gray-400"></span>
-                                <span className="text-xs font-bold text-gray-600">{taskId ? 'Task' : 'New Task'}</span>
-                                <ChevronDown className="w-3 h-3 text-gray-400" />
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50/50 rounded-full border border-slate-200/50 cursor-pointer hover:bg-slate-100 transition-all duration-200 shadow-sm group">
+                                <span className={`w-2 h-2 rounded-full ${taskId ? 'bg-indigo-500 animate-pulse' : 'bg-emerald-500'}`}></span>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-slate-700">{taskId ? 'Task' : 'New Task'}</span>
+                                <ChevronDown className="w-3 h-3 text-slate-400 group-hover:text-slate-600 transition-transform group-hover:translate-y-0.5" />
                             </div>
                             {task.content_id && (
-                                <div className="flex items-center gap-1 p-1 bg-gray-50 border border-gray-100 rounded-xl ml-2 text-nowrap">
+                                <div className="flex items-center gap-1 p-1 bg-slate-50/30 border border-slate-200/30 rounded-2xl ml-2 text-nowrap">
                                     <button
                                         onClick={() => setActiveTab('details')}
-                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'details'
-                                            ? 'bg-white text-indigo-600 shadow-sm'
-                                            : 'text-gray-400 hover:text-gray-600'
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${activeTab === 'details'
+                                            ? 'bg-white text-indigo-600 shadow-md scale-105 active:scale-95'
+                                            : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
                                             }`}
                                     >
-                                        <MessageSquare className="w-3 h-3" />
+                                        <MessageSquare className="w-3.5 h-3.5" />
                                         Details
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('review')}
-                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'review'
-                                            ? 'bg-white text-teal-600 shadow-sm'
-                                            : 'text-gray-400 hover:text-gray-600'
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${activeTab === 'review'
+                                            ? 'bg-white text-emerald-600 shadow-md scale-105 active:scale-95'
+                                            : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
                                             }`}
                                     >
-                                        <FileText className="w-3 h-3" />
-                                        Review Content
+                                        <FileText className="w-3.5 h-3.5" />
+                                        Review
                                     </button>
                                     <Link
                                         href={`/dashboard/editor/${task.content_id?._id || task.content_id?.id || task.content_id}`}
-                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-blue-600 hover:bg-white transition-all"
+                                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 hover:bg-white hover:shadow-md transition-all duration-300"
                                     >
-                                        <ExternalLink className="w-3 h-3" />
+                                        <ExternalLink className="w-3.5 h-3.5" />
                                         Edit
                                     </Link>
                                 </div>
                             )}
-                            {isSaving ? (
-                                <div className="flex items-center gap-2 text-indigo-500 animate-pulse">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
-                                    <span className="text-[10px] font-bold uppercase tracking-wider">Saving...</span>
-                                </div>
-                            ) : lastSaved && (
-                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                    Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </div>
-                            )}
+                            <div className="flex items-center gap-3 ml-2">
+                                {isSaving ? (
+                                    <div className="flex items-center gap-2 text-indigo-500">
+                                        <div className="flex gap-0.5">
+                                            <div className="w-1 h-1 rounded-full bg-indigo-500 animate-bounce [animation-delay:-0.3s]"></div>
+                                            <div className="w-1 h-1 rounded-full bg-indigo-500 animate-bounce [animation-delay:-0.15s]"></div>
+                                            <div className="w-1 h-1 rounded-full bg-indigo-500 animate-bounce"></div>
+                                        </div>
+                                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-500/80">Syncing</span>
+                                    </div>
+                                ) : lastSaved && (
+                                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-50/50 border border-slate-100/50">
+                                        <div className="w-1 h-1 rounded-full bg-slate-300"></div>
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                                            Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
                             {taskId && (
-                                <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-                                    <Maximize2 className="w-4 h-4" />
+                                <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all duration-300 active:scale-90 group">
+                                    <Maximize2 className="w-4 h-4 group-hover:scale-110" />
+                                </button>
+                            )}
+                            {!taskId && (
+                                <button
+                                    onClick={() => handleCreateTask()}
+                                    className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 flex items-center gap-2.5"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Submit Task
                                 </button>
                             )}
                         </div>
-                        {!taskId && (
-                            <button
-                                onClick={() => handleCreateTask()}
-                                className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-sm flex items-center gap-2"
-                            >
-                                <Plus className="w-3 h-3" />
-                                Create Task
-                            </button>
-                        )}
-                        {/* Close button removed as we use navigation */}
                     </div>
 
                     <div className="p-6 space-y-4">
@@ -467,36 +477,65 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                 </div>
 
                                 {/* Metadata Grid */}
-                                <div className="grid grid-cols-3 gap-y-3 gap-x-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {/* Status */}
-                                    <div className="flex items-center group">
-                                        <div className="w-24 flex items-center gap-2 text-gray-400">
-                                            <CheckCircle2 className="w-4 h-4" />
-                                            <span className="text-xs font-bold uppercase tracking-wider">Status</span>
+                                    <div className="flex flex-col gap-2 p-3 rounded-2xl bg-slate-50/50 border border-slate-100/50 hover:bg-white hover:shadow-lg hover:shadow-slate-100 transition-all duration-300 group">
+                                        <div className="flex items-center gap-2 text-slate-400">
+                                            <CheckCircle2 className="w-3.5 h-3.5 group-hover:text-indigo-500 transition-colors" />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.15em]">Workflow State</span>
                                         </div>
-                                        <select
-                                            value={task.stage || 'To Do'}
-                                            onChange={(e) => {
-                                                const newVal = e.target.value;
-                                                handleUpdateField('stage', newVal);
-                                            }}
-                                            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-md font-bold text-xs uppercase cursor-pointer hover:bg-indigo-100 transition-colors border-none focus:ring-0"
-                                        >
-                                            <option value="To Do">To Do</option>
-                                            <option value="In Progress">In Progress</option>
-                                            <option value="Review">Review</option>
-                                            <option value="Done">Done</option>
-                                        </select>
+                                        <div className="relative">
+                                            <select
+                                                value={task.stage || 'To Do'}
+                                                onChange={(e) => handleUpdateField('stage', e.target.value)}
+                                                className={`w-full appearance-none px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest cursor-pointer border-none focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-sm ${task.stage === 'Done' ? 'bg-emerald-50 text-emerald-700' :
+                                                    task.stage === 'Review' ? 'bg-amber-50 text-amber-700' :
+                                                        task.stage === 'In Progress' ? 'bg-indigo-50 text-indigo-700' :
+                                                            'bg-slate-100 text-slate-600'
+                                                    }`}
+                                            >
+                                                <option value="To Do">To Do</option>
+                                                <option value="In Progress">In Progress</option>
+                                                <option value="Review">Review</option>
+                                                <option value="Done">Done</option>
+                                            </select>
+                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-50" />
+                                        </div>
                                     </div>
 
-                                    {/* Assignees */}
-                                    <div className="flex items-center group">
-                                        <div className="w-24 flex items-center gap-2 text-gray-400">
-                                            <UserIcon className="w-4 h-4" />
-                                            <span className="text-xs font-bold uppercase tracking-wider">Assignee</span>
+                                    {/* Priority */}
+                                    <div className="flex flex-col gap-2 p-3 rounded-2xl bg-slate-50/50 border border-slate-100/50 hover:bg-white hover:shadow-lg hover:shadow-slate-100 transition-all duration-300 group">
+                                        <div className="flex items-center gap-2 text-slate-400">
+                                            <Flag className="w-3.5 h-3.5 group-hover:text-red-500 transition-colors" />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.15em]">Priority Level</span>
                                         </div>
-                                        <div className="flex items-center gap-2 cursor-pointer group relative">
-                                            {task.assignee_name && <UserAvatar name={task.assignee_name} size="xs" />}
+                                        <div className="relative">
+                                            <select
+                                                value={task.priority || 'medium'}
+                                                onChange={(e) => handleUpdateField('priority', e.target.value)}
+                                                className={`w-full appearance-none px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest cursor-pointer border-none focus:ring-2 focus:ring-red-500/20 transition-all shadow-sm ${task.priority === 'urgent' ? 'bg-red-50 text-red-700' :
+                                                    task.priority === 'high' ? 'bg-orange-50 text-orange-700' :
+                                                        task.priority === 'medium' ? 'bg-indigo-50 text-indigo-700' :
+                                                            'bg-slate-100 text-slate-600'
+                                                    }`}
+                                            >
+                                                <option value="low">Low</option>
+                                                <option value="medium">Medium</option>
+                                                <option value="high">High</option>
+                                                <option value="urgent">Urgent</option>
+                                            </select>
+                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-50" />
+                                        </div>
+                                    </div>
+
+                                    {/* Assignee */}
+                                    <div className="flex flex-col gap-2 p-3 rounded-2xl bg-slate-50/50 border border-slate-100/50 hover:bg-white hover:shadow-lg hover:shadow-slate-100 transition-all duration-300 group">
+                                        <div className="flex items-center gap-2 text-slate-400">
+                                            <UserIcon className="w-3.5 h-3.5 group-hover:text-violet-500 transition-colors" />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.15em]">Assignee</span>
+                                        </div>
+                                        <div className="flex items-center gap-3 bg-white/50 p-1 rounded-xl border border-slate-100 transition-all group-hover:border-violet-100 group-hover:bg-white">
+                                            {task.assignee_name && <UserAvatar name={task.assignee_name} size="sm" className="ring-2 ring-white shadow-sm" />}
                                             <select
                                                 value={task.assignee?._id || task.assignee?.id || task.assignee || ''}
                                                 onChange={(e) => {
@@ -507,7 +546,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                                         assignee_name: member?.full_name || ''
                                                     });
                                                 }}
-                                                className="text-xs font-bold text-gray-700 bg-transparent border-none focus:ring-0 p-0"
+                                                className="flex-1 text-xs font-black text-slate-700 bg-transparent border-none focus:ring-0 p-0 uppercase tracking-widest"
                                             >
                                                 <option value="">Unassigned</option>
                                                 {members.map(m => (
@@ -517,150 +556,92 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                         </div>
                                     </div>
 
-                                    {/* Assigner (Admin/Manager Only) */}
-                                    {(user?.role === 'admin' || user?.role === 'editor_in_chief' || user?.role === 'section_editor') && (
-                                        <div className="flex items-center group">
-                                            <div className="w-24 flex items-center gap-2 text-gray-400">
-                                                <UserIcon className="w-4 h-4 text-indigo-400" />
-                                                <span className="text-xs font-bold uppercase tracking-wider text-indigo-400">Assigner</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 cursor-pointer group relative">
-                                                {task.assigner_name && <UserAvatar name={task.assigner_name} size="xs" />}
-                                                <select
-                                                    value={task.assigner?._id || task.assigner?.id || task.assigner || ''}
-                                                    onChange={(e) => {
-                                                        const selectedId = e.target.value;
-                                                        const member = members.find(m => (m._id || m.id) === selectedId);
-                                                        handleUpdateField({
-                                                            assigner: selectedId,
-                                                            assigner_name: member?.full_name || ''
-                                                        });
-                                                    }}
-                                                    className="text-xs font-bold text-gray-700 bg-transparent border-none focus:ring-0 p-0"
-                                                >
-                                                    <option value="">Unknown</option>
-                                                    {members.map(m => (
-                                                        <option key={m._id || m.id} value={m._id || m.id}>{m.full_name}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
+                                    {/* Timeline */}
+                                    <div className="flex flex-col gap-2 p-3 rounded-2xl bg-slate-50/50 border border-slate-100/50 hover:bg-white hover:shadow-lg hover:shadow-slate-100 transition-all duration-300 group">
+                                        <div className="flex items-center gap-2 text-slate-400">
+                                            <Calendar className="w-3.5 h-3.5 group-hover:text-blue-500 transition-colors" />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.15em]">Timeline</span>
                                         </div>
-                                    )}
-
-
-                                    {/* Dates */}
-                                    <div className="flex items-center group">
-                                        <div className="w-24 flex items-center gap-2 text-gray-400">
-                                            <Calendar className="w-4 h-4" />
-                                            <span className="text-xs font-bold uppercase tracking-wider">Dates</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-indigo-600 cursor-pointer transition-colors">
+                                        <div className="flex items-center gap-2 px-1">
                                             <input
                                                 type="date"
-                                                title="Start Date (IST)"
                                                 value={task.start_date ? new Date(new Date(task.start_date).toLocaleString("en-US", { timeZone: "Asia/Kolkata" })).toISOString().split('T')[0] : ''}
-                                                onChange={(e) => {
-                                                    // Send as ISO string, backend converts to IST/UTC
-                                                    handleUpdateField('start_date', e.target.valueAsDate?.toISOString())
-                                                }}
-                                                className="bg-transparent border-none focus:ring-0 p-0 text-xs font-bold w-24"
+                                                onChange={(e) => handleUpdateField('start_date', e.target.valueAsDate?.toISOString())}
+                                                className="bg-slate-100/50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border-none focus:ring-2 focus:ring-blue-100 text-[11px] font-black text-slate-600 uppercase tracking-tighter w-full transition-all"
                                             />
-                                            <span className="mx-1">→</span>
+                                            <span className="text-slate-300 font-bold">→</span>
                                             <input
                                                 type="date"
-                                                title="Due Date (IST)"
                                                 value={task.due_date ? new Date(new Date(task.due_date).toLocaleString("en-US", { timeZone: "Asia/Kolkata" })).toISOString().split('T')[0] : ''}
-                                                onChange={(e) => {
-                                                    // Send as ISO string
-                                                    handleUpdateField('due_date', e.target.valueAsDate?.toISOString())
-                                                }}
-                                                className="bg-transparent border-none focus:ring-0 p-0 text-xs font-bold w-24"
+                                                onChange={(e) => handleUpdateField('due_date', e.target.valueAsDate?.toISOString())}
+                                                className="bg-slate-100/50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border-none focus:ring-2 focus:ring-blue-100 text-[11px] font-black text-slate-600 uppercase tracking-tighter w-full transition-all"
                                             />
                                         </div>
                                     </div>
 
-                                    {/* Priority */}
-                                    <div className="flex items-center group">
-                                        <div className="w-24 flex items-center gap-2 text-gray-400">
-                                            <Flag className="w-4 h-4" />
-                                            <span className="text-xs font-bold uppercase tracking-wider">Priority</span>
+                                    {/* Time Economics */}
+                                    <div className="flex flex-col gap-2 p-3 rounded-2xl bg-slate-50/50 border border-slate-100/50 hover:bg-white hover:shadow-lg hover:shadow-slate-100 transition-all duration-300 group">
+                                        <div className="flex items-center gap-2 text-slate-400">
+                                            <Clock className="w-3.5 h-3.5 group-hover:text-amber-500 transition-colors" />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.15em]">Allocated Time</span>
                                         </div>
-                                        <select
-                                            value={task.priority || 'medium'}
-                                            onChange={(e) => {
-                                                const newVal = e.target.value;
-                                                handleUpdateField('priority', newVal);
-                                            }}
-                                            className="text-xs font-bold text-gray-700 bg-transparent border-none focus:ring-0 p-0 capitalize"
-                                        >
-                                            <option value="low">Low</option>
-                                            <option value="medium">Medium</option>
-                                            <option value="high">High</option>
-                                            <option value="urgent">Urgent</option>
-                                        </select>
-                                    </div>
-
-                                    {/* Time Estimate */}
-                                    <div className="flex items-center group">
-                                        <div className="w-24 flex items-center gap-2 text-gray-400">
-                                            <Clock className="w-4 h-4" />
-                                            <span className="text-xs font-bold uppercase tracking-wider">Time estimate</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="number"
-                                                placeholder="Hr"
-                                                defaultValue={parseEstimate(task.time_estimate).h}
-                                                onBlur={(e) => handleUpdateEstimate(e.target.value, parseEstimate(task.time_estimate).m)}
-                                                className="w-12 text-xs font-bold text-gray-700 bg-gray-50 border border-gray-100 rounded px-1.5 py-0.5 focus:ring-1 focus:ring-indigo-500 outline-none"
-                                            />
-                                            <span className="text-[10px] font-bold text-gray-400 uppercase">H</span>
-                                            <input
-                                                type="number"
-                                                placeholder="Min"
-                                                defaultValue={parseEstimate(task.time_estimate).m}
-                                                onBlur={(e) => handleUpdateEstimate(parseEstimate(task.time_estimate).h, e.target.value)}
-                                                className="w-12 text-xs font-bold text-gray-700 bg-gray-50 border border-gray-100 rounded px-1.5 py-0.5 focus:ring-1 focus:ring-indigo-500 outline-none"
-                                            />
-                                            <span className="text-[10px] font-bold text-gray-400 uppercase">M</span>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center bg-slate-100/50 rounded-xl px-3 py-1.5 gap-2 flex-1 group-hover:bg-white group-hover:border group-hover:border-slate-100 transition-all">
+                                                <input
+                                                    type="number"
+                                                    placeholder="0"
+                                                    defaultValue={parseEstimate(task.time_estimate).h}
+                                                    onBlur={(e) => handleUpdateEstimate(e.target.value, parseEstimate(task.time_estimate).m)}
+                                                    className="w-8 text-[11px] font-black text-slate-700 bg-transparent border-none focus:ring-0 p-0 text-center"
+                                                />
+                                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Hrs</span>
+                                            </div>
+                                            <div className="flex items-center bg-slate-100/50 rounded-xl px-3 py-1.5 gap-2 flex-1 group-hover:bg-white group-hover:border group-hover:border-slate-100 transition-all">
+                                                <input
+                                                    type="number"
+                                                    placeholder="0"
+                                                    defaultValue={parseEstimate(task.time_estimate).m}
+                                                    onBlur={(e) => handleUpdateEstimate(parseEstimate(task.time_estimate).h, e.target.value)}
+                                                    className="w-8 text-[11px] font-black text-slate-700 bg-transparent border-none focus:ring-0 p-0 text-center"
+                                                />
+                                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Min</span>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {/* Track Time */}
-                                    <div className="flex items-center group">
-                                        <div className="w-24 flex items-center gap-2 text-gray-400">
-                                            <Play className="w-4 h-4" />
-                                            <span className="text-xs font-bold uppercase tracking-wider">Track time</span>
+                                    {/* Time Tracking */}
+                                    <div className="flex flex-col gap-2 p-3 rounded-2xl bg-indigo-50/30 border border-indigo-100/50 hover:bg-indigo-50 hover:shadow-xl hover:shadow-indigo-100/50 transition-all duration-500 group">
+                                        <div className="flex items-center gap-2 text-indigo-400">
+                                            <Play className={`w-3.5 h-3.5 ${task.stage === 'In Progress' ? 'animate-pulse text-indigo-600' : ''}`} />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.15em]">Actual Usage</span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs font-bold text-indigo-600">
-                                            <Clock className="w-3.5 h-3.5" />
-                                            {formatTime(displayTime)}
+                                        <div className="flex items-center justify-between px-3 py-2 bg-white rounded-xl shadow-sm border border-indigo-100/30 group-hover:border-indigo-200 transition-all">
+                                            <span className={`text-xl font-black tabular-nums tracking-tighter ${task.stage === 'In Progress' ? 'text-indigo-600' : 'text-slate-400'}`}>
+                                                {formatTime(displayTime)}
+                                            </span>
                                             {task.stage === 'In Progress' && (
-                                                <span className="flex h-2 w-2 relative">
-                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                                                </span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping"></div>
+                                                    <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Active</span>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
+                                </div>
 
-                                    {/* Tags */}
-                                    <div className="flex items-center group">
-                                        <div className="w-24 flex items-center gap-2 text-gray-400">
-                                            <Tag className="w-4 h-4" />
-                                            <span className="text-xs font-bold uppercase tracking-wider">Tags</span>
-                                        </div>
-                                        <div className="flex flex-wrap gap-1 items-center">
-                                            {task.tags?.map((t: string) => (
-                                                <span key={t} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-bold flex items-center gap-1 group/tag">
-                                                    {t}
-                                                    <X className="w-2.5 h-2.5 cursor-pointer hover:text-red-500 opacity-0 group-hover/tag:opacity-100 transition-opacity" onClick={() => handleRemoveTag(t)} />
-                                                </span>
-                                            ))}
+                                {/* Tags & Linked Content Full Width Row */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                                    {/* Tags Container */}
+                                    <div className="flex flex-col gap-3 p-4 rounded-2xl bg-slate-50/30 border border-slate-100/50 hover:bg-white hover:shadow-md transition-all group">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 text-slate-400">
+                                                <Tag className="w-3.5 h-3.5" />
+                                                <span className="text-[10px] font-black uppercase tracking-[0.15em]">Classifiers</span>
+                                            </div>
                                             <input
                                                 type="text"
-                                                placeholder="+ Tag"
-                                                className="text-[10px] font-bold text-gray-400 bg-transparent border-none focus:ring-0 p-0 w-16"
+                                                placeholder="+ Add Classification"
+                                                className="text-[10px] font-black text-indigo-400 placeholder:text-slate-300 bg-transparent border-none focus:ring-0 p-0 w-32 text-right uppercase tracking-widest hover:text-indigo-600 transition-colors"
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter') {
                                                         handleAddTag(e.currentTarget.value);
@@ -669,27 +650,38 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                                 }}
                                             />
                                         </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {task.tags?.map((t: string) => (
+                                                <span key={t} className="px-3 py-1.5 bg-indigo-50/50 text-indigo-600 rounded-lg border border-indigo-100/50 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 group/tag hover:bg-indigo-600 hover:text-white transition-all duration-300 transform hover:scale-105 cursor-default">
+                                                    {t}
+                                                    <X className="w-3 h-3 cursor-pointer hover:rotate-90 transition-transform" onClick={() => handleRemoveTag(t)} />
+                                                </span>
+                                            ))}
+                                            {(!task.tags || task.tags.length === 0) && (
+                                                <span className="text-[10px] font-black text-slate-300 uppercase italic tracking-widest leading-[30px]">No classifications assigned</span>
+                                            )}
+                                        </div>
                                     </div>
 
-                                    {/* Linked Content */}
-                                    <div className="flex items-center group col-span-3 border-t border-gray-50 pt-2 mt-1">
-                                        <div className="w-24 flex items-center gap-2 text-gray-400">
-                                            <FileText className="w-4 h-4" />
-                                            <span className="text-xs font-bold uppercase tracking-wider">Linked Content</span>
+                                    {/* Linked Workspace Content */}
+                                    <div className="flex flex-col gap-3 p-4 rounded-2xl bg-slate-50/30 border border-slate-100/50 hover:bg-white hover:shadow-md transition-all group">
+                                        <div className="flex items-center gap-2 text-slate-400">
+                                            <FileText className="w-3.5 h-3.5" />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.15em]">Target Content</span>
                                         </div>
-                                        <select
-                                            value={task.content_id?._id || task.content_id?.id || task.content_id || ''}
-                                            onChange={(e) => {
-                                                const newVal = e.target.value;
-                                                handleUpdateField('content_id', newVal || null);
-                                            }}
-                                            className="text-xs font-bold text-gray-700 bg-transparent border-none focus:ring-0 p-0 flex-1 truncate cursor-pointer hover:text-indigo-600 transition-colors"
-                                        >
-                                            <option value="">None</option>
-                                            {libraryContent.map(c => (
-                                                <option key={c._id || c.id} value={c._id || c.id}>{c.title}</option>
-                                            ))}
-                                        </select>
+                                        <div className="relative group/select">
+                                            <select
+                                                value={task.content_id?._id || task.content_id?.id || task.content_id || ''}
+                                                onChange={(e) => handleUpdateField('content_id', e.target.value || null)}
+                                                className="w-full appearance-none bg-slate-100/50 hover:bg-white px-4 py-2 rounded-xl border border-transparent hover:border-indigo-100 transition-all text-xs font-black text-slate-600 uppercase tracking-widest outline-none pr-10"
+                                            >
+                                                <option value="">None Linked</option>
+                                                {libraryContent.map(c => (
+                                                    <option key={c._id || c.id} value={c._id || c.id}>{c.title}</option>
+                                                ))}
+                                            </select>
+                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none group-hover/select:text-indigo-400 transition-colors" />
+                                        </div>
                                     </div>
                                 </div>
 
@@ -821,84 +813,89 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                     </div>
                 </div>
 
-                {/* Right Section: Activity Feed */}
-                <div className="w-[320px] flex flex-col bg-gray-50/50">
-                    <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white">
-                        <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Activity</h3>
-                        <div className="flex items-center gap-3">
-                            <Search className="w-4 h-4 text-gray-400" />
-                            <div className="relative">
-                                <AtSign className="w-4 h-4 text-gray-400" />
-                                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-indigo-500 border-2 border-white rounded-full"></span>
-                            </div>
-                            <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                {/* Sidebar: Activity & Feed */}
+                <div className="w-96 flex flex-col bg-slate-50/50 border-l border-slate-100 overflow-hidden">
+                    <div className="p-5 border-b border-slate-200/50 bg-white">
+                        <div className="flex items-center justify-between mb-1">
+                            <h3 className="text-[13px] font-black uppercase tracking-[0.2em] text-slate-900">Collaboration Feed</h3>
+                            <button className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+                                <Search className="w-3.5 h-3.5" />
+                            </button>
                         </div>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Team interaction and log</p>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                        {feed.map((item: any, idx: number) => (
-                            item.feedType === 'activity' ? (
-                                <div key={`activity-${item.id}`} className="flex gap-4">
-                                    <UserAvatar name={item.user_name} size="md" className="border-2 border-white flex-shrink-0" />
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-gray-500">
-                                            <span className="font-bold text-gray-700 mr-1">{item.user_name === user?.full_name ? 'You' : item.user_name}</span>
-                                            {item.action === 'status_change' && `changed status from ${item.old_value} to ${item.new_value}`}
-                                            {item.action === 'assignee_change' && `changed assignee to ${item.new_value || 'Unassigned'}`}
-                                            {item.action === 'created' && 'created this task'}
-                                        </p>
-                                        <p className="text-[10px] text-gray-400 uppercase font-black">
-                                            {new Date(item.created_at).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                        </p>
-                                    </div>
+                    <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                        {feed.length === 0 && (
+                            <div className="flex flex-col items-center justify-center h-64 text-center space-y-3 opacity-40">
+                                <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center">
+                                    <MessageSquare className="w-6 h-6 text-slate-400" />
                                 </div>
-                            ) : (
-                                <div key={`comment-${item.id}`} className="flex gap-4 group">
-                                    <UserAvatar name={item.author_name} size="md" className="flex-shrink-0" />
-                                    <div className="space-y-1.5 flex-1">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold text-gray-900">{item.author_name}</span>
-                                            <span className="text-[10px] text-gray-400 font-medium">
+                                <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">No activity logged yet</p>
+                            </div>
+                        )}
+                        {feed.map((item: any, idx) => (
+                            <div key={idx} className={`relative flex gap-1 ${item.feedType === 'comment' ? 'flex-col' : 'items-center py-2'}`}>
+                                {item.feedType === 'comment' ? (
+                                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <UserAvatar name={item.author_name} size="sm" className="ring-2 ring-indigo-50" />
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest leading-none">{item.author_name}</p>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                                                    {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
+                                            <button className="ml-auto p-1 text-slate-200 hover:text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <MoreHorizontal className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                        <p className="text-xs font-medium text-slate-600 leading-relaxed">{item.text}</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-3 w-full">
+                                        <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200/50">
+                                            <AlertCircle className="w-3 h-3 text-slate-400" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[10px] font-bold text-slate-500 leading-tight">
+                                                <span className="font-black text-slate-700 uppercase tracking-tight">{item.user_name}</span> {item.description}
+                                            </p>
+                                            <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mt-0.5">
                                                 {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
-                                        </div>
-                                        <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 text-sm text-gray-700">
-                                            {item.text}
+                                            </p>
                                         </div>
                                     </div>
-                                </div>
-                            )
+                                )}
+                            </div>
                         ))}
                     </div>
 
-                    {/* Comment Input */}
-                    <div className="p-6 bg-white border-t border-gray-100">
-                        <form
-                            onSubmit={handleAddComment}
-                            className="bg-white border-2 border-gray-100 rounded-2xl p-4 shadow-sm focus-within:border-indigo-500 transition-all"
-                        >
+                    {/* Comment Input Area */}
+                    <div className="p-5 bg-white border-t border-slate-100">
+                        <form onSubmit={handleAddComment} className="relative bg-slate-50 rounded-2xl border border-slate-100 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-200 transition-all p-2 group">
                             <textarea
                                 value={newComment}
                                 onChange={(e) => setNewComment(e.target.value)}
                                 placeholder="Write a comment..."
-                                className="w-full border-none focus:ring-0 p-0 text-sm placeholder:text-gray-300 min-h-[40px] resize-none"
+                                className="w-full bg-transparent border-none focus:ring-0 p-3 text-xs text-slate-600 placeholder:text-slate-400 resize-none min-h-[100px]"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleAddComment(e as any);
+                                    }
+                                }}
                             />
-                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
-                                <div className="flex items-center gap-3">
-                                    <Plus className="w-4 h-4 text-gray-400 hover:text-indigo-600 cursor-pointer transition-colors" />
-                                    <div className="px-2 py-0.5 bg-gray-50 text-[10px] font-bold text-gray-400 rounded flex items-center gap-1 border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors">
-                                        Comment
-                                        <ChevronDown className="w-3 h-3" />
-                                    </div>
-                                    <Smile className="w-4 h-4 text-gray-400 hover:text-indigo-600 cursor-pointer transition-colors" />
-                                    <AtSign className="w-4 h-4 text-gray-400 hover:text-indigo-600 cursor-pointer transition-colors" />
-                                    <div className="w-[1px] h-4 bg-gray-100 mx-1" />
-                                    <Paperclip className="w-4 h-4 text-gray-400 hover:text-indigo-600 cursor-pointer transition-colors" />
+                            <div className="flex items-center justify-between px-2 pb-2">
+                                <div className="flex items-center gap-1">
+                                    <button type="button" className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-white rounded-xl transition-all"><Smile className="w-4 h-4" /></button>
+                                    <button type="button" className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-white rounded-xl transition-all"><AtSign className="w-4 h-4" /></button>
+                                    <button type="button" className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-white rounded-xl transition-all"><Paperclip className="w-4 h-4" /></button>
                                 </div>
                                 <button
                                     type="submit"
                                     disabled={!newComment.trim()}
-                                    className="p-1.5 bg-gray-50 text-gray-300 rounded-lg hover:bg-indigo-600 hover:text-white transition-all disabled:opacity-50"
+                                    className="p-2.5 bg-indigo-600 text-white rounded-xl shadow-md hover:shadow-indigo-200 hover:scale-110 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 transition-all duration-300"
                                 >
                                     <Send className="w-4 h-4" />
                                 </button>
@@ -906,44 +903,38 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                         </form>
                     </div>
                 </div>
+
             </div>
 
-            {/* Reversion Confirmation Modal */}
+            {/* Reversion Confirmation Portal */}
             {showReversionConfirm && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
-                        <div className="flex items-center gap-3 text-amber-500 mb-4">
-                            <AlertCircle className="w-6 h-6" />
-                            <h3 className="text-lg font-black uppercase tracking-tight">Existing Task In-Progress</h3>
-                        </div>
-
-                        <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-                            You already have a task in progress: <span className="font-bold text-gray-900">"{showReversionConfirm.activeTaskTitle}"</span>.
-                            <br /><br />
-                            Starting this task will automatically move the current one back to <span className="font-bold">"To Do"</span>. Do you want to continue?
-                        </p>
-
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => setShowReversionConfirm(null)}
-                                className="px-4 py-2 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors"
-                            >
-                                CANCEL
-                            </button>
-                            <button
-                                onClick={() => {
-                                    const nextStage = showReversionConfirm.nextStage;
-                                    setShowReversionConfirm(null);
-                                    if (taskId) {
-                                        handleUpdateField('stage', nextStage, true);
-                                    } else {
-                                        handleCreateTask(true);
-                                    }
-                                }}
-                                className="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg active:scale-95"
-                            >
-                                YES, START THIS TASK
-                            </button>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-100">
+                        <div className="p-8 text-center">
+                            <div className="w-20 h-20 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-6 border-4 border-amber-100">
+                                <AlertCircle className="w-10 h-10 text-amber-500" />
+                            </div>
+                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter mb-3">Active Task Detected</h3>
+                            <p className="text-sm font-medium text-slate-500 leading-relaxed mb-6">
+                                You currently have <span className="font-black text-slate-900 italic">"{showReversionConfirm.activeTaskTitle}"</span> in progress. Moving this task to <span className="text-indigo-600 font-bold uppercase tracking-widest">{showReversionConfirm.nextStage}</span> will pause and revert the other one.
+                            </p>
+                            <div className="grid grid-cols-2 gap-4">
+                                <button
+                                    onClick={() => setShowReversionConfirm(null)}
+                                    className="px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        handleUpdateField('stage', showReversionConfirm.nextStage, true);
+                                        setShowReversionConfirm(null);
+                                    }}
+                                    className="px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                                >
+                                    Proceed
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
