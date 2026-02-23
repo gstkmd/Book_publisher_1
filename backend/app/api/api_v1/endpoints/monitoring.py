@@ -29,6 +29,7 @@ def init_db():
         conn.execute('''
             CREATE TABLE IF NOT EXISTS agents (
                 id TEXT PRIMARY KEY,
+                user_id TEXT,
                 computer_name TEXT,
                 os_version TEXT,
                 last_seen TIMESTAMP,
@@ -83,6 +84,17 @@ def init_db():
         ]
         
         cursor = conn.cursor()
+        
+        # Agents table migration
+        cursor.execute("PRAGMA table_info(agents)")
+        agent_columns = [row[1] for row in cursor.fetchall()]
+        if "user_id" not in agent_columns:
+            try:
+                conn.execute("ALTER TABLE agents ADD COLUMN user_id TEXT")
+            except Exception as e:
+                print(f"Migration error for agents.user_id: {e}")
+
+        # App usage table migration
         cursor.execute("PRAGMA table_info(app_usage)")
         existing_columns = [row[1] for row in cursor.fetchall()]
         
@@ -139,14 +151,15 @@ async def register_agent(
     os_version: str = Form(...),
     platform: Optional[str] = Form(None),
     arch: Optional[str] = Form(None),
-    nickname: Optional[str] = Form(None)
+    nickname: Optional[str] = Form(None),
+    current_user: User = Depends(deps.get_current_user)
 ):
     """Register a new monitoring agent"""
     agent_id = str(uuid.uuid4())
     with get_db() as conn:
         conn.execute(
-            "INSERT INTO agents (id, computer_name, os_version, last_seen) VALUES (?, ?, ?, ?)",
-            (agent_id, computer_name, os_version, datetime.now())
+            "INSERT INTO agents (id, user_id, computer_name, os_version, last_seen) VALUES (?, ?, ?, ?, ?)",
+            (agent_id, str(current_user.id), computer_name, os_version, datetime.now())
         )
 
         conn.commit()
@@ -158,7 +171,8 @@ async def upload_screenshot(
     agentId: Optional[str] = Form(None),
     screenshot: Optional[UploadFile] = File(None),
     files: Optional[UploadFile] = File(None),
-    timestamp: Optional[str] = Form(None)
+    timestamp: Optional[str] = Form(None),
+    current_user: User = Depends(deps.get_current_user)
 ):
     """Receive screenshot from agent"""
     # Robustly handle different field names
@@ -204,7 +218,10 @@ async def upload_screenshot(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/agent-working-apps/set")
-async def track_app_usage(data: dict):
+async def track_app_usage(
+    data: dict,
+    current_user: User = Depends(deps.get_current_user)
+):
     """Track application usage from agent"""
     try:
         app_id = str(uuid.uuid4())
@@ -254,7 +271,10 @@ async def track_app_usage(data: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/agent-idle-time/add")
-async def track_idle_time(data: dict):
+async def track_idle_time(
+    data: dict,
+    current_user: User = Depends(deps.get_current_user)
+):
     """Track idle time periods"""
     try:
         idle_id = str(uuid.uuid4())
