@@ -1,6 +1,7 @@
 from typing import Optional, List, Dict
 from beanie import Document, Link
 from pymongo import IndexModel, ASCENDING, DESCENDING
+from pydantic import Field
 from datetime import datetime, timezone
 from app.modules.core.models import User
 
