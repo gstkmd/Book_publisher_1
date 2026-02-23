@@ -22,6 +22,7 @@ export default function MonitoringDashboardPage() {
     const [summary, setSummary] = useState<any>(null);
     const [agents, setAgents] = useState<any[]>([]);
     const [screenshots, setScreenshots] = useState<any[]>([]);
+    const [teamActivities, setTeamActivities] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -62,14 +63,16 @@ export default function MonitoringDashboardPage() {
         console.log(`[${globalInstanceId}] 📡 Fetching monitoring data...`);
 
         try {
-            const [summaryData, agentsData, screenshotsData] = await Promise.all([
+            const [summaryData, agentsData, screenshotsData, teamActivitiesData] = await Promise.all([
                 api.get('/monitoring/dashboard/summary', token || undefined),
                 api.get('/monitoring/dashboard/agents', token || undefined),
-                api.get('/monitoring/dashboard/screenshots?limit=8', token || undefined)
+                api.get('/monitoring/dashboard/screenshots?limit=8', token || undefined),
+                api.get('/team-monitoring/team-activity', token || undefined)
             ]);
             setSummary(summaryData);
             setAgents(agentsData);
             setScreenshots(screenshotsData);
+            setTeamActivities(teamActivitiesData || []);
             console.log(`[${globalInstanceId}] ✅ Data received (Synchronized)`);
         } catch (err: any) {
             console.error(`[${globalInstanceId}] ❌ Fetch failed:`, err);
@@ -188,6 +191,66 @@ export default function MonitoringDashboardPage() {
                             View Workflow Stats
                         </Link>
                     </div>
+                </div>
+            </div>
+
+            {/* Team Activity Table */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-6 border-b border-gray-50 flex justify-between items-center">
+                    <h3 className="text-xl font-bold text-gray-900">Recent Team Activity</h3>
+                    <span className="text-sm text-gray-500">{teamActivities.length} logs recorded</span>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-semibold">
+                            <tr>
+                                <th className="px-6 py-4">Time</th>
+                                <th className="px-6 py-4">User</th>
+                                <th className="px-6 py-4">App / Window</th>
+                                <th className="px-6 py-4">URL / Path</th>
+                                <th className="px-6 py-4">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {teamActivities.map((activity, idx) => (
+                                <tr key={activity.id || idx} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                                        {new Date(activity.timestamp).toLocaleTimeString()}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
+                                                {activity.user?.full_name?.charAt(0) || 'U'}
+                                            </div>
+                                            <span className="text-sm font-medium text-gray-900">{activity.user?.full_name}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="text-sm font-medium text-gray-900">{activity.app_name}</div>
+                                        <div className="text-xs text-gray-500 truncate max-w-[200px]">{activity.window_title}</div>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-blue-600">
+                                        <span className="truncate max-w-[150px] inline-block" title={activity.web_url || activity.file_path}>
+                                            {activity.web_url || activity.file_path || '-'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${activity.activity_type === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                            }`}>
+                                            {activity.activity_type}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                            {teamActivities.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-10 text-center text-gray-500">
+                                        No team activity logs found.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 

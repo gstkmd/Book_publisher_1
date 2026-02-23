@@ -49,7 +49,7 @@ def init_db():
             )
         ''')
         
-        # App usage table
+        # App usage table - UPDATED with enriched fields
         conn.execute('''
             CREATE TABLE IF NOT EXISTS app_usage (
                 id TEXT PRIMARY KEY,
@@ -60,9 +60,38 @@ def init_db():
                 keys_pressed INTEGER DEFAULT 0,
                 mouse_clicks INTEGER DEFAULT 0,
                 duration_seconds INTEGER,
+                app_category TEXT,
+                activity_type TEXT,
+                web_title TEXT,
+                web_domain TEXT,
+                web_category TEXT,
+                file_name TEXT,
+                file_extension TEXT,
                 FOREIGN KEY (agent_id) REFERENCES agents (id)
             )
         ''')
+
+        # Migrations for existing databases
+        columns = [
+            ("app_category", "TEXT"),
+            ("activity_type", "TEXT"),
+            ("web_title", "TEXT"),
+            ("web_domain", "TEXT"),
+            ("web_category", "TEXT"),
+            ("file_name", "TEXT"),
+            ("file_extension", "TEXT")
+        ]
+        
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(app_usage)")
+        existing_columns = [row[1] for row in cursor.fetchall()]
+        
+        for col_name, col_type in columns:
+            if col_name not in existing_columns:
+                try:
+                    conn.execute(f"ALTER TABLE app_usage ADD COLUMN {col_name} {col_type}")
+                except Exception as e:
+                    print(f"Migration error for {col_name}: {e}")
         
         # Idle time table
         conn.execute('''
@@ -191,8 +220,10 @@ async def track_app_usage(data: dict):
             conn.execute(
                 """INSERT INTO app_usage 
                    (id, agent_id, app_name, app_open_at, app_close_at, 
-                    keys_pressed, mouse_clicks, duration_seconds)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                    keys_pressed, mouse_clicks, duration_seconds,
+                    app_category, activity_type, web_title, web_domain,
+                    web_category, file_name, file_extension)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     app_id, agent_id, 
                     app_data.get("app_name") or app_data.get("appName", "Unknown"),
@@ -200,7 +231,14 @@ async def track_app_usage(data: dict):
                     app_data.get("app_close_at") or app_data.get("appCloseAt"),
                     app_data.get("keys_pressed") or app_data.get("keysPressed", 0),
                     app_data.get("mouse_clicks") or app_data.get("mouseClicks", 0),
-                    duration
+                    duration,
+                    app_data.get("appCategory"),
+                    app_data.get("activityType"),
+                    app_data.get("webTitle"),
+                    app_data.get("webDomain"),
+                    app_data.get("webCategory"),
+                    app_data.get("fileName"),
+                    app_data.get("fileExtension")
                 )
             )
             

@@ -1,0 +1,78 @@
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from app.modules.core.models import User
+from app.api.deps import get_current_user
+from app.modules.generic.monitoring_models import MonitoringActivity, MonitoringScreenshot
+from typing import List, Optional
+from pydantic import BaseModel
+from datetime import datetime
+
+router = APIRouter()
+
+class ActivityLog(BaseModel):
+    timestamp: datetime
+    app_name: Optional[str] = None
+    window_title: Optional[str] = None
+    web_url: Optional[str] = None
+    file_path: Optional[str] = None
+    activity_type: str
+    idle_duration: int = 0
+
+class ActivitySubmitRequest(BaseModel):
+    logs: List[ActivityLog]
+
+@router.post("/activity")
+async def submit_activity(
+    req: ActivitySubmitRequest,
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user.organization_id:
+        raise HTTPException(status_code=400, detail="User not part of an organization")
+
+    activities = [
+        MonitoringActivity(
+            user=current_user,
+            organization_id=current_user.organization_id,
+            **log.dict()
+        ) for log in req.logs
+    ]
+    await MonitoringActivity.insert_many(activities)
+    return {"status": "success", "count": len(activities)}
+
+@router.get("/team-activity")
+async def get_team_activity(
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "admin": # Only admins/managers see others
+        raise HTTPException(status_code=403, detail="Not authorized to view team activity")
+
+    activities = await MonitoringActivity.find(
+        MonitoringActivity.organization_id == current_user.organization_id
+    ).sort(-MonitoringActivity.timestamp).limit(200).to_list()
+    
+    return activities
+
+@router.post("/screenshot")
+async def upload_screenshot(
+    app_name: str,
+    window_title: str,
+    timestamp: datetime,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user.organization_id:
+        raise HTTPException(status_code=400, detail="User not part of an organization")
+
+    # In a real app, upload to S3/Wasabi and get URL
+    # file_url = await upload_to_storage(file)
+    file_url = f"/mock-storage/{file.filename}" 
+
+    screenshot = MonitoringScreenshot(
+        user=current_user,
+        organization_id=current_user.organization_id,
+        timestamp=timestamp,
+        file_url=file_url,
+        app_name=app_name,
+        window_title=window_title
+    )
+    await screenshot.create()
+    return {"status": "success", "file_url": file_url}
