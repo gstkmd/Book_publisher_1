@@ -9,6 +9,9 @@ from typing import List, Optional
 from pathlib import Path
 from contextlib import contextmanager
 
+from app.api import deps
+from app.modules.core.models import User
+
 router = APIRouter()
 
 # ============ DATABASE SETUP ============
