@@ -37,12 +37,6 @@ export function AgentList({ agents }: AgentListProps) {
                                 <td className="px-6 py-4 font-medium text-gray-900">{agent.computer_name}</td>
                                 <td className="px-6 py-4 text-gray-600 text-sm">{agent.os_version}</td>
                                 <td className="px-6 py-4 text-gray-600 text-sm">
-                                    {(() => {
-                                        try {
-                                            let dateStr = agent.last_seen;
-                                            if (dateStr && !dateStr.includes('Z')) {
-                                                // If ' ' instead of 'T', fix it
-                                <td className="px-6 py-4 text-gray-900 text-sm whitespace-nowrap">
                                     {agent.last_seen ? new Date(agent.last_seen).toLocaleString() : 'Never'}
                                 </td>
                                 <td className="px-6 py-4">

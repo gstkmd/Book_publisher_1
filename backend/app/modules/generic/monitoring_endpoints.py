@@ -5,6 +5,9 @@ from app.modules.generic.monitoring_models import MonitoringActivity, Monitoring
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime, timezone
+import os
+import shutil
+import uuid
 
 router = APIRouter()
 
@@ -67,9 +70,20 @@ async def upload_screenshot(
     if not current_user.organization_id:
         raise HTTPException(status_code=400, detail="User not part of an organization")
 
-    # In a real app, upload to S3/Wasabi and get URL
-    # file_url = await upload_to_storage(file)
-    file_url = f"/mock-storage/{file.filename}" 
+    # Ensure directory exists
+    os.makedirs("storage/screenshots", exist_ok=True)
+    
+    # Generate unique filename
+    file_id = str(uuid.uuid4())
+    file_extension = os.path.splitext(file.filename)[1] or ".png"
+    filename = f"{file_id}{file_extension}"
+    filepath = f"storage/screenshots/{filename}"
+    
+    # Save file to disk
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    file_url = filepath # Store local path for internal use
 
     ts = timestamp
     if ts.tzinfo is None:

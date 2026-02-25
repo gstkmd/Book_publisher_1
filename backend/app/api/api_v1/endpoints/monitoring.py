@@ -201,23 +201,22 @@ async def upload_screenshot(
         with open(filepath, "wb") as buffer:
             shutil.copyfileobj(screenshot.file, buffer)
         
-        # Save to database
-        with get_db() as conn:
-            conn.execute(
-                """INSERT INTO screenshots 
-                   (id, agent_id, filename, filepath, timestamp) 
-                   VALUES (?, ?, ?, ?, ?)""",
-                (file_id, agent_id, filename, filepath, timestamp)
-            )
+        # Save to database (MongoDB)
+        ts = datetime.fromisoformat(timestamp.replace('Z', '+00:00')) if timestamp else datetime.now(timezone.utc)
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
             
-            # Update agent last seen
-            conn.execute(
-                "UPDATE agents SET last_seen = ? WHERE id = ?",
-                (datetime.now(timezone.utc), agent_id)
-            )
-            conn.commit()
+        screenshot_doc = MonitoringScreenshot(
+            user=current_user,
+            organization_id=current_user.organization_id,
+            timestamp=ts,
+            file_url=filepath, # Store local path for internal use
+            app_name="Agent Upload",
+            window_title="N/A"
+        )
+        await screenshot_doc.create()
         
-        return {"status": "success", "screenshot_id": file_id}
+        return {"status": "success", "screenshot_id": str(screenshot_doc.id)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -420,7 +419,7 @@ async def get_screenshots(
     return [
         {
             "id": str(s.id),
-            "filename": s.file_url.split('/')[-1],
+            "filename": s.file_url.split('/')[-1] if s.file_url else "unknown.png",
             "filepath": s.file_url,
             "timestamp": s.timestamp,
             "computer_name": s.user.full_name if s.user else "Unknown"
@@ -465,13 +464,13 @@ async def get_agent_activity(agent_id: str, date: Optional[str] = None):
 
 @router.get("/dashboard/screenshot/{screenshot_id}")
 async def get_screenshot(screenshot_id: str):
-    """Serve screenshot file"""
-    with get_db() as conn:
-        result = conn.execute(
-            "SELECT filepath FROM screenshots WHERE id = ?",
-            (screenshot_id,)
-        ).fetchone()
+    """Serve screenshot file from MongoDB record"""
+    from bson import ObjectId
+    try:
+        shot = await MonitoringScreenshot.get(ObjectId(screenshot_id))
+        if shot and shot.file_url and os.path.exists(shot.file_url):
+            return FileResponse(shot.file_url)
+    except Exception:
+        pass
         
-        if result and os.path.exists(result["filepath"]):
-            return FileResponse(result["filepath"])
-        raise HTTPException(status_code=404, detail="Screenshot not found")
+    raise HTTPException(status_code=404, detail="Screenshot not found")
