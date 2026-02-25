@@ -199,107 +199,108 @@ export default function MonitoringDashboardPage() {
             </div>
 
             {/* Team Activity Table */}
-            <div className="p-6 border-b border-gray-50 flex flex-wrap justify-between items-center gap-4">
-                <h3 className="text-xl font-bold text-gray-900">Recent Team Activity</h3>
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <label htmlFor="user-filter" className="text-sm font-medium text-gray-600">Filter by User:</label>
-                        <select
-                            id="user-filter"
-                            value={selectedUserId}
-                            onChange={(e) => setSelectedUserId(e.target.value)}
-                            className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="all">All Users</option>
-                            {users.map(u => (
-                                <option key={u.id} value={u.id}>{u.full_name}</option>
-                            ))}
-                        </select>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-6 border-b border-gray-50 flex flex-wrap justify-between items-center gap-4">
+                    <h3 className="text-xl font-bold text-gray-900">Recent Team Activity</h3>
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <label htmlFor="user-filter" className="text-sm font-medium text-gray-600">Filter by User:</label>
+                            <select
+                                id="user-filter"
+                                value={selectedUserId}
+                                onChange={(e) => setSelectedUserId(e.target.value)}
+                                className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="all">All Users</option>
+                                {users.map(u => (
+                                    <option key={u.id} value={u.id}>{u.full_name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <span className="text-sm text-gray-500">
+                            {teamActivities.filter(a => selectedUserId === 'all' || a.user?.id === selectedUserId || a.user === selectedUserId).length} logs shown
+                        </span>
                     </div>
-                    <span className="text-sm text-gray-500">
-                        {teamActivities.filter(a => selectedUserId === 'all' || a.user?.id === selectedUserId || a.user === selectedUserId).length} logs shown
-                    </span>
                 </div>
-            </div>
-            <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                    <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-semibold">
-                        <tr>
-                            <th className="px-6 py-4">Time</th>
-                            <th className="px-6 py-4">User</th>
-                            <th className="px-6 py-4">App / Window</th>
-                            <th className="px-6 py-4">URL / Path</th>
-                            <th className="px-6 py-4">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                        {teamActivities
-                            .filter(activity => {
-                                if (selectedUserId === 'all') return true;
-                                const activityUserId = activity.user?.id || activity.user;
-                                return activityUserId === selectedUserId;
-                            })
-                            .map((activity, idx) => (
-                                <tr key={activity.id || idx} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                                        {(() => {
-                                            try {
-                                                let dateStr = activity.timestamp;
-                                                if (dateStr && !dateStr.includes('Z') && !dateStr.includes('+')) {
-                                                    dateStr += 'Z';
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-semibold">
+                            <tr>
+                                <th className="px-6 py-4">Time</th>
+                                <th className="px-6 py-4">User</th>
+                                <th className="px-6 py-4">App / Window</th>
+                                <th className="px-6 py-4">URL / Path</th>
+                                <th className="px-6 py-4">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {teamActivities
+                                .filter(activity => {
+                                    if (selectedUserId === 'all') return true;
+                                    const activityUserId = activity.user?.id || activity.user;
+                                    return activityUserId === selectedUserId;
+                                })
+                                .map((activity, idx) => (
+                                    <tr key={activity.id || idx} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                                            {(() => {
+                                                try {
+                                                    let dateStr = activity.timestamp;
+                                                    if (dateStr && !dateStr.includes('Z') && !dateStr.includes('+')) {
+                                                        dateStr += 'Z';
+                                                    }
+                                                    return new Date(dateStr).toLocaleTimeString(undefined, {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                        second: '2-digit',
+                                                        hour12: true
+                                                    });
+                                                } catch (e) {
+                                                    return activity.timestamp;
                                                 }
-                                                return new Date(dateStr).toLocaleTimeString(undefined, {
-                                                    hour: '2-digit',
-                                                    minute: '2-digit',
-                                                    second: '2-digit',
-                                                    hour12: true
-                                                });
-                                            } catch (e) {
-                                                return activity.timestamp;
-                                            }
-                                        })()}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
-                                                {activity.user?.full_name?.charAt(0) || 'U'}
+                                            })()}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
+                                                    {activity.user?.full_name?.charAt(0) || 'U'}
+                                                </div>
+                                                <span className="text-sm font-medium text-gray-900">{activity.user?.full_name || (typeof activity.user === 'string' ? 'User ID: ' + activity.user : 'Unknown User')}</span>
                                             </div>
-                                            <span className="text-sm font-medium text-gray-900">{activity.user?.full_name || (typeof activity.user === 'string' ? 'User ID: ' + activity.user : 'Unknown User')}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm font-medium text-gray-900">{activity.app_name}</div>
-                                        <div className="text-xs text-gray-500 truncate max-w-[200px]">{activity.window_title}</div>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-blue-600">
-                                        <span className="truncate max-w-[150px] inline-block" title={activity.web_url || activity.file_path}>
-                                            {activity.web_url || activity.file_path || '-'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${activity.activity_type === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                            }`}>
-                                            {activity.activity_type}
-                                        </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm font-medium text-gray-900">{activity.app_name}</div>
+                                            <div className="text-xs text-gray-500 truncate max-w-[200px]">{activity.window_title}</div>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-blue-600">
+                                            <span className="truncate max-w-[150px] inline-block" title={activity.web_url || activity.file_path}>
+                                                {activity.web_url || activity.file_path || '-'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${activity.activity_type === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                {activity.activity_type}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            {teamActivities.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-10 text-center text-gray-500">
+                                        No team activity logs found.
                                     </td>
                                 </tr>
-                            ))}
-                        {teamActivities.length === 0 && (
-                            <tr>
-                                <td colSpan={5} className="px-6 py-10 text-center text-gray-500">
-                                    No team activity logs found.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Screenshot Gallery */}
+            <div ref={screenshotsSectionRef}>
+                <ScreenshotGallery screenshots={screenshots} apiUrl={API_BASE.replace('/api/v1', '/api/v1')} />
             </div>
         </div>
-
-            {/* Screenshot Gallery */ }
-    <div ref={screenshotsSectionRef}>
-        <ScreenshotGallery screenshots={screenshots} apiUrl={API_BASE.replace('/api/v1', '/api/v1')} />
-    </div>
-        </div >
     );
 }
