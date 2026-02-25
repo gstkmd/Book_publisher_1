@@ -25,6 +25,8 @@ export default function MonitoringDashboardPage() {
     const [teamActivities, setTeamActivities] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [users, setUsers] = useState<any[]>([]);
+    const [selectedUserId, setSelectedUserId] = useState<string>('all');
 
     const agentsSectionRef = useRef<HTMLDivElement>(null);
     const screenshotsSectionRef = useRef<HTMLDivElement>(null);
@@ -63,16 +65,18 @@ export default function MonitoringDashboardPage() {
         console.log(`[${globalInstanceId}] 📡 Fetching monitoring data...`);
 
         try {
-            const [summaryData, agentsData, screenshotsData, teamActivitiesData] = await Promise.all([
+            const [summaryData, agentsData, screenshotsData, teamActivitiesData, usersData] = await Promise.all([
                 api.get('/monitoring/dashboard/summary', token || undefined),
                 api.get('/monitoring/dashboard/agents', token || undefined),
                 api.get('/monitoring/dashboard/screenshots?limit=8', token || undefined),
-                api.get('/team-monitoring/team-activity', token || undefined)
+                api.get('/team-monitoring/team-activity', token || undefined),
+                api.get('/organizations/members', token || undefined)
             ]);
             setSummary(summaryData);
             setAgents(agentsData);
             setScreenshots(screenshotsData);
             setTeamActivities(teamActivitiesData || []);
+            setUsers(usersData || []);
             console.log(`[${globalInstanceId}] ✅ Data received (Synchronized)`);
         } catch (err: any) {
             console.error(`[${globalInstanceId}] ❌ Fetch failed:`, err);
@@ -195,24 +199,47 @@ export default function MonitoringDashboardPage() {
             </div>
 
             {/* Team Activity Table */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-50 flex justify-between items-center">
-                    <h3 className="text-xl font-bold text-gray-900">Recent Team Activity</h3>
-                    <span className="text-sm text-gray-500">{teamActivities.length} logs recorded</span>
+            <div className="p-6 border-b border-gray-50 flex flex-wrap justify-between items-center gap-4">
+                <h3 className="text-xl font-bold text-gray-900">Recent Team Activity</h3>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <label htmlFor="user-filter" className="text-sm font-medium text-gray-600">Filter by User:</label>
+                        <select
+                            id="user-filter"
+                            value={selectedUserId}
+                            onChange={(e) => setSelectedUserId(e.target.value)}
+                            className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="all">All Users</option>
+                            {users.map(u => (
+                                <option key={u.id} value={u.id}>{u.full_name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                        {teamActivities.filter(a => selectedUserId === 'all' || a.user?.id === selectedUserId || a.user === selectedUserId).length} logs shown
+                    </span>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-semibold">
-                            <tr>
-                                <th className="px-6 py-4">Time</th>
-                                <th className="px-6 py-4">User</th>
-                                <th className="px-6 py-4">App / Window</th>
-                                <th className="px-6 py-4">URL / Path</th>
-                                <th className="px-6 py-4">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {teamActivities.map((activity, idx) => (
+            </div>
+            <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                    <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-semibold">
+                        <tr>
+                            <th className="px-6 py-4">Time</th>
+                            <th className="px-6 py-4">User</th>
+                            <th className="px-6 py-4">App / Window</th>
+                            <th className="px-6 py-4">URL / Path</th>
+                            <th className="px-6 py-4">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                        {teamActivities
+                            .filter(activity => {
+                                if (selectedUserId === 'all') return true;
+                                const activityUserId = activity.user?.id || activity.user;
+                                return activityUserId === selectedUserId;
+                            })
+                            .map((activity, idx) => (
                                 <tr key={activity.id || idx} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                                         {(() => {
@@ -237,7 +264,7 @@ export default function MonitoringDashboardPage() {
                                             <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
                                                 {activity.user?.full_name?.charAt(0) || 'U'}
                                             </div>
-                                            <span className="text-sm font-medium text-gray-900">{activity.user?.full_name}</span>
+                                            <span className="text-sm font-medium text-gray-900">{activity.user?.full_name || (typeof activity.user === 'string' ? 'User ID: ' + activity.user : 'Unknown User')}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
@@ -257,22 +284,22 @@ export default function MonitoringDashboardPage() {
                                     </td>
                                 </tr>
                             ))}
-                            {teamActivities.length === 0 && (
-                                <tr>
-                                    <td colSpan={5} className="px-6 py-10 text-center text-gray-500">
-                                        No team activity logs found.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Screenshot Gallery */}
-            <div ref={screenshotsSectionRef}>
-                <ScreenshotGallery screenshots={screenshots} apiUrl={API_BASE.replace('/api/v1', '/api/v1')} />
+                        {teamActivities.length === 0 && (
+                            <tr>
+                                <td colSpan={5} className="px-6 py-10 text-center text-gray-500">
+                                    No team activity logs found.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
             </div>
         </div>
+
+            {/* Screenshot Gallery */ }
+    <div ref={screenshotsSectionRef}>
+        <ScreenshotGallery screenshots={screenshots} apiUrl={API_BASE.replace('/api/v1', '/api/v1')} />
+    </div>
+        </div >
     );
 }

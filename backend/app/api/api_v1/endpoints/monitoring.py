@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks, Depends
 from fastapi.responses import JSONResponse, FileResponse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import shutil
 import os
 import sqlite3
@@ -144,7 +144,7 @@ init_db()
 @router.get("/health")
 async def health_check():
     """Health check for monitoring system"""
-    return {"status": "healthy", "database": "connected", "timestamp": datetime.now()}
+    return {"status": "healthy", "database": "connected", "timestamp": datetime.now(timezone.utc)}
 
 # ============ API ENDPOINTS FOR AGENT ============
 
@@ -162,7 +162,7 @@ async def register_agent(
     with get_db() as conn:
         conn.execute(
             "INSERT INTO agents (id, user_id, computer_name, os_version, last_seen) VALUES (?, ?, ?, ?, ?)",
-            (agent_id, str(current_user.id), computer_name, os_version, datetime.now())
+            (agent_id, str(current_user.id), computer_name, os_version, datetime.now(timezone.utc))
         )
 
         conn.commit()
@@ -265,7 +265,7 @@ async def track_app_usage(
             # Update agent last seen
             conn.execute(
                 "UPDATE agents SET last_seen = ? WHERE id = ?",
-                (datetime.now(), agent_id)
+                (datetime.now(timezone.utc), agent_id)
             )
             conn.commit()
         
@@ -310,23 +310,23 @@ async def get_dashboard_summary():
     """Get summary data for dashboard"""
     with get_db() as conn:
         # Total active agents today
-        today = datetime.now().date()
+        today_utc = datetime.now(timezone.utc).date()
         active_agents = conn.execute(
             "SELECT COUNT(*) as count FROM agents WHERE date(last_seen) = ?",
-            (today,)
+            (today_utc,)
         ).fetchone()["count"]
         
         # Total screenshots today
         screenshots_today = conn.execute(
             "SELECT COUNT(*) as count FROM screenshots WHERE date(timestamp) = ?",
-            (today,)
+            (today_utc,)
         ).fetchone()["count"]
         
         # Total active minutes today
         active_minutes = conn.execute(
             """SELECT SUM(duration_seconds)/60.0 as minutes 
                FROM app_usage WHERE date(app_open_at) = ?""",
-            (today,)
+            (today_utc,)
         ).fetchone()["minutes"] or 0
         
         # Productivity score

@@ -46,7 +46,8 @@ async def get_team_activity(
         raise HTTPException(status_code=403, detail="Not authorized to view team activity")
 
     activities = await MonitoringActivity.find(
-        MonitoringActivity.organization_id == current_user.organization_id
+        MonitoringActivity.organization_id == current_user.organization_id,
+        fetch_links=True
     ).sort(-MonitoringActivity.timestamp).limit(200).to_list()
     
     return activities
