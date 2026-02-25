@@ -1,13 +1,17 @@
-
 [build]
-builder = "dockerfile"
-dockerfilePath = "backend/Dockerfile"
+# Global build settings (removed to use per-service settings)
 
 [[services]]
 name = "backend"
 root = "backend"
+[services.build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
 
 [[services]]
 name = "frontend"
 root = "frontend"
-startCommand = "npm start" # Adjust if you use a different command like 'npm run dev' or 'npm run start'
+[services.build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+startCommand = "npm start"
