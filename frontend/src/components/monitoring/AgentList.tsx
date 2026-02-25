@@ -41,12 +41,23 @@ export function AgentList({ agents }: AgentListProps) {
                                         try {
                                             let dateStr = agent.last_seen;
                                             if (dateStr && !dateStr.includes('Z')) {
-                                                dateStr = dateStr.replace(' ', 'T') + 'Z';
+                                                // If ' ' instead of 'T', fix it
+                                                dateStr = dateStr.replace(' ', 'T');
+                                                // Add Z if no timezone info, but only if we're sure it's UTC.
+                                                // After backend fix, it WILL be UTC. 
+                                                // If it's old data (local), it might be slightly off until overwritten.
+                                                dateStr += 'Z';
                                             }
                                             const d = new Date(dateStr);
-                                            // Add 5.5 hours to UTC time to get IST
-                                            const istTime = new Date(d.getTime() + (5.5 * 60 * 60 * 1000));
-                                            return istTime.toISOString().replace('T', ' ').substring(0, 19);
+                                            return d.toLocaleString(undefined, {
+                                                year: 'numeric',
+                                                month: '2-digit',
+                                                day: '2-digit',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                                second: '2-digit',
+                                                hour12: false
+                                            }).replace(',', '');
                                         } catch (e) {
                                             return agent.last_seen;
                                         }

@@ -215,7 +215,22 @@ export default function MonitoringDashboardPage() {
                             {teamActivities.map((activity, idx) => (
                                 <tr key={activity.id || idx} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                                        {new Date(activity.timestamp).toLocaleTimeString()}
+                                        {(() => {
+                                            try {
+                                                let dateStr = activity.timestamp;
+                                                if (dateStr && !dateStr.includes('Z') && !dateStr.includes('+')) {
+                                                    dateStr += 'Z';
+                                                }
+                                                return new Date(dateStr).toLocaleTimeString(undefined, {
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                    second: '2-digit',
+                                                    hour12: true
+                                                });
+                                            } catch (e) {
+                                                return activity.timestamp;
+                                            }
+                                        })()}
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">

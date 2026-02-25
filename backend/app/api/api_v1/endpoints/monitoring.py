@@ -212,7 +212,7 @@ async def upload_screenshot(
             # Update agent last seen
             conn.execute(
                 "UPDATE agents SET last_seen = ? WHERE id = ?",
-                (datetime.now(), agent_id)
+                (datetime.now(timezone.utc), agent_id)
             )
             conn.commit()
         
