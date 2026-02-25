@@ -410,13 +410,23 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
 
 @router.get("/dashboard/screenshots")
 async def get_screenshots(
+    agent_id: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
     current_user: User = Depends(deps.get_current_user)
 ):
     """Get recent screenshots from MongoDB for current organization"""
+    from bson import ObjectId
+    
+    query = {"organization_id": current_user.organization_id}
+    if agent_id:
+        try:
+            query["user"] = ObjectId(agent_id)
+        except:
+            pass
+            
     screenshots = await MonitoringScreenshot.find(
-        MonitoringScreenshot.organization_id == current_user.organization_id,
+        query,
         fetch_links=True
     ).sort(-MonitoringScreenshot.timestamp).skip(offset).limit(limit).to_list()
     
@@ -431,40 +441,93 @@ async def get_screenshots(
     ]
 
 @router.get("/dashboard/agent/{agent_id}/activity")
-async def get_agent_activity(agent_id: str, date: Optional[str] = None):
-    """Get detailed activity for a specific agent"""
-    if not date:
-        date = datetime.now().strftime("%Y-%m-%d")
+async def get_agent_activity(
+    agent_id: str, 
+    date: Optional[str] = None,
+    current_user: User = Depends(deps.get_current_user)
+):
+    """Get detailed activity for a specific agent (MongoDB)"""
+    from bson import ObjectId
     
-    with get_db() as conn:
-        # App usage for the day
-        apps = conn.execute("""
-            SELECT 
-                app_name,
-                SUM(duration_seconds) as total_seconds,
-                SUM(keys_pressed) as total_keys,
-                SUM(mouse_clicks) as total_clicks
-            FROM app_usage
-            WHERE agent_id = ? AND date(app_open_at) = ?
-            GROUP BY app_name
-            ORDER BY total_seconds DESC
-        """, (agent_id, date)).fetchall()
-        
-        # Hourly activity breakdown
-        hourly = conn.execute("""
-            SELECT 
-                strftime('%H', app_open_at) as hour,
-                SUM(duration_seconds) as active_seconds
-            FROM app_usage
-            WHERE agent_id = ? AND date(app_open_at) = ?
-            GROUP BY hour
-            ORDER BY hour
-        """, (agent_id, date)).fetchall()
-        
-        return {
-            "app_usage": [dict(app) for app in apps],
-            "hourly_activity": [dict(h) for h in hourly]
-        }
+    if not date:
+        date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    try:
+        start_date = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        # Convert to UTC start/end of day
+        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = start_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+
+    try:
+        user_oid = ObjectId(agent_id)
+    except:
+        raise HTTPException(status_code=400, detail="Invalid agent_id")
+
+    # 1. App usage aggregation
+    app_pipeline = [
+        {
+            "$match": {
+                "user": user_oid,
+                "timestamp": {"$gte": start_date, "$lte": end_date}
+            }
+        },
+        {
+            "$group": {
+                "_id": "$app_name",
+                "total_seconds": {"$sum": "$duration"},
+                "total_keys": {"$sum": "$keys_pressed"},
+                "total_clicks": {"$sum": "$mouse_clicks"}
+            }
+        },
+        {
+            "$project": {
+                "app_name": "$_id",
+                "total_seconds": 1,
+                "total_keys": 1,
+                "total_clicks": 1,
+                "_id": 0
+            }
+        },
+        {"$sort": {"total_seconds": -1}}
+    ]
+    
+    apps_result = await MonitoringActivity.aggregate(app_pipeline).to_list()
+    
+    # 2. Hourly activity aggregation
+    hourly_pipeline = [
+        {
+            "$match": {
+                "user": user_oid,
+                "timestamp": {"$gte": start_date, "$lte": end_date}
+            }
+        },
+        {
+            "$group": {
+                "_id": {"$hour": "$timestamp"},
+                "active_seconds": {"$sum": "$duration"}
+            }
+        },
+        {
+            "$project": {
+                "hour": {"$toString": "$_id"},
+                "active_seconds": 1,
+                "_id": 0
+            }
+        },
+        {"$sort": {"hour": 1}}
+    ]
+    
+    hourly_result = await MonitoringActivity.aggregate(hourly_pipeline).to_list()
+    
+    # Ensure hours are padded (0, 1, 2... 23) if needed by frontend but usually frontend handles results
+    # But let's return it as a list of dicts consistent with the previous SQLite rows
+    
+    return {
+        "app_usage": apps_result,
+        "hourly_activity": hourly_result
+    }
 
 @router.get("/dashboard/screenshot/{screenshot_id}")
 async def get_screenshot(screenshot_id: str):
