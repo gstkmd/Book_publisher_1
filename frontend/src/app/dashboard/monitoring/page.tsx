@@ -212,13 +212,20 @@ export default function MonitoringDashboardPage() {
                                 className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="all">All Users</option>
-                                {users.map(u => (
-                                    <option key={u.id} value={u.id}>{u.full_name}</option>
-                                ))}
+                                {users.map(u => {
+                                    const userId = u.id || u._id;
+                                    return (
+                                        <option key={userId} value={userId}>{u.full_name}</option>
+                                    );
+                                })}
                             </select>
                         </div>
                         <span className="text-sm text-gray-500">
-                            {teamActivities.filter(a => selectedUserId === 'all' || a.user?.id === selectedUserId || a.user === selectedUserId).length} logs shown
+                            {teamActivities.filter(a => {
+                                if (selectedUserId === 'all') return true;
+                                const activityUserId = a.user?.id || a.user?._id || a.user;
+                                return String(activityUserId) === String(selectedUserId);
+                            }).length} logs shown
                         </span>
                     </div>
                 </div>
@@ -237,8 +244,8 @@ export default function MonitoringDashboardPage() {
                             {teamActivities
                                 .filter(activity => {
                                     if (selectedUserId === 'all') return true;
-                                    const activityUserId = activity.user?.id || activity.user;
-                                    return activityUserId === selectedUserId;
+                                    const activityUserId = activity.user?.id || activity.user?._id || activity.user;
+                                    return String(activityUserId) === String(selectedUserId);
                                 })
                                 .map((activity, idx) => (
                                     <tr key={activity.id || idx} className="hover:bg-gray-50 transition-colors">

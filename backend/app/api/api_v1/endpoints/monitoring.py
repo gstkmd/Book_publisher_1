@@ -11,6 +11,7 @@ from contextlib import contextmanager
 
 from app.api import deps
 from app.modules.core.models import User
+from app.modules.generic.monitoring_models import MonitoringActivity, MonitoringScreenshot
 
 router = APIRouter()
 
@@ -306,81 +307,116 @@ async def track_idle_time(
 # ============ API ENDPOINTS FOR DASHBOARD ============
 
 @router.get("/dashboard/summary")
-async def get_dashboard_summary():
-    """Get summary data for dashboard"""
-    with get_db() as conn:
-        # Total active agents today
-        today_utc = datetime.now(timezone.utc).date()
-        active_agents = conn.execute(
-            "SELECT COUNT(*) as count FROM agents WHERE date(last_seen) = ?",
-            (today_utc,)
-        ).fetchone()["count"]
-        
-        # Total screenshots today
-        screenshots_today = conn.execute(
-            "SELECT COUNT(*) as count FROM screenshots WHERE date(timestamp) = ?",
-            (today_utc,)
-        ).fetchone()["count"]
-        
-        # Total active minutes today
-        active_minutes = conn.execute(
-            """SELECT SUM(duration_seconds)/60.0 as minutes 
-               FROM app_usage WHERE date(app_open_at) = ?""",
-            (today_utc,)
-        ).fetchone()["minutes"] or 0
-        
-        # Productivity score
-        productive_score = 75  # Example calculation
-        
-        return {
-            "active_agents": active_agents,
-            "screenshots_today": screenshots_today,
-            "total_active_minutes": round(active_minutes, 1),
-            "productivity_score": productive_score
+async def get_dashboard_summary(current_user: User = Depends(deps.get_current_user)):
+    """Get summary data for dashboard from MongoDB"""
+    # Start of day UTC
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # 1. Total active agents today (unique users with activity)
+    # We query for users who have at least one activity log today
+    active_user_links = await MonitoringActivity.find(
+        MonitoringActivity.organization_id == current_user.organization_id,
+        MonitoringActivity.timestamp >= today
+    ).distinct("user")
+    active_agents = len(active_user_links)
+    
+    # 2. Total screenshots today
+    screenshots_today = await MonitoringScreenshot.find(
+        MonitoringScreenshot.organization_id == current_user.organization_id,
+        MonitoringScreenshot.timestamp >= today
+    ).count()
+    
+    # 3. Total active minutes today
+    # Estimate: each log entry represents a period characterized by the agent interval (usually 30-60s)
+    # We'll calculate it by counting unique 1-minute blocks of activity per user
+    pipeline = [
+        {
+            "$match": {
+                "organization_id": current_user.organization_id,
+                "timestamp": {"$gte": today},
+                "activity_type": "active"
+            }
+        },
+        {
+            "$group": {
+                "_id": {
+                    "user": "$user",
+                    "year": {"$year": "$timestamp"},
+                    "month": {"$month": "$timestamp"},
+                    "day": {"$dayOfMonth": "$timestamp"},
+                    "hour": {"$hour": "$timestamp"},
+                    "minute": {"$minute": "$timestamp"}
+                }
+            }
+        },
+        {
+            "$count": "total_minutes"
         }
+    ]
+    
+    minutes_result = await MonitoringActivity.aggregate(pipeline).to_list()
+    active_minutes = minutes_result[0]["total_minutes"] if minutes_result else 0
+    
+    # Productivity score (placeholder)
+    productive_score = 75 
+    
+    return {
+        "active_agents": active_agents,
+        "screenshots_today": screenshots_today,
+        "total_active_minutes": round(active_minutes, 1),
+        "productivity_score": productive_score
+    }
 
 @router.get("/dashboard/agents")
-async def get_agents():
-    """Get list of all agents with latest activity"""
-    with get_db() as conn:
-        agents = conn.execute("""
-            SELECT 
-                a.*,
-                (SELECT COUNT(*) FROM screenshots s WHERE s.agent_id = a.id) as screenshot_count,
-                (SELECT timestamp FROM screenshots s WHERE s.agent_id = a.id ORDER BY timestamp DESC LIMIT 1) as last_screenshot
-            FROM agents a
-            ORDER BY a.last_seen DESC
-        """).fetchall()
+async def get_agents(current_user: User = Depends(deps.get_current_user)):
+    """Get list of all agents from MongoDB for current organization"""
+    # Fetch all members of the organization
+    members = await User.find(User.organization_id == current_user.organization_id).to_list()
+    
+    agents_list = []
+    for member in members:
+        # Find latest activity for this member
+        latest_activity = await MonitoringActivity.find(
+            MonitoringActivity.user.id == member.id
+        ).sort(-MonitoringActivity.timestamp).first_or_none()
         
-        return [dict(agent) for agent in agents]
+        # Find screenshot count
+        screenshot_count = await MonitoringScreenshot.find(
+            MonitoringScreenshot.user.id == member.id
+        ).count()
+        
+        agents_list.append({
+            "id": str(member.id),
+            "full_name": member.full_name,
+            "computer_name": "Remote Device", # Placeholder since we don't have agent registration in Mongo yet
+            "os_version": "N/A",
+            "last_seen": latest_activity.timestamp if latest_activity else None,
+            "screenshot_count": screenshot_count
+        })
+        
+    return agents_list
 
 @router.get("/dashboard/screenshots")
 async def get_screenshots(
-    agent_id: Optional[str] = None,
     limit: int = 50,
-    offset: int = 0
+    offset: int = 0,
+    current_user: User = Depends(deps.get_current_user)
 ):
-    """Get recent screenshots with pagination"""
-    with get_db() as conn:
-        if agent_id:
-            screenshots = conn.execute("""
-                SELECT s.*, a.computer_name 
-                FROM screenshots s
-                JOIN agents a ON s.agent_id = a.id
-                WHERE s.agent_id = ?
-                ORDER BY s.timestamp DESC
-                LIMIT ? OFFSET ?
-            """, (agent_id, limit, offset)).fetchall()
-        else:
-            screenshots = conn.execute("""
-                SELECT s.*, a.computer_name 
-                FROM screenshots s
-                JOIN agents a ON s.agent_id = a.id
-                ORDER BY s.timestamp DESC
-                LIMIT ? OFFSET ?
-            """, (limit, offset)).fetchall()
-        
-        return [dict(shot) for shot in screenshots]
+    """Get recent screenshots from MongoDB for current organization"""
+    screenshots = await MonitoringScreenshot.find(
+        MonitoringScreenshot.organization_id == current_user.organization_id,
+        fetch_links=True
+    ).sort(-MonitoringScreenshot.timestamp).skip(offset).limit(limit).to_list()
+    
+    return [
+        {
+            "id": str(s.id),
+            "filename": s.file_url.split('/')[-1],
+            "filepath": s.file_url,
+            "timestamp": s.timestamp,
+            "computer_name": s.user.full_name if s.user else "Unknown"
+        } for s in screenshots
+    ]
 
 @router.get("/dashboard/agent/{agent_id}/activity")
 async def get_agent_activity(agent_id: str, date: Optional[str] = None):
