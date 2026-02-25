@@ -4,7 +4,7 @@ from app.api.deps import get_current_user
 from app.modules.generic.monitoring_models import MonitoringActivity, MonitoringScreenshot
 from typing import List, Optional
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -28,13 +28,17 @@ async def submit_activity(
     if not current_user.organization_id:
         raise HTTPException(status_code=400, detail="User not part of an organization")
 
-    activities = [
-        MonitoringActivity(
+    activities = []
+    for log in req.logs:
+        ts = log.timestamp
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+            
+        activities.append(MonitoringActivity(
             user=current_user,
             organization_id=current_user.organization_id,
-            **log.dict()
-        ) for log in req.logs
-    ]
+            **{**log.dict(), "timestamp": ts}
+        ))
     await MonitoringActivity.insert_many(activities)
     return {"status": "success", "count": len(activities)}
 
@@ -67,10 +71,14 @@ async def upload_screenshot(
     # file_url = await upload_to_storage(file)
     file_url = f"/mock-storage/{file.filename}" 
 
+    ts = timestamp
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+
     screenshot = MonitoringScreenshot(
         user=current_user,
         organization_id=current_user.organization_id,
-        timestamp=timestamp,
+        timestamp=ts,
         file_url=file_url,
         app_name=app_name,
         window_title=window_title
