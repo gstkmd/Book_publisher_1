@@ -33,7 +33,11 @@ export function AgentList({ agents }: AgentListProps) {
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                         {agents.map((agent) => (
-                            <tr key={agent.id} className="hover:bg-gray-50 transition-colors">
+                            <tr
+                                key={agent.id}
+                                className="hover:bg-gray-50 transition-colors cursor-pointer"
+                                onClick={() => window.location.href = `/dashboard/monitoring/${agent.id}`}
+                            >
                                 <td className="px-6 py-4 font-medium text-gray-900">{agent.computer_name}</td>
                                 <td className="px-6 py-4 text-gray-600 text-sm">{agent.os_version}</td>
                                 <td className="px-6 py-4 text-gray-600 text-sm">
@@ -44,7 +48,7 @@ export function AgentList({ agents }: AgentListProps) {
                                         {agent.screenshot_count || 0} captured
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-sm">
+                                <td className="px-6 py-4 text-sm" onClick={(e) => e.stopPropagation()}>
                                     <Link
                                         href={`/dashboard/monitoring/${agent.id}`}
                                         className="text-blue-600 hover:text-blue-800 font-medium"

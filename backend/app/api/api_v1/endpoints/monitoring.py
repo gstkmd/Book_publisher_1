@@ -421,7 +421,12 @@ async def get_screenshots(
     query = {"organization_id": current_user.organization_id}
     if agent_id:
         try:
-            query["user"] = ObjectId(agent_id)
+            # Try both raw ID and DBRef style just in case
+            agent_oid = ObjectId(agent_id)
+            query["$or"] = [
+                {"user": agent_oid},
+                {"user.$id": agent_oid}
+            ]
         except:
             pass
             
@@ -454,7 +459,6 @@ async def get_agent_activity(
     
     try:
         start_date = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-        # Convert to UTC start/end of day
         start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = start_date.replace(hour=23, minute=59, second=59, microsecond=999999)
     except Exception as e:
@@ -465,11 +469,17 @@ async def get_agent_activity(
     except:
         raise HTTPException(status_code=400, detail="Invalid agent_id")
 
+    # Match both raw ID and DBRef style for user
+    user_match = {"$or": [
+        {"user": user_oid},
+        {"user.$id": user_oid}
+    ]}
+
     # 1. App usage aggregation
     app_pipeline = [
         {
             "$match": {
-                "user": user_oid,
+                **user_match,
                 "timestamp": {"$gte": start_date, "$lte": end_date}
             }
         },
@@ -499,7 +509,7 @@ async def get_agent_activity(
     hourly_pipeline = [
         {
             "$match": {
-                "user": user_oid,
+                **user_match,
                 "timestamp": {"$gte": start_date, "$lte": end_date}
             }
         },
