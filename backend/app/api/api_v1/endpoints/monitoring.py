@@ -252,13 +252,13 @@ async def track_app_usage(
                     app_data.get("keys_pressed") or app_data.get("keysPressed", 0),
                     app_data.get("mouse_clicks") or app_data.get("mouseClicks", 0),
                     duration,
-                    app_data.get("appCategory"),
-                    app_data.get("activityType"),
-                    app_data.get("webTitle"),
-                    app_data.get("webDomain"),
-                    app_data.get("webCategory"),
-                    app_data.get("fileName"),
-                    app_data.get("fileExtension")
+                    app_data.get("app_category") or app_data.get("appCategory"),
+                    app_data.get("activity_type") or app_data.get("activityType"),
+                    app_data.get("web_title") or app_data.get("webTitle"),
+                    app_data.get("web_domain") or app_data.get("webDomain"),
+                    app_data.get("web_category") or app_data.get("webCategory"),
+                    app_data.get("file_name") or app_data.get("fileName"),
+                    app_data.get("file_extension") or app_data.get("fileExtension")
                 )
             )
             
