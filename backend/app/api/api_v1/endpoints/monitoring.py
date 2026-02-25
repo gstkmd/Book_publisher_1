@@ -253,6 +253,7 @@ async def track_app_usage(
                     web_category, file_name, file_extension)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
+                    app_id, agent_id,
                     app_data.get("app_name") or app_data.get("appName") or "Unknown",
                     app_data.get("app_open_at") or app_data.get("appOpenAt"),
                     app_data.get("app_close_at") or app_data.get("appCloseAt"),
