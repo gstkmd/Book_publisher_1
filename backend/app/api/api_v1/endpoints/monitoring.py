@@ -226,6 +226,7 @@ async def track_app_usage(
         if not current_user.organization_id:
             raise HTTPException(status_code=400, detail="User not part of an organization")
 
+        agent_id = data.get("agent_id") or data.get("agentId")
         app_data = data.get("app_data") or data.get("appData", {})
         
         # Calculate duration
@@ -276,6 +277,7 @@ async def track_idle_time(
         if not current_user.organization_id:
             raise HTTPException(status_code=400, detail="User not part of an organization")
 
+        agent_id = data.get("agent_id") or data.get("agentId")
         # Calculate duration
         from_time_str = data.get("from") or data.get("idle_from")
         to_time_str = data.get("to") or data.get("idle_to")
