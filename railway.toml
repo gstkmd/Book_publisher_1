@@ -1,17 +1,25 @@
-[build]
-# Global build settings (removed to use per-service settings)
-
-[[services]]
-name = "backend"
+# Backend Service
+[services.backend]
 root = "backend"
-[services.build]
-builder = "dockerfile"
+
+[services.backend.build]
+builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
-[[services]]
-name = "frontend"
+[services.backend.deploy]
+startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/"
+healthcheckTimeout = 100
+
+# Frontend Service
+[services.frontend]
 root = "frontend"
-[services.build]
-builder = "dockerfile"
+
+[services.frontend.build]
+builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
-startCommand = "npm start"
+
+[services.frontend.deploy]
+startCommand = "node server.js"
+healthcheckPath = "/"
+healthcheckTimeout = 100
