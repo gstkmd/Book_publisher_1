@@ -232,9 +232,17 @@ async def track_app_usage(
         app_data = data.get("app_data") or data.get("appData", {})
         
         # Calculate duration
-        open_time = datetime.fromisoformat(app_data.get("appOpenAt").replace('Z', '+00:00'))
-        close_time = datetime.fromisoformat(app_data.get("appCloseAt").replace('Z', '+00:00'))
-        duration = int((close_time - open_time).total_seconds())
+        open_time_str = app_data.get("app_open_at") or app_data.get("appOpenAt")
+        close_time_str = app_data.get("app_close_at") or app_data.get("appCloseAt")
+        
+        if not open_time_str or not close_time_str:
+            open_time = datetime.now(timezone.utc)
+            close_time = open_time 
+            duration = 0
+        else:
+            open_time = datetime.fromisoformat(open_time_str.replace('Z', '+00:00'))
+            close_time = datetime.fromisoformat(close_time_str.replace('Z', '+00:00'))
+            duration = int((close_time - open_time).total_seconds())
         
         with get_db() as conn:
             conn.execute(
@@ -245,12 +253,11 @@ async def track_app_usage(
                     web_category, file_name, file_extension)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
-                    app_id, agent_id, 
-                    app_data.get("app_name") or app_data.get("appName", "Unknown"),
+                    app_data.get("app_name") or app_data.get("appName") or "Unknown",
                     app_data.get("app_open_at") or app_data.get("appOpenAt"),
                     app_data.get("app_close_at") or app_data.get("appCloseAt"),
-                    app_data.get("keys_pressed") or app_data.get("keysPressed", 0),
-                    app_data.get("mouse_clicks") or app_data.get("mouseClicks", 0),
+                    app_data.get("keys_pressed") or app_data.get("keysPressed") or 0,
+                    app_data.get("mouse_clicks") or app_data.get("mouseClicks") or 0,
                     duration,
                     app_data.get("app_category") or app_data.get("appCategory"),
                     app_data.get("activity_type") or app_data.get("activityType"),
@@ -286,9 +293,19 @@ async def track_idle_time(
         idle_to = data.get("to")
         
         # Calculate duration
-        from_time = datetime.fromisoformat(idle_from.replace('Z', '+00:00'))
-        to_time = datetime.fromisoformat(idle_to.replace('Z', '+00:00'))
-        duration = int((to_time - from_time).total_seconds())
+        from_time_str = data.get("from") or data.get("idle_from")
+        to_time_str = data.get("to") or data.get("idle_to")
+        
+        if not from_time_str or not to_time_str:
+            duration = 0
+            idle_from = datetime.now(timezone.utc).isoformat()
+            idle_to = idle_from
+        else:
+            from_time = datetime.fromisoformat(from_time_str.replace('Z', '+00:00'))
+            to_time = datetime.fromisoformat(to_time_str.replace('Z', '+00:00'))
+            duration = int((to_time - from_time).total_seconds())
+            idle_from = from_time_str
+            idle_to = to_time_str
         
         with get_db() as conn:
             conn.execute(
