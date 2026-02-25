@@ -42,30 +42,12 @@ export function AgentList({ agents }: AgentListProps) {
                                             let dateStr = agent.last_seen;
                                             if (dateStr && !dateStr.includes('Z')) {
                                                 // If ' ' instead of 'T', fix it
-                                                dateStr = dateStr.replace(' ', 'T');
-                                                // Add Z if no timezone info, but only if we're sure it's UTC.
-                                                // After backend fix, it WILL be UTC. 
-                                                // If it's old data (local), it might be slightly off until overwritten.
-                                                dateStr += 'Z';
-                                            }
-                                            const d = new Date(dateStr);
-                                            return d.toLocaleString(undefined, {
-                                                year: 'numeric',
-                                                month: '2-digit',
-                                                day: '2-digit',
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                                second: '2-digit',
-                                                hour12: false
-                                            }).replace(',', '');
-                                        } catch (e) {
-                                            return agent.last_seen;
-                                        }
-                                    })()}
+                                <td className="px-6 py-4 text-gray-900 text-sm whitespace-nowrap">
+                                    {agent.last_seen ? new Date(agent.last_seen).toLocaleString() : 'Never'}
                                 </td>
                                 <td className="px-6 py-4">
-                                    <span className="bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full text-xs font-semibold">
-                                        {agent.screenshot_count} captured
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        {agent.screenshot_count || 0} captured
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-sm">

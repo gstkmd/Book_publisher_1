@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from app.modules.core.models import User
 from app.api.deps import get_current_user
 from app.modules.generic.monitoring_models import MonitoringActivity, MonitoringScreenshot
@@ -58,9 +58,9 @@ async def get_team_activity(
 
 @router.post("/screenshot")
 async def upload_screenshot(
-    app_name: str,
-    window_title: str,
-    timestamp: datetime,
+    app_name: str = Form(...),
+    window_title: str = Form(...),
+    timestamp: datetime = Form(...),
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user)
 ):
