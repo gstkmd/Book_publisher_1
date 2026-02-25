@@ -1,5 +1,6 @@
-from typing import Optional
-from pydantic import BaseModel, EmailStr, ConfigDict
+from typing import Optional, Any
+from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
+from beanie import PydanticObjectId
 
 from app.modules.core.models import UserRole
 
@@ -21,6 +22,13 @@ class UserInDBBase(UserBase):
     organization_id: Optional[str] = None
     
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("id", "organization_id", mode="before")
+    @classmethod
+    def convert_object_id(cls, v: Any) -> Any:
+        if isinstance(v, PydanticObjectId):
+            return str(v)
+        return v
 
 class User(UserInDBBase):
     pass
