@@ -16,7 +16,11 @@ class Settings(BaseSettings):
     # Example: "https://example.com" or "https://example.com,https://another.com"
     BACKEND_CORS_ORIGINS: str = ""
 
-    MONGODB_URL: str = Field(..., validation_alias="MONGO_URI") # Required, supports MONGO_URI env var
+    MONGODB_URL: str = Field(
+        "mongodb://localhost:27017/Book_publisher", 
+        validation_alias="MONGO_URI",
+        description="MongoDB connection string. Supports MONGO_URI as alias."
+    )
     DB_NAME: str = "Book_publisher"  # Match existing database case
     
     # Storage (Wasabi/S3)
