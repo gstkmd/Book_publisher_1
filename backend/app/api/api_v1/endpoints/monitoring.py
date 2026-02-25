@@ -309,16 +309,27 @@ async def track_idle_time(
 @router.get("/dashboard/summary")
 async def get_dashboard_summary(current_user: User = Depends(deps.get_current_user)):
     """Get summary data for dashboard from MongoDB"""
-    # Start of day UTC
-    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    # Start of day UTC (naive to match potentially naive logs in DB)
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).replace(tzinfo=None)
     
     # 1. Total active agents today (unique users with activity)
-    # We query for users who have at least one activity log today
-    active_user_links = await MonitoringActivity.find(
-        MonitoringActivity.organization_id == current_user.organization_id,
-        MonitoringActivity.timestamp >= today
-    ).distinct("user")
-    active_agents = len(active_user_links)
+    # Use aggregation to get unique user IDs efficiently
+    active_agents_pipeline = [
+        {
+            "$match": {
+                "organization_id": current_user.organization_id,
+                "timestamp": {"$gte": today}
+            }
+        },
+        {
+            "$group": {"_id": "$user"}
+        },
+        {
+            "$count": "count"
+        }
+    ]
+    agents_result = await MonitoringActivity.aggregate(active_agents_pipeline).to_list()
+    active_agents = agents_result[0]["count"] if agents_result else 0
     
     # 2. Total screenshots today
     screenshots_today = await MonitoringScreenshot.find(
@@ -327,8 +338,6 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
     ).count()
     
     # 3. Total active minutes today
-    # Estimate: each log entry represents a period characterized by the agent interval (usually 30-60s)
-    # We'll calculate it by counting unique 1-minute blocks of activity per user
     pipeline = [
         {
             "$match": {
