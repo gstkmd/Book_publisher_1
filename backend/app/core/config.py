@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     )
     DB_NAME: str = "Book_publisher"  # Match existing database case
     
+    @validator("DB_NAME", pre=True)
+    def ensure_correct_db_case(cls, v):
+        if isinstance(v, str) and v.lower() == "book_publisher":
+            return "Book_publisher"
+        return v
+    
     # Storage (Wasabi/S3)
     S3_ENDPOINT_URL: str = "https://s3.wasabisys.com"
     S3_BUCKET: str = "edu-publishing-bucket"
