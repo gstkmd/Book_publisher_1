@@ -158,15 +158,10 @@ async def register_agent(
     nickname: Optional[str] = Form(None),
     current_user: User = Depends(deps.get_current_user)
 ):
-    """Register a new monitoring agent"""
+    """Register a new monitoring agent (Dummy Success for migration)"""
+    # We no longer track agents separately from users in SQLite.
+    # We generate a consistent ID for the agent session.
     agent_id = str(uuid.uuid4())
-    with get_db() as conn:
-        conn.execute(
-            "INSERT INTO agents (id, user_id, computer_name, os_version, last_seen) VALUES (?, ?, ?, ?, ?)",
-            (agent_id, str(current_user.id), computer_name, os_version, datetime.now(timezone.utc))
-        )
-
-        conn.commit()
     return {"agent_id": agent_id, "status": "registered"}
 
 @router.post("/screenshots/upload")
@@ -209,6 +204,7 @@ async def upload_screenshot(
         screenshot_doc = MonitoringScreenshot(
             user=current_user,
             organization_id=current_user.organization_id,
+            agent_id=agent_id,
             timestamp=ts,
             file_url=filepath, # Store local path for internal use
             app_name="Agent Upload",
@@ -225,10 +221,11 @@ async def track_app_usage(
     data: dict,
     current_user: User = Depends(deps.get_current_user)
 ):
-    """Track application usage from agent"""
+    """Track application usage from agent (MongoDB)"""
     try:
-        app_id = str(uuid.uuid4())
-        agent_id = data.get("agent_id") or data.get("agentId")
+        if not current_user.organization_id:
+            raise HTTPException(status_code=400, detail="User not part of an organization")
+
         app_data = data.get("app_data") or data.get("appData", {})
         
         # Calculate duration
@@ -242,42 +239,30 @@ async def track_app_usage(
         else:
             open_time = datetime.fromisoformat(open_time_str.replace('Z', '+00:00'))
             close_time = datetime.fromisoformat(close_time_str.replace('Z', '+00:00'))
+            if open_time.tzinfo is None: open_time = open_time.replace(tzinfo=timezone.utc)
+            if close_time.tzinfo is None: close_time = close_time.replace(tzinfo=timezone.utc)
             duration = int((close_time - open_time).total_seconds())
         
-        with get_db() as conn:
-            conn.execute(
-                """INSERT INTO app_usage 
-                   (id, agent_id, app_name, app_open_at, app_close_at, 
-                    keys_pressed, mouse_clicks, duration_seconds,
-                    app_category, activity_type, web_title, web_domain,
-                    web_category, file_name, file_extension)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (
-                    app_id, agent_id,
-                    app_data.get("app_name") or app_data.get("appName") or "Unknown",
-                    app_data.get("app_open_at") or app_data.get("appOpenAt"),
-                    app_data.get("app_close_at") or app_data.get("appCloseAt"),
-                    app_data.get("keys_pressed") or app_data.get("keysPressed") or 0,
-                    app_data.get("mouse_clicks") or app_data.get("mouseClicks") or 0,
-                    duration,
-                    app_data.get("app_category") or app_data.get("appCategory"),
-                    app_data.get("activity_type") or app_data.get("activityType"),
-                    app_data.get("web_title") or app_data.get("webTitle"),
-                    app_data.get("web_domain") or app_data.get("webDomain"),
-                    app_data.get("web_category") or app_data.get("webCategory"),
-                    app_data.get("file_name") or app_data.get("fileName"),
-                    app_data.get("file_extension") or app_data.get("fileExtension")
-                )
-            )
-            
-            # Update agent last seen
-            conn.execute(
-                "UPDATE agents SET last_seen = ? WHERE id = ?",
-                (datetime.now(timezone.utc), agent_id)
-            )
-            conn.commit()
-        
-        return {"status": "success", "app_id": app_id}
+        activity = MonitoringActivity(
+            user=current_user,
+            organization_id=current_user.organization_id,
+            agent_id=agent_id,
+            timestamp=open_time,
+            app_name=app_data.get("app_name") or app_data.get("appName") or "Unknown",
+            window_title=app_data.get("window_title") or app_data.get("windowTitle") or "N/A",
+            activity_type=app_data.get("activity_type") or app_data.get("activityType") or "active",
+            duration=duration,
+            keys_pressed=app_data.get("keys_pressed") or app_data.get("keysPressed") or 0,
+            mouse_clicks=app_data.get("mouse_clicks") or app_data.get("mouseClicks") or 0,
+            web_url=app_data.get("web_url") or app_data.get("webUrl"),
+            web_title=app_data.get("web_title") or app_data.get("webTitle"),
+            web_domain=app_data.get("web_domain") or app_data.get("webDomain"),
+            file_path=app_data.get("file_path") or app_data.get("filePath"),
+            file_name=app_data.get("file_name") or app_data.get("fileName"),
+            file_extension=app_data.get("file_extension") or app_data.get("fileExtension")
+        )
+        await activity.create()
+        return {"status": "success", "id": str(activity.id)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -286,38 +271,37 @@ async def track_idle_time(
     data: dict,
     current_user: User = Depends(deps.get_current_user)
 ):
-    """Track idle time periods"""
+    """Track idle time periods (MongoDB)"""
     try:
-        idle_id = str(uuid.uuid4())
-        agent_id = data.get("agent_id") or data.get("agentId")
-        idle_from = data.get("from")
-        idle_to = data.get("to")
-        
+        if not current_user.organization_id:
+            raise HTTPException(status_code=400, detail="User not part of an organization")
+
         # Calculate duration
         from_time_str = data.get("from") or data.get("idle_from")
         to_time_str = data.get("to") or data.get("idle_to")
         
         if not from_time_str or not to_time_str:
             duration = 0
-            idle_from = datetime.now(timezone.utc).isoformat()
-            idle_to = idle_from
+            ts = datetime.now(timezone.utc)
         else:
             from_time = datetime.fromisoformat(from_time_str.replace('Z', '+00:00'))
             to_time = datetime.fromisoformat(to_time_str.replace('Z', '+00:00'))
+            if from_time.tzinfo is None: from_time = from_time.replace(tzinfo=timezone.utc)
+            if to_time.tzinfo is None: to_time = to_time.replace(tzinfo=timezone.utc)
             duration = int((to_time - from_time).total_seconds())
-            idle_from = from_time_str
-            idle_to = to_time_str
+            ts = from_time
         
-        with get_db() as conn:
-            conn.execute(
-                """INSERT INTO idle_time 
-                   (id, agent_id, idle_from, idle_to, duration_seconds)
-                   VALUES (?, ?, ?, ?, ?)""",
-                (idle_id, agent_id, idle_from, idle_to, duration)
-            )
-            conn.commit()
-        
-        return {"status": "success", "idle_id": idle_id}
+        activity = MonitoringActivity(
+            user=current_user,
+            organization_id=current_user.organization_id,
+            agent_id=agent_id,
+            timestamp=ts,
+            activity_type="idle",
+            duration=duration,
+            idle_duration=duration
+        )
+        await activity.create()
+        return {"status": "success", "id": str(activity.id)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

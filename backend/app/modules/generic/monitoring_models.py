@@ -8,6 +8,7 @@ from app.modules.core.models import User
 class MonitoringActivity(Document):
     user: Link[User]
     organization_id: str
+    agent_id: Optional[str] = None
     timestamp: datetime
     app_name: Optional[str] = None
     window_title: Optional[str] = None
@@ -15,6 +16,14 @@ class MonitoringActivity(Document):
     file_path: Optional[str] = None
     activity_type: str # active, idle
     idle_duration: int = 0
+    duration: int = 0 # in seconds
+    keys_pressed: int = 0
+    mouse_clicks: int = 0
+    web_title: Optional[str] = None
+    web_domain: Optional[str] = None
+    web_category: Optional[str] = None
+    file_name: Optional[str] = None
+    file_extension: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
@@ -29,6 +38,7 @@ class MonitoringActivity(Document):
 class MonitoringScreenshot(Document):
     user: Link[User]
     organization_id: str
+    agent_id: Optional[str] = None
     timestamp: datetime
     file_url: str # URL to stored image (e.g. S3/Wasabi)
     app_name: Optional[str] = None

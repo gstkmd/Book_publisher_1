@@ -16,9 +16,18 @@ class ActivityLog(BaseModel):
     app_name: Optional[str] = None
     window_title: Optional[str] = None
     web_url: Optional[str] = None
+    web_title: Optional[str] = None
+    web_domain: Optional[str] = None
+    web_category: Optional[str] = None
     file_path: Optional[str] = None
+    file_name: Optional[str] = None
+    file_extension: Optional[str] = None
     activity_type: str
     idle_duration: int = 0
+    duration: int = 0
+    keys_pressed: int = 0
+    mouse_clicks: int = 0
+    agent_id: Optional[str] = None
 
 class ActivitySubmitRequest(BaseModel):
     logs: List[ActivityLog]
