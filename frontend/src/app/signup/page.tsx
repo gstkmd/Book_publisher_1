@@ -77,7 +77,7 @@ export default function SignupPage() {
            params.append('password', password);
 
            const loginRes = await fetch(
-           	`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}/login/access-token`,
+           	`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}/auth/access-token`,
     		{
         		method: 'POST',
         		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
