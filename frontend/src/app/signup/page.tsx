@@ -25,6 +25,7 @@ export default function SignupPage() {
 
     const [step, setStep] = useState<Step>(1);
     const [error, setError] = useState('');
+    const [accountExistsError, setAccountExistsError] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const toSlug = (name: string) =>
@@ -38,6 +39,7 @@ export default function SignupPage() {
     const handleStep1 = (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setAccountExistsError(false);
         if (!fullName.trim() || !email.trim() || password.length < 6) {
             setError('Please fill all fields. Password must be at least 6 characters.');
             return;
@@ -48,16 +50,27 @@ export default function SignupPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setAccountExistsError(false);
         if (!orgName.trim() || !orgSlug.trim()) {
             setError('Please provide an organization name.');
             return;
         }
         setLoading(true);
         try {
-            // 1. Create user account
-            await api.post('/users/', { email, password, full_name: fullName, role: 'admin' });
+            let userExisted = false;
+            // 1. Try to create user account
+            try {
+                await api.post('/users/', { email, password, full_name: fullName, role: 'admin' });
+            } catch (err: any) {
+                let msg = '';
+                try { const j = JSON.parse(err.message); msg = j.detail || msg; } catch { msg = err.message || msg; }
+                if (typeof msg === 'string' && msg.toLowerCase().includes('already exists')) {
+                    userExisted = true;
+                } else {
+                    throw err; // rethrow other errors
+                }
+            }
 
-            
 	   // 2. Login to get token
 	   const params = new URLSearchParams() ;
            params.append('username', email);
@@ -72,11 +85,21 @@ export default function SignupPage() {
     		}
 );
 
-		if (!loginRes.ok) throw new Error('Auto-login failed');
+		if (!loginRes.ok) {
+            if (userExisted) {
+                setAccountExistsError(true);
+                throw new Error('Account already exists. Please login.');
+            }
+            throw new Error('Auto-login failed');
+        }
 		const { access_token } = await loginRes.json();
 
             // 3. Create organization
-            await api.post('/organizations/', { name: orgName, slug: orgSlug }, access_token);
+            try {
+                await api.post('/organizations/', { name: orgName, slug: orgSlug }, access_token);
+            } catch (orgErr: any) {
+                console.warn('Organization creation warning:', orgErr);
+            }
 
             // 4. Login via context (redirect to dashboard)
             login(access_token);
@@ -124,8 +147,13 @@ export default function SignupPage() {
 
                 <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8">
                     {error && (
-                        <div className="bg-red-50 text-red-600 border border-red-100 p-3 rounded-xl mb-6 text-sm font-medium">
-                            {error}
+                        <div className="bg-red-50 text-red-600 border border-red-100 p-4 rounded-xl mb-6 text-sm font-medium flex flex-col gap-3">
+                            <div>{error}</div>
+                            {accountExistsError && (
+                                <Link href="/login" className="inline-flex items-center justify-center gap-2 py-2 px-4 bg-red-600 text-white rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-red-700 transition-colors w-fit shadow-sm">
+                                    Go to Login <ArrowRight className="w-4 h-4" />
+                                </Link>
+                            )}
                         </div>
                     )}
 
