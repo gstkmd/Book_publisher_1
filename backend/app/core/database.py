@@ -11,8 +11,7 @@ import certifi
 
 async def init_db():
     client = AsyncIOMotorClient(
-        settings.MONGODB_URL,
-        tlsCAFile=certifi.where()
+        settings.MONGO_URL,
     )
     await init_beanie(
         database=client[settings.DB_NAME],

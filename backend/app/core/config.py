@@ -16,18 +16,15 @@ class Settings(BaseSettings):
     # Example: "https://example.com" or "https://example.com,https://another.com"
     BACKEND_CORS_ORIGINS: str = ""
 
-    MONGODB_URL: str = Field(
-        "mongodb://localhost:27017/Book_publisher", 
-        validation_alias="MONGO_URI",
-        description="MongoDB connection string. Supports MONGO_URI as alias."
-    )
-    DB_NAME: str = "Book_publisher"  # Match existing database case
+    MONGO_URL: str = Field(
+	    "mongodb://admin:StrongPassword123@mongo:27017/admin?authSource=admin&tls=false",
+	    validation_alias="MONGO_URI",
+	    description="MongoDB connection string. Supports MONGO_URI as alias."
+	)
+    DB_NAME: str = "book_publisher"
+
+
     
-    @validator("DB_NAME", pre=True)
-    def ensure_correct_db_case(cls, v):
-        if isinstance(v, str) and v.lower() == "book_publisher":
-            return "Book_publisher"
-        return v
     
     # Storage (Wasabi/S3)
     S3_ENDPOINT_URL: str = "https://s3.wasabisys.com"

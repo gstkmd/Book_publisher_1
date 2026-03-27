@@ -57,14 +57,23 @@ export default function SignupPage() {
             // 1. Create user account
             await api.post('/users/', { email, password, full_name: fullName, role: 'admin' });
 
-            // 2. Login to get token
-            const params = new URLSearchParams({ username: email, password });
-            const loginRes = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}/auth/login`,
-                { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params }
-            );
-            if (!loginRes.ok) throw new Error('Auto-login failed');
-            const { access_token } = await loginRes.json();
+            
+	   // 2. Login to get token
+	   const params = new URLSearchParams() ;
+           params.append('username', email);
+           params.append('password', password);
+
+           const loginRes = await fetch(
+           	`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}/login/access-token`,
+    		{
+        		method: 'POST',
+        		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        		body: params.toString(),
+    		}
+);
+
+		if (!loginRes.ok) throw new Error('Auto-login failed');
+		const { access_token } = await loginRes.json();
 
             // 3. Create organization
             await api.post('/organizations/', { name: orgName, slug: orgSlug }, access_token);
