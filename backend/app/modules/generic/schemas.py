@@ -99,6 +99,28 @@ class NotificationSchema(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class ContentCreate(BaseModel):
+    title: str
+    slug: str
+    body: Dict = {}
+    type: str = "article"
+    status: str = "draft"
+    author: Optional[str] = None
+    tags: Optional[List[str]] = []
+    organization_id: Optional[str] = None
+    custom_fields: Optional[Dict[str, str]] = {}
+    attachments: Optional[List[Dict[str, str]]] = []
+
+class ContentUpdate(BaseModel):
+    title: Optional[str] = None
+    slug: Optional[str] = None
+    body: Optional[Dict] = None
+    type: Optional[str] = None
+    status: Optional[str] = None
+    custom_fields: Optional[Dict[str, str]] = None
+    attachments: Optional[List[Dict[str, str]]] = None
+    organization_id: Optional[str] = None
+
 class ContentSchema(BaseModel):
     id: str
 

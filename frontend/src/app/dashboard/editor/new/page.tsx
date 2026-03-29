@@ -6,6 +6,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { api } from '@/lib/api';
 import { RichTextEditor } from '@/components/RichTextEditor';
 import { SupportingDocuments } from '@/components/SupportingDocuments';
+import toast from 'react-hot-toast';
 
 function EditorNewContent() {
     const { user, isLoading, token } = useAuth();
@@ -71,7 +72,7 @@ function EditorNewContent() {
 
     const handleSaveDraft = async () => {
         if (!title.trim()) {
-            alert('Please enter a title');
+            toast.error('Please enter a title');
             return;
         }
 
@@ -91,7 +92,7 @@ function EditorNewContent() {
                 attachments: attachments
             }, token!);
 
-            alert('Draft saved successfully!');
+            toast.success('Draft saved successfully!');
             if (taskId) {
                 router.push(`/dashboard/tasks/${taskId}`);
             } else {
@@ -99,7 +100,9 @@ function EditorNewContent() {
             }
         } catch (err: any) {
             console.error(err);
-            alert('Failed to save draft: ' + (err.message || 'Unknown error'));
+            let msg = 'Unknown error occurred on the server.';
+            try { msg = JSON.parse(err.message).detail || msg; } catch { msg = err.message || msg; }
+            toast.error('Failed to save draft: ' + msg);
         } finally {
             setSaving(false);
         }

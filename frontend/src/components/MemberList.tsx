@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Link2, Copy, Check, X, UserPlus } from 'lucide-react';
 import { TeamService, OrganizationMember } from '@/lib/services/TeamService';
+import toast from 'react-hot-toast';
 
 const ROLES = [
     { value: 'user', label: 'Member' },
@@ -40,17 +41,21 @@ export const MemberList = () => {
     };
 
     const handleGenerateLink = async () => {
-        if (!inviteEmail || !user?.organization_id) return;
+        if (!inviteEmail || !user?.organization_id) {
+            toast.error("Missing email or organization ID");
+            return;
+        }
         setInviting(true);
         setGeneratedLink('');
         try {
             const res = await TeamService.inviteMember(user.organization_id, inviteEmail, inviteRole, token!);
             const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
             setGeneratedLink(`${baseUrl}/invite/${res.token}`);
+            toast.success("Invite link generated successfully!");
         } catch (err: any) {
             let msg = 'Failed to generate link';
             try { msg = JSON.parse(err.message).detail || msg; } catch { }
-            alert(msg);
+            toast.error(msg);
         } finally {
             setInviting(false);
         }
@@ -59,6 +64,7 @@ export const MemberList = () => {
     const handleCopy = async () => {
         await navigator.clipboard.writeText(generatedLink);
         setCopied(true);
+        toast.success("Copied to clipboard!");
         setTimeout(() => setCopied(false), 2000);
     };
 
@@ -72,13 +78,12 @@ export const MemberList = () => {
 
     const handleToggleStatus = async (userId: string, currentStatus: boolean, email: string) => {
         try {
-            // Note: Endpoints to patch user status might still be in old format or we can keep it as is.
-            // But we should use api for now if we didn't add it to TeamService.
             const { api } = await import('@/lib/api');
             await api.patch(`/organizations/members/${userId}/status?is_active=${!currentStatus}`, {}, token!);
             fetchMembers();
+            toast.success("Member status updated");
         } catch (err: any) {
-            alert('Failed to update status: ' + (err.message || 'Unknown error'));
+            toast.error('Failed to update status: ' + (err.message || 'Unknown error'));
         }
     };
 
@@ -87,8 +92,9 @@ export const MemberList = () => {
             const { api } = await import('@/lib/api');
             await api.patch(`/organizations/members/${userId}/role?role=${newRole}`, {}, token!);
             fetchMembers();
+            toast.success("Member role updated");
         } catch (err: any) {
-            alert('Failed to update role: ' + (err.message || 'Unknown error'));
+            toast.error('Failed to update role: ' + (err.message || 'Unknown error'));
         }
     };
 
@@ -97,6 +103,7 @@ export const MemberList = () => {
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Team Members</h2>
                 <button
+                    type="button"
                     onClick={() => setShowInvite(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-indigo-700 transition-all"
                 >
@@ -122,11 +129,12 @@ export const MemberList = () => {
                             <select
                                 value={m.organization_role || m.role}
                                 onChange={(e) => handleRoleChange(m._id, e.target.value)}
-                                className="text-xs bg-gray-50 border-none px-2 py-1 rounded capitalize focus:ring-1 focus:ring-blue-500"
+                                className="text-xs bg-gray-50 border-none px-2 py-1 rounded capitalize focus:ring-1 focus:ring-blue-500 text-slate-900"
                             >
                                 {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                             </select>
                             <button
+                                type="button"
                                 onClick={() => handleToggleStatus(m._id, m.is_active, m.email)}
                                 className={`text-[10px] font-bold uppercase px-2 py-1 rounded transition ${m.is_active ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
                             >
@@ -143,14 +151,14 @@ export const MemberList = () => {
             {/* Invite Modal */}
             {showInvite && (
                 <>
-                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50" onClick={handleCloseInvite} />
+                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40" onClick={handleCloseInvite} />
                     <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 border border-slate-100">
                         <div className="flex items-center justify-between mb-6">
                             <div>
                                 <h3 className="font-black text-slate-900 text-lg">Invite a Team Member</h3>
                                 <p className="text-slate-500 text-xs mt-0.5">Generate a secure link — valid for 48 hours</p>
                             </div>
-                            <button onClick={handleCloseInvite} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-50 transition">
+                            <button type="button" onClick={handleCloseInvite} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-50 transition">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
@@ -162,20 +170,21 @@ export const MemberList = () => {
                                     type="email" autoFocus
                                     value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
                                     placeholder="colleague@company.com"
-                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-slate-900"
                                 />
                             </div>
                             <div>
                                 <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">Role</label>
                                 <select
                                     value={inviteRole} onChange={e => setInviteRole(e.target.value)}
-                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-slate-900"
                                 >
                                     {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                                 </select>
                             </div>
 
                             <button
+                                type="button"
                                 onClick={handleGenerateLink} disabled={inviting || !inviteEmail}
                                 className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl font-black text-sm uppercase tracking-wider hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -192,6 +201,7 @@ export const MemberList = () => {
                                             {generatedLink}
                                         </code>
                                         <button
+                                            type="button"
                                             onClick={handleCopy}
                                             className={`shrink-0 p-2 rounded-lg transition-all ${copied ? 'bg-emerald-600 text-white' : 'bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-100'}`}
                                         >

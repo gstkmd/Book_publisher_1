@@ -8,7 +8,7 @@ from app.core.time_utils import get_ist_now, ensure_ist
 from app.modules.generic.models import Content, ContentVersion, Comment, Task, TaskComment, ActivityLog, Notification
 from app.modules.core.models import User
 from app.api.deps import get_current_user, get_current_active_superuser
-from app.modules.generic.schemas import ContentSchema, CommentSchema
+from app.modules.generic.schemas import ContentSchema, CommentSchema, ContentCreate, ContentUpdate
 from app.modules.generic.websockets import manager
 from app.core.storage import s3_client
 
@@ -221,12 +221,25 @@ async def get_content(id: PydanticObjectId):
 
 
 @router.post("/content", response_model=ContentSchema)
-async def create_content(content: Content, current_user: User = Depends(get_current_user)):
-    content.organization_id = current_user.organization_id
+async def create_content(content_in: ContentCreate, current_user: User = Depends(get_current_user)):
+    from bson import ObjectId
+    content = Content(
+        title=content_in.title,
+        slug=content_in.slug,
+        body=content_in.body,
+        type=content_in.type,
+        status=content_in.status,
+        tags=content_in.tags or [],
+        author=Link(ref=DBRef(collection="users", id=ObjectId(content_in.author)), document_class=User) if content_in.author else Link(ref=DBRef(collection="users", id=ObjectId(str(current_user.id))), document_class=User),
+        organization_id=current_user.organization_id,
+        custom_fields=content_in.custom_fields or {},
+        attachments=content_in.attachments or []
+    )
     await content.create()
+    
     # Create initial version
     version = ContentVersion(
-        content_id=content.id,
+        content_id=content,
         version_number=1,
         title=content.title,
         body=content.body,
@@ -236,9 +249,9 @@ async def create_content(content: Content, current_user: User = Depends(get_curr
 
     # Trigger Webhook
     from app.modules.core.services import webhook_service
-    await webhook_service.dispatch_event("content.created", content.dict(), organization_id=content.organization_id)
+    await webhook_service.dispatch_event("content.created", content.model_dump(exclude={"author"}), organization_id=content.organization_id)
 
-    c_dict = content.dict()
+    c_dict = content.model_dump()
     c_dict["id"] = str(content.id)
     c_dict["_id"] = str(content.id)
     if content.author and hasattr(content.author, "ref"):
@@ -246,28 +259,28 @@ async def create_content(content: Content, current_user: User = Depends(get_curr
     return c_dict
 
 @router.put("/content/{id}", response_model=ContentSchema)
-async def update_content(id: PydanticObjectId, content_in: Content):
+async def update_content(id: PydanticObjectId, content_in: ContentUpdate):
     content = await Content.get(id)
     if not content:
         raise HTTPException(status_code=404, detail="Content not found")
     
     # Update fields
-    content.title = content_in.title
-    content.slug = content_in.slug
-    content.body = content_in.body
-    content.type = content_in.type
-    content.status = content_in.status
-    content.custom_fields = content_in.custom_fields
-    content.attachments = content_in.attachments
-    if content_in.organization_id:
-        content.organization_id = content_in.organization_id
+    if content_in.title is not None: content.title = content_in.title
+    if content_in.slug is not None: content.slug = content_in.slug
+    if content_in.body is not None: content.body = content_in.body
+    if content_in.type is not None: content.type = content_in.type
+    if content_in.status is not None: content.status = content_in.status
+    if content_in.custom_fields is not None: content.custom_fields = content_in.custom_fields
+    if content_in.attachments is not None: content.attachments = content_in.attachments
+    if content_in.organization_id is not None: content.organization_id = content_in.organization_id
+    
     content.updated_at = get_ist_now()
     await content.save()
 
     # Create new version
     count = await ContentVersion.find(ContentVersion.content_id.id == content.id).count()
     version = ContentVersion(
-        content_id=content.id,
+        content_id=content,
         version_number=count + 1,
         title=content.title,
         body=content.body,
@@ -277,9 +290,9 @@ async def update_content(id: PydanticObjectId, content_in: Content):
 
     # Trigger Webhook
     from app.modules.core.services import webhook_service
-    await webhook_service.dispatch_event("content.updated", content.dict(), organization_id=content.organization_id)
+    await webhook_service.dispatch_event("content.updated", content.model_dump(exclude={"author"}), organization_id=content.organization_id)
 
-    c_dict = content.dict()
+    c_dict = content.model_dump()
     c_dict["id"] = str(content.id)
     c_dict["_id"] = str(content.id)
     if content.author and hasattr(content.author, "ref"):
@@ -335,7 +348,7 @@ async def update_content_status(
     # Create new version to track the status change
     count = await ContentVersion.find(ContentVersion.content_id.id == content.id).count()
     version = ContentVersion(
-        content_id=content.id,
+        content_id=content,
         version_number=count + 1,
         title=content.title,
         body=content.body,
@@ -343,7 +356,7 @@ async def update_content_status(
     )
     await version.create()
     
-    c_dict = content.dict()
+    c_dict = content.model_dump()
     c_dict["id"] = str(content.id)
     c_dict["_id"] = str(content.id)
     if content.author and hasattr(content.author, "ref"):
