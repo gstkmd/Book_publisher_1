@@ -54,8 +54,17 @@ export const MemberList = () => {
             toast.success("Invite link generated successfully!");
         } catch (err: any) {
             let msg = 'Failed to generate link';
-            try { msg = JSON.parse(err.message).detail || msg; } catch { }
-            toast.error(msg);
+            try { 
+                const startIndex = err.message.indexOf('{');
+                if (startIndex !== -1) {
+                    msg = JSON.parse(err.message.substring(startIndex)).detail || msg; 
+                } else if (typeof err.message === 'string') {
+                    msg = err.message.replace(/^\d+:\s*/, '');
+                }
+            } catch { 
+                msg = err.message || msg;
+            }
+            toast.error(typeof msg === 'string' ? msg : 'An unexpected error occurred');
         } finally {
             setInviting(false);
         }
