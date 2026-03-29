@@ -389,12 +389,12 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
     for member in members:
         # Find latest activity for this member
         latest_activity = await MonitoringActivity.find(
-            MonitoringActivity.user.id == member.id
+            {"user.$id": member.id}
         ).sort(-MonitoringActivity.timestamp).first_or_none()
         
         # Find screenshot count
         screenshot_count = await MonitoringScreenshot.find(
-            MonitoringScreenshot.user.id == member.id
+            {"user.$id": member.id}
         ).count()
         
         agents_list.append({

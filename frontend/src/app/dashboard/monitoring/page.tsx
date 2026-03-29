@@ -70,7 +70,7 @@ export default function MonitoringDashboardPage() {
                 api.get('/monitoring/dashboard/agents', token || undefined),
                 api.get('/monitoring/dashboard/screenshots?limit=8', token || undefined),
                 api.get('/team-monitoring/team-activity', token || undefined),
-                api.get('/organizations/members', token || undefined)
+                user?.organization_id ? api.get(`/organizations/${user.organization_id}/members`, token || undefined) : Promise.resolve([])
             ]);
             setSummary(summaryData);
             setAgents(agentsData);

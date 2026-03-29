@@ -62,10 +62,35 @@ export const MemberList = () => {
     };
 
     const handleCopy = async () => {
-        await navigator.clipboard.writeText(generatedLink);
-        setCopied(true);
-        toast.success("Copied to clipboard!");
-        setTimeout(() => setCopied(false), 2000);
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(generatedLink);
+            } else {
+                // Fallback for non-HTTPS environments
+                const textArea = document.createElement("textarea");
+                textArea.value = generatedLink;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                textArea.style.top = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                } catch (err) {
+                    console.error('Fallback copy failed', err);
+                    toast.error("Manual copy needed: Select text and press Ctrl+C");
+                } finally {
+                    textArea.remove();
+                }
+            }
+            setCopied(true);
+            toast.success("Copied to clipboard!");
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Copy failed', err);
+            toast.error("Failed to copy link. Please manually select the link text.");
+        }
     };
 
     const handleCloseInvite = () => {
@@ -197,9 +222,13 @@ export const MemberList = () => {
                                 <div className="mt-4 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
                                     <p className="text-xs font-black text-emerald-700 uppercase tracking-wider mb-2">✅ Link Ready — Share this with your team member</p>
                                     <div className="flex items-center gap-2">
-                                        <code className="flex-1 text-xs text-emerald-800 bg-white border border-emerald-200 rounded-lg px-3 py-2 truncate font-mono">
-                                            {generatedLink}
-                                        </code>
+                                        <input
+                                            type="text"
+                                            readOnly
+                                            className="flex-1 text-xs text-emerald-800 bg-white border border-emerald-200 rounded-lg px-3 py-2 font-mono outline-none focus:ring-1 focus:ring-emerald-400"
+                                            value={generatedLink}
+                                            onClick={e => (e.target as HTMLInputElement).select()}
+                                        />
                                         <button
                                             type="button"
                                             onClick={handleCopy}
