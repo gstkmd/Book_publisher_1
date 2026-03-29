@@ -57,7 +57,6 @@ export default function InvitePage() {
                     formData.append('password', password);
                     const res = await api.post('/auth/access-token', formData, undefined, true);
                     activeToken = res.access_token;
-                    login(res.access_token);
                 } else {
                     const res = await api.post('/users/', {
                         email: inviteData.email,
@@ -70,15 +69,20 @@ export default function InvitePage() {
                     formData.append('password', password);
                     const authRes = await api.post('/auth/access-token', formData, undefined, true);
                     activeToken = authRes.access_token;
-                    login(authRes.access_token);
                 }
             }
 
-            // Accept the invitation
+            // Accept the invitation FIRST before loading user context
             await TeamService.acceptInvite(token, activeToken!);
             
-            // Redirect to dashboard
-            router.push('/dashboard');
+            // Log in, which fetches the fresh backend state (with newly joined org_id) and redirects
+            if (!authToken) {
+                login(activeToken!);
+            } else {
+                // If they were already logged in, we should refresh their session manually or just redirect
+                // A quick hack is just window.location.href to force full context reload
+                window.location.href = '/dashboard';
+            }
         } catch (err: any) {
             let msg = 'Processing failed';
             try { 

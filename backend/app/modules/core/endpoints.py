@@ -230,11 +230,10 @@ async def accept_invitation(
         )
         await new_member.create()
 
-    # Set user context to this org as default if they didn't have one
-    if not current_user.organization_id:
-        current_user.organization_id = invite.organization_id
-        current_user.role = invite.role
-        await current_user.save()
+    # Switch user context to this org so they can actually see the invited workspace
+    current_user.organization_id = invite.organization_id
+    current_user.role = invite.role
+    await current_user.save()
 
     invite.status = "accepted"
     invite.accepted_by_user_id = str(current_user.id)
