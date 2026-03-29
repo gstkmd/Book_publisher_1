@@ -81,11 +81,17 @@ export default function InvitePage() {
             router.push('/dashboard');
         } catch (err: any) {
             let msg = 'Processing failed';
-            try { msg = JSON.parse(err.message).detail || msg; } catch { }
-            if (typeof err.message === 'string' && !err.message.includes('{')) {
-                msg = err.message;
+            try { 
+                const startIndex = err.message.indexOf('{');
+                if (startIndex !== -1) {
+                    msg = JSON.parse(err.message.substring(startIndex)).detail || msg; 
+                } else if (typeof err.message === 'string') {
+                    msg = err.message.replace(/^\d+:\s*/, '');
+                }
+            } catch { 
+                msg = err.message || msg;
             }
-            setAuthError(msg);
+            setAuthError(typeof msg === 'string' ? msg : 'An unexpected error occurred');
         } finally {
             setIsProcessing(false);
         }
