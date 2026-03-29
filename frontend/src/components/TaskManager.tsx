@@ -42,15 +42,16 @@ export const TaskManager = () => {
     const [members, setMembers] = useState<any[]>([]);
 
     useEffect(() => {
-        if (token) {
+        if (token && user?.organization_id) {
             fetchTasks();
             fetchMembers();
         }
-    }, [token, filterAssignee, filterAssigner, filterScope]);
+    }, [token, user?.organization_id, filterAssignee, filterAssigner, filterScope]);
 
     const fetchMembers = async () => {
+        if (!user?.organization_id) return;
         try {
-            const data = await api.get('/organizations/members', token!);
+            const data = await api.get(`/organizations/${user.organization_id}/members`, token!);
             setMembers(data);
         } catch (err) {
             console.error('Failed to fetch members:', err);

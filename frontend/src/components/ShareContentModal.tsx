@@ -38,15 +38,16 @@ export default function ShareContentModal({
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
-        if (isOpen && token) {
+        if (isOpen && token && user?.organization_id) {
             fetchUsers();
         }
-    }, [isOpen, token]);
+    }, [isOpen, token, user?.organization_id]);
 
     const fetchUsers = async () => {
+        if (!user?.organization_id) return;
         try {
             // Fetch organization users
-            const data = await api.get('/organizations/members', token!);
+            const data = await api.get(`/organizations/${user.organization_id}/members`, token!);
             setUsers(Array.isArray(data) ? data : []);
         } catch (err: any) {
             console.error('Failed to fetch users:', err);

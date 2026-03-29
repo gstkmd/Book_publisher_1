@@ -176,8 +176,9 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
     };
 
     const fetchMembers = async () => {
+        if (!user?.organization_id) return;
         try {
-            const data = await api.get('/organizations/members', token!);
+            const data = await api.get(`/organizations/${user.organization_id}/members`, token!);
             setMembers(data);
         } catch (err) {
             console.error('Failed to fetch members:', err);
