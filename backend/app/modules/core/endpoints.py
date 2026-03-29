@@ -267,7 +267,9 @@ async def get_organization_members(
     # Attach role and specific membership info
     result = []
     for u in users:
-        u_dict = u.model_dump()
+        u_dict = u.model_dump(by_alias=True)
+        u_dict["_id"] = str(u.id) # Force string serialization for PydanticObjectId, frontend expects _id
+        u_dict["id"] = str(u.id) # Add id for older components
         m = next((mb for mb in memberships if mb.user_id == str(u.id)), None)
         if m:
             u_dict["organization_role"] = m.role
