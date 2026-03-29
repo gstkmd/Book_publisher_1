@@ -119,7 +119,7 @@ export default function CreateLessonPlanPage() {
                     </div>
 
                     <div className="mb-8">
-                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-3">Learning Objectives</h3>
+                        <h3 className="text-sm font-black text-gray-600 uppercase tracking-widest mb-3">Learning Objectives</h3>
                         <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {(generatedPlan.plan_content?.objectives || []).map((obj: string, i: number) => (
                                 <li key={i} className="flex gap-2 text-gray-700 text-sm bg-indigo-50/30 p-2 rounded">
@@ -131,7 +131,7 @@ export default function CreateLessonPlanPage() {
                     </div>
 
                     <div className="mb-8">
-                        <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">Lesson Activities</h3>
+                        <h3 className="text-sm font-black text-gray-600 uppercase tracking-widest mb-4">Lesson Activities</h3>
                         <div className="space-y-4">
                             {(generatedPlan.plan_content?.activities || []).map((act: any, i: number) => (
                                 <div key={i} className="flex gap-4 p-4 bg-white rounded-lg border border-gray-100 hover:border-indigo-200 transition-colors shadow-sm">

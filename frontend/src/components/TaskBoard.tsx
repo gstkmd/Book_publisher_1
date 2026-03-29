@@ -64,7 +64,7 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, onEdit }) => {
                                     }`}></span>
                                 {stage}
                             </h3>
-                            <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                            <span className="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
                                 {stageTasks.length}
                             </span>
                         </div>
@@ -103,7 +103,7 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, onEdit }) => {
                                             {task.assignee_name ? (
                                                 <UserAvatar name={task.assignee_name} size="xs" />
                                             ) : (
-                                                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+                                                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
                                                     <span className="sr-only">Unassigned</span>
                                                     ?
                                                 </div>
@@ -112,7 +112,7 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, onEdit }) => {
 
                                         <div className="text-right">
                                             {task.due_date && (
-                                                <div className={`text-[10px] font-bold ${new Date(task.due_date) < new Date() ? 'text-red-500' : 'text-gray-400'}`}>
+                                                <div className={`text-[10px] font-bold ${new Date(task.due_date) < new Date() ? 'text-red-500' : 'text-gray-600'}`}>
                                                     {new Date(task.due_date).toLocaleDateString('en-IN', {
                                                         month: 'short',
                                                         day: 'numeric',
@@ -131,7 +131,7 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, onEdit }) => {
                                     )}
                                 </div>
                             ))}
-                            <button className="w-full py-2 border-2 border-dashed border-gray-100 rounded-xl text-xs font-bold text-gray-400 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center gap-2">
+                            <button className="w-full py-2 border-2 border-dashed border-gray-100 rounded-xl text-xs font-bold text-gray-600 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center gap-2">
                                 <Plus className="w-3 h-3" />
                                 Add Task
                             </button>

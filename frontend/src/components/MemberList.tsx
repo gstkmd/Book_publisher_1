@@ -1,8 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { Link2, Copy, Check, X, UserPlus } from 'lucide-react';
+import { TeamService, OrganizationMember } from '@/lib/services/TeamService';
 
 const ROLES = [
     { value: 'user', label: 'Member' },
@@ -16,7 +16,7 @@ const ROLES = [
 ];
 
 export const MemberList = () => {
-    const { token } = useAuth();
+    const { token, user } = useAuth();
     const [members, setMembers] = useState<any[]>([]);
 
     // Invite modal state
@@ -28,27 +28,25 @@ export const MemberList = () => {
     const [copied, setCopied] = useState(false);
 
     useEffect(() => {
-        if (token) fetchMembers();
-    }, [token]);
+        if (token && user?.organization_id) fetchMembers();
+    }, [token, user?.organization_id]);
 
     const fetchMembers = async () => {
         try {
-            const data = await api.get('/organizations/members', token!);
+            if (!user?.organization_id) return;
+            const data = await TeamService.getMembers(user.organization_id, token!);
             setMembers(data);
         } catch (err) { console.error(err); }
     };
 
     const handleGenerateLink = async () => {
-        if (!inviteEmail) return;
+        if (!inviteEmail || !user?.organization_id) return;
         setInviting(true);
         setGeneratedLink('');
         try {
-            const { token: inviteToken } = await api.post('/organizations/invite-link', {
-                email: inviteEmail,
-                role: inviteRole
-            }, token!);
+            const res = await TeamService.inviteMember(user.organization_id, inviteEmail, inviteRole, token!);
             const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-            setGeneratedLink(`${baseUrl}/join?token=${inviteToken}`);
+            setGeneratedLink(`${baseUrl}/invite/${res.token}`);
         } catch (err: any) {
             let msg = 'Failed to generate link';
             try { msg = JSON.parse(err.message).detail || msg; } catch { }
@@ -72,8 +70,11 @@ export const MemberList = () => {
         setCopied(false);
     };
 
-    const handleToggleStatus = async (userId: string, currentStatus: boolean) => {
+    const handleToggleStatus = async (userId: string, currentStatus: boolean, email: string) => {
         try {
+            // Note: Endpoints to patch user status might still be in old format or we can keep it as is.
+            // But we should use api for now if we didn't add it to TeamService.
+            const { api } = await import('@/lib/api');
             await api.patch(`/organizations/members/${userId}/status?is_active=${!currentStatus}`, {}, token!);
             fetchMembers();
         } catch (err: any) {
@@ -83,6 +84,7 @@ export const MemberList = () => {
 
     const handleRoleChange = async (userId: string, newRole: string) => {
         try {
+            const { api } = await import('@/lib/api');
             await api.patch(`/organizations/members/${userId}/role?role=${newRole}`, {}, token!);
             fetchMembers();
         } catch (err: any) {
@@ -118,14 +120,14 @@ export const MemberList = () => {
 
                         <div className="flex items-center gap-4">
                             <select
-                                value={m.role}
+                                value={m.organization_role || m.role}
                                 onChange={(e) => handleRoleChange(m._id, e.target.value)}
                                 className="text-xs bg-gray-50 border-none px-2 py-1 rounded capitalize focus:ring-1 focus:ring-blue-500"
                             >
                                 {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                             </select>
                             <button
-                                onClick={() => handleToggleStatus(m._id, m.is_active)}
+                                onClick={() => handleToggleStatus(m._id, m.is_active, m.email)}
                                 className={`text-[10px] font-bold uppercase px-2 py-1 rounded transition ${m.is_active ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
                             >
                                 {m.is_active ? 'Deactivate' : 'Activate'}
@@ -134,7 +136,7 @@ export const MemberList = () => {
                     </div>
                 ))}
                 {members.length === 0 && (
-                    <p className="text-center text-gray-400 text-sm py-8">No team members yet. Invite someone!</p>
+                    <p className="text-center text-gray-600 text-sm py-8">No team members yet. Invite someone!</p>
                 )}
             </div>
 

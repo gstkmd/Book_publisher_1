@@ -27,7 +27,7 @@ export default function Home() {
           <h1 className="mb-4 text-4xl font-extrabold tracking-tight leading-none text-gray-900 md:text-5xl lg:text-6xl dark:text-white">
             The Future of <span className="text-indigo-600 dark:text-indigo-500">Educational Publishing</span>
           </h1>
-          <p className="mb-8 text-lg font-normal text-gray-500 lg:text-xl sm:px-16 xl:px-48 dark:text-gray-400">
+          <p className="mb-8 text-lg font-normal text-gray-500 lg:text-xl sm:px-16 xl:px-48 dark:text-gray-600">
             A powerful, modular platform designed for modern content creation, collaboration, and distribution. Built for publishers, educators, and innovators.
           </p>
           <div className="flex flex-col mb-8 lg:mb-16 space-y-4 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-4">
@@ -52,7 +52,7 @@ export default function Home() {
         <div className="py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6">
           <div className="mx-auto max-w-screen-md text-center mb-8 lg:mb-12">
             <h2 className="mb-4 text-3xl tracking-tight font-extrabold text-gray-900 dark:text-white">Platform Modules</h2>
-            <p className="mb-5 font-light text-gray-500 sm:text-xl dark:text-gray-400">Everything you need to manage the lifecycle of your educational content.</p>
+            <p className="mb-5 font-light text-gray-500 sm:text-xl dark:text-gray-600">Everything you need to manage the lifecycle of your educational content.</p>
           </div>
           <div className="grid gap-8 mb-6 lg:mb-16 md:grid-cols-2">
             {/* Generic Editor Card */}
@@ -63,7 +63,7 @@ export default function Home() {
                   <svg className="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                 </div>
                 <h3 className="mb-2 text-xl font-bold dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Generic Editor</h3>
-                <p className="font-light text-gray-500 dark:text-gray-400">Collaborative, real-time rich text editing powered by WebSockets. Experience seamless teamwork.</p>
+                <p className="font-light text-gray-500 dark:text-gray-600">Collaborative, real-time rich text editing powered by WebSockets. Experience seamless teamwork.</p>
                 <div className="mt-4 flex items-center text-indigo-600 dark:text-indigo-400 font-medium text-sm group-hover:translate-x-2 transition-transform">
                   Open Editor <span className="ml-2">→</span>
                 </div>
@@ -72,12 +72,12 @@ export default function Home() {
 
             {/* Educational Tools Card */}
             <div className="relative block p-8 bg-white rounded-2xl border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700 opacity-75 grayscale cursor-not-allowed">
-              <div className="absolute top-4 right-4 bg-gray-100 text-gray-500 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-400 border border-gray-200 dark:border-gray-600">Coming Soon</div>
+              <div className="absolute top-4 right-4 bg-gray-100 text-gray-500 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-600 border border-gray-200 dark:border-gray-600">Coming Soon</div>
               <div className="flex justify-center items-center mb-4 w-12 h-12 rounded-full bg-teal-100 dark:bg-teal-900/30">
                 <svg className="w-6 h-6 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
               </div>
               <h3 className="mb-2 text-xl font-bold dark:text-white">Educational Tools</h3>
-              <p className="font-light text-gray-500 dark:text-gray-400">Advanced tools for lesson planning, standards alignment (CCSS/NGSS), and assessment generation.</p>
+              <p className="font-light text-gray-500 dark:text-gray-600">Advanced tools for lesson planning, standards alignment (CCSS/NGSS), and assessment generation.</p>
             </div>
           </div>
         </div>
@@ -86,8 +86,8 @@ export default function Home() {
       <footer className="p-4 bg-white md:p-8 lg:p-10 dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800">
         <div className="mx-auto max-w-screen-xl text-center">
           <span className="text-2xl font-semibold text-gray-900 dark:text-white">Trojan Horse</span>
-          <p className="my-6 text-gray-500 dark:text-gray-400">Open-source educational publishing infrastructure.</p>
-          <span className="text-sm text-gray-500 sm:text-center dark:text-gray-400">© 2024 <a href="#" className="hover:underline">Education Architecture™</a>. All Rights Reserved.</span>
+          <p className="my-6 text-gray-500 dark:text-gray-600">Open-source educational publishing infrastructure.</p>
+          <span className="text-sm text-gray-500 sm:text-center dark:text-gray-600">© 2024 <a href="#" className="hover:underline">Education Architecture™</a>. All Rights Reserved.</span>
         </div>
       </footer>
     </main>

@@ -125,14 +125,14 @@ export const TaskManager = () => {
                     <div className="flex bg-gray-100 rounded-lg p-1">
                         <button
                             onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                            className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-600 hover:text-gray-600'}`}
                             title="List View"
                         >
                             <LayoutList className="w-5 h-5" />
                         </button>
                         <button
                             onClick={() => setViewMode('board')}
-                            className={`p-2 rounded-md transition-all ${viewMode === 'board' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                            className={`p-2 rounded-md transition-all ${viewMode === 'board' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-600 hover:text-gray-600'}`}
                             title="Board View"
                         >
                             <LayoutGrid className="w-5 h-5" />

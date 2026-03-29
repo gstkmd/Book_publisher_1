@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
-from app.modules.core.models import User, Organization, InviteToken
+from fastapi import APIRouter, Depends, HTTPException, status
+from app.modules.core.models import User, Organization, InviteToken, OrganizationMember
 from beanie import PydanticObjectId
 from app.api.deps import get_current_user
 from typing import List, Optional
@@ -53,6 +53,15 @@ async def create_organization(
     current_user.role = "admin" # First user becomes admin
     await current_user.save()
     
+    # Create OrganizationMember for creator
+    org_member = OrganizationMember(
+        organization_id=str(org.id),
+        user_id=str(current_user.id),
+        role="admin",
+        status="active"
+    )
+    await org_member.create()
+    
     return org
 
 @router.get("/me", response_model=Optional[Organization])
@@ -97,148 +106,209 @@ async def update_organization(
     await org.save()
     return org
 
-@router.post("/invite")
+# ─── TEAM INVITATION & MEMBERSHIP ENDPOINTS ───────────────────────────────────
+
+@router.post("/{organization_id}/invite")
 async def invite_member(
-    invite: InviteRequest,
-    current_user: User = Depends(get_current_user)
-):
-    if current_user.role != "admin": 
-        raise HTTPException(status_code=403, detail="Only admins can invite members")
-
-    if not current_user.organization_id:
-        raise HTTPException(status_code=404, detail="Create an organization first")
-
-    # Check if user exists
-    user_to_invite = await User.find_one(User.email == invite.email.lower())
-    
-    if user_to_invite:
-        # Existing user logic
-        if user_to_invite.organization_id:
-            if user_to_invite.organization_id == current_user.organization_id:
-                raise HTTPException(status_code=400, detail="User is already in this organization")
-            else:
-                raise HTTPException(status_code=400, detail="User is already in another organization")
-        
-        user_to_invite.organization_id = current_user.organization_id
-        if invite.role:
-            user_to_invite.role = invite.role
-        await user_to_invite.save()
-        return {"message": f"Added existing user {user_to_invite.email} to organization"}
-    
-    else:
-        # Create NEW user (Manual Provisioning)
-        if not invite.password:
-             raise HTTPException(status_code=400, detail="Password is required to create a new user")
-        
-        new_user = User(
-            email=invite.email.lower(),
-            hashed_password=get_password_hash(invite.password),
-            full_name=invite.full_name or invite.email.split('@')[0],
-            organization_id=current_user.organization_id,
-            role=invite.role or "user", 
-            is_active=True
-        )
-        await new_user.create()
-        return {"message": f"Created new user {new_user.email} and added to organization"}
-
-# ─── Token-based Invite Link Endpoints ───────────────────────────────────────
-
-@router.post("/invite-link")
-async def generate_invite_link(
+    organization_id: str,
     req: InviteLinkRequest,
     current_user: User = Depends(get_current_user)
 ):
-    """Admin generates a shareable invite link for a specific email + role."""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admins can generate invite links")
-    if not current_user.organization_id:
-        raise HTTPException(status_code=400, detail="Create an organization first")
+    """Admin invites a user by email, returns an invite link."""
+    if current_user.organization_id != organization_id:
+        raise HTTPException(status_code=403, detail="Not authorized for this organization")
+    if current_user.role not in ["admin", "owner"]:
+        raise HTTPException(status_code=403, detail="Only admins can invite members")
 
-    # Invalidate any previous unused tokens for this email + org
-    old_tokens = await InviteToken.find(
-        InviteToken.email == req.email.lower(),
-        InviteToken.organization_id == current_user.organization_id,
-        InviteToken.used == False
+    email_lower = req.email.lower()
+
+    # Check if user is already a member
+    existing_user = await User.find_one(User.email == email_lower)
+    if existing_user:
+        existing_member = await OrganizationMember.find_one(
+            OrganizationMember.organization_id == organization_id,
+            OrganizationMember.user_id == str(existing_user.id)
+        )
+        if existing_member and existing_member.status == "active":
+            raise HTTPException(status_code=400, detail="User is already an active member")
+
+    # Invalidate old pending invites for this email + org
+    old_invites = await InviteToken.find(
+        InviteToken.email == email_lower,
+        InviteToken.organization_id == organization_id,
+        InviteToken.status == "pending"
     ).to_list()
-    for t in old_tokens:
-        await t.delete()
+    for inv in old_invites:
+        inv.status = "revoked"
+        await inv.save()
 
     token = str(uuid.uuid4())
     invite = InviteToken(
         token=token,
-        email=req.email.lower(),
+        email=email_lower,
         role=req.role or "user",
-        organization_id=current_user.organization_id,
+        organization_id=organization_id,
+        status="pending",
+        invited_by=str(current_user.id),
         expires_at=datetime.now(timezone.utc) + timedelta(hours=48)
     )
     await invite.create()
-    return {"token": token}
+    
+    # Return the token or full constructed link (frontend usually constructs it, but we return token here)
+    return {"token": token, "message": "Invitation created successfully"}
 
 
-@router.get("/invite/{token}")
+@router.get("/invitations/{token}")
 async def validate_invite_token(token: str):
     """Public endpoint — validates token and returns org name, email, role for the join page."""
     invite = await InviteToken.find_one(InviteToken.token == token)
     if not invite:
-        raise HTTPException(status_code=404, detail="Invite link is invalid or expired")
-    if invite.used:
-        raise HTTPException(status_code=400, detail="This invite link has already been used")
+        raise HTTPException(status_code=404, detail="Invite link is invalid or does not exist")
+    if invite.status == "revoked":
+        raise HTTPException(status_code=400, detail="This invite link has been revoked")
+    if invite.status == "accepted":
+        raise HTTPException(status_code=400, detail="This invite link has already been accepted")
     if invite.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        invite.status = "expired"
+        await invite.save()
         raise HTTPException(status_code=400, detail="This invite link has expired")
 
-    org = await Organization.get(invite.organization_id)
+    org = await Organization.get(PydanticObjectId(invite.organization_id))
     org_name = org.name if org else "Unknown Organization"
 
     return {
         "email": invite.email,
         "role": invite.role,
-        "org_name": org_name
+        "org_name": org_name,
+        "status": invite.status
     }
 
 
-@router.post("/join")
-async def join_organization(req: JoinRequest):
-    """Public endpoint — creates a user account and joins the org using an invite token."""
-    invite = await InviteToken.find_one(InviteToken.token == req.token)
-    if not invite or invite.used:
-        raise HTTPException(status_code=400, detail="Invalid or already-used invite link")
+@router.post("/invitations/{token}/accept")
+async def accept_invitation(
+    token: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Authenticated endpoint — accepts the invite and links user to org."""
+    invite = await InviteToken.find_one(InviteToken.token == token)
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invite link is invalid")
+    
+    if invite.status != "pending":
+        raise HTTPException(status_code=400, detail=f"Invite is already {invite.status}")
+        
     if invite.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
-        raise HTTPException(status_code=400, detail="Invite link has expired")
+        invite.status = "expired"
+        await invite.save()
+        raise HTTPException(status_code=400, detail="This invite link has expired")
 
-    # Check if user already exists
-    existing = await User.find_one(User.email == invite.email)
-    if existing:
-        if existing.organization_id:
-            raise HTTPException(status_code=400, detail="This email already belongs to an organization")
-        # Existing user with no org — just join them
-        existing.organization_id = invite.organization_id
-        existing.role = invite.role
-        await existing.save()
+    if current_user.email != invite.email:
+        raise HTTPException(status_code=400, detail="Logged-in user email does not match invited email")
+
+    # Prevent duplicate active memberships
+    existing_member = await OrganizationMember.find_one(
+        OrganizationMember.organization_id == invite.organization_id,
+        OrganizationMember.user_id == str(current_user.id)
+    )
+    if existing_member and existing_member.status == "active":
+        invite.status = "accepted"
+        await invite.save()
+        return {"message": "You are already an active member of this organization"}
+    
+    # Create or update membership
+    if existing_member:
+        existing_member.status = "active"
+        existing_member.role = invite.role
+        await existing_member.save()
     else:
-        new_user = User(
-            email=invite.email,
-            hashed_password=get_password_hash(req.password),
-            full_name=req.full_name,
+        new_member = OrganizationMember(
             organization_id=invite.organization_id,
+            user_id=str(current_user.id),
             role=invite.role,
-            is_active=True
+            status="active",
+            invited_by=invite.invited_by
         )
-        await new_user.create()
+        await new_member.create()
 
-    # Consume the token
-    invite.used = True
+    # Set user context to this org as default if they didn't have one
+    if not current_user.organization_id:
+        current_user.organization_id = invite.organization_id
+        current_user.role = invite.role
+        await current_user.save()
+
+    invite.status = "accepted"
+    invite.accepted_by_user_id = str(current_user.id)
+    invite.accepted_at = datetime.now(timezone.utc)
+    # keep used for backward compat
+    invite.used = True 
     await invite.save()
 
-    return {"message": "Successfully joined organization. You can now log in."}
+    org = await Organization.get(PydanticObjectId(invite.organization_id))
+    return {
+        "message": "Successfully joined organization", 
+        "organization_id": invite.organization_id,
+        "org_name": org.name if org else ""
+    }
 
-@router.get("/members", response_model=List[User])
-async def get_organization_members(current_user: User = Depends(get_current_user)):
-    if not current_user.organization_id:
-        # Return empty list for users without organization
-        return []
+
+@router.get("/{organization_id}/members")
+async def get_organization_members(
+    organization_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.organization_id != organization_id:
+        raise HTTPException(status_code=403, detail="Not authorized for this organization")
     
-    members = await User.find(User.organization_id == current_user.organization_id).to_list()
-    return members
+    # Ideally should join OrganizationMember with User
+    memberships = await OrganizationMember.find(OrganizationMember.organization_id == organization_id).to_list()
+    user_ids = [PydanticObjectId(m.user_id) for m in memberships]
+    
+    users = await User.find({"_id": {"$in": user_ids}}).to_list()
+    
+    # Attach role and specific membership info
+    result = []
+    for u in users:
+        u_dict = u.model_dump()
+        m = next((mb for mb in memberships if mb.user_id == str(u.id)), None)
+        if m:
+            u_dict["organization_role"] = m.role
+            u_dict["membership_status"] = m.status
+            u_dict["joined_at"] = m.joined_at
+        result.append(u_dict)
+        
+    return result
+
+@router.get("/{organization_id}/invitations")
+async def get_organization_invitations(
+    organization_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.organization_id != organization_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role not in ["admin", "owner"]:
+        raise HTTPException(status_code=403, detail="Only admins can view invitations")
+
+    invites = await InviteToken.find(InviteToken.organization_id == organization_id).to_list()
+    return invites
+
+@router.post("/invitations/{invitation_id}/revoke")
+async def revoke_invitation(
+    invitation_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    invite = await InviteToken.get(PydanticObjectId(invitation_id))
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+        
+    if current_user.organization_id != invite.organization_id or current_user.role not in ["admin", "owner"]:
+        raise HTTPException(status_code=403, detail="Not authorized to revoke this invitation")
+
+    if invite.status != "pending":
+        raise HTTPException(status_code=400, detail=f"Cannot revoke {invite.status} invitation")
+
+    invite.status = "revoked"
+    await invite.save()
+    return {"message": "Invitation revoked successfully"}
 
 @router.get("/stats")
 async def get_organization_stats(current_user: User = Depends(get_current_user)):

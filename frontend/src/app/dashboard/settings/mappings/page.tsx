@@ -103,7 +103,7 @@ export default function PresetMappingsPage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">If {labels.title} is:</label>
+                                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">If {labels.title} is:</label>
                                 <input
                                     type="text"
                                     value={mapping.trigger}
@@ -114,11 +114,11 @@ export default function PresetMappingsPage() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Auto-fill these fields:</label>
+                                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Auto-fill these fields:</label>
                                 <div className="space-y-3">
                                     {/* Type Mapping */}
                                     <div className="flex items-center gap-3">
-                                        <span className="text-sm font-medium text-gray-400 w-20">Type:</span>
+                                        <span className="text-sm font-medium text-gray-600 w-20">Type:</span>
                                         <select
                                             value={mapping.fields.type || ''}
                                             onChange={(e) => updateMappingField(idx, 'type', e.target.value)}
@@ -134,7 +134,7 @@ export default function PresetMappingsPage() {
                                     {/* Custom Fields Mapping */}
                                     {customFields.map((field: any) => (
                                         <div key={field.name} className="flex items-center gap-3">
-                                            <span className="text-sm font-medium text-gray-400 w-20 truncate">{field.label}:</span>
+                                            <span className="text-sm font-medium text-gray-600 w-20 truncate">{field.label}:</span>
                                             <input
                                                 type="text"
                                                 value={mapping.fields[field.name] || ''}
@@ -152,7 +152,7 @@ export default function PresetMappingsPage() {
 
                 {mappings.length === 0 && (
                     <div className="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
-                        <p className="text-gray-400">No preset mappings defined yet.</p>
+                        <p className="text-gray-600">No preset mappings defined yet.</p>
                         <button
                             onClick={addMapping}
                             className="mt-4 text-purple-600 font-bold hover:underline"
@@ -165,7 +165,7 @@ export default function PresetMappingsPage() {
                 {mappings.length > 0 && (
                     <button
                         onClick={addMapping}
-                        className="w-full py-4 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 font-medium hover:border-purple-200 hover:text-purple-400 transition-all"
+                        className="w-full py-4 border-2 border-dashed border-gray-200 rounded-xl text-gray-600 font-medium hover:border-purple-200 hover:text-purple-400 transition-all"
                     >
                         + Add Another Mapping rule
                     </button>

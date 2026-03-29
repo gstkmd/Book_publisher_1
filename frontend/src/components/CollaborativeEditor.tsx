@@ -63,7 +63,7 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({ docume
                         <ImageIcon className="w-5 h-5 text-indigo-600" />
                     </div>
                     <div>
-                        <h2 className="text-sm font-bold text-gray-400 uppercase tracking-tighter">Editor</h2>
+                        <h2 className="text-sm font-bold text-gray-600 uppercase tracking-tighter">Editor</h2>
                         <h3 className="text-xl font-black text-gray-900 leading-none">{documentId}</h3>
                     </div>
                     {compareVersion && (
@@ -81,7 +81,7 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({ docume
                             : 'bg-white text-gray-500 border-gray-100 hover:border-indigo-200 hover:text-indigo-600'
                             }`}
                     >
-                        <MessageSquare className={`w-4 h-4 transition-transform group-hover:scale-110 ${showComments ? 'text-indigo-100' : 'text-gray-400'}`} />
+                        <MessageSquare className={`w-4 h-4 transition-transform group-hover:scale-110 ${showComments ? 'text-indigo-100' : 'text-gray-600'}`} />
                         {showComments ? 'Comments Active' : 'Show Comments'}
                     </button>
                     <button
@@ -91,7 +91,7 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({ docume
                             : 'bg-white text-gray-500 border-gray-100 hover:border-indigo-200 hover:text-indigo-600'
                             }`}
                     >
-                        <History className={`w-4 h-4 transition-transform group-hover:rotate-180 ${showHistory ? 'text-indigo-100' : 'text-gray-400'}`} />
+                        <History className={`w-4 h-4 transition-transform group-hover:rotate-180 ${showHistory ? 'text-indigo-100' : 'text-gray-600'}`} />
                         {showHistory ? 'History Open' : 'Version History'}
                     </button>
                 </div>

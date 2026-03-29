@@ -299,7 +299,7 @@ export const ReviewDisplay: React.FC<ReviewDisplayProps> = ({ contentId, onClose
                                             <UserAvatar name={comment.author_name || 'Unknown'} size="xs" />
                                             <span className="text-xs font-bold text-gray-700">{comment.author_name || 'Unknown'}</span>
                                         </div>
-                                        <span className="text-[10px] text-gray-400">{new Date(comment.created_at).toLocaleString()}</span>
+                                        <span className="text-[10px] text-gray-600">{new Date(comment.created_at).toLocaleString()}</span>
                                     </div>
                                     <button
                                         onClick={(e) => {

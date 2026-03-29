@@ -71,11 +71,11 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit, onDelete }) =
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="border-b border-gray-100 bg-gray-50/50">
-                            <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-widest w-1/3">Task</th>
-                            <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-widest">Status</th>
-                            <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-widest">Assignee</th>
-                            <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-widest">Due Date</th>
-                            <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                            <th className="py-4 px-6 text-xs font-bold text-gray-600 uppercase tracking-widest w-1/3">Task</th>
+                            <th className="py-4 px-6 text-xs font-bold text-gray-600 uppercase tracking-widest">Status</th>
+                            <th className="py-4 px-6 text-xs font-bold text-gray-600 uppercase tracking-widest">Assignee</th>
+                            <th className="py-4 px-6 text-xs font-bold text-gray-600 uppercase tracking-widest">Due Date</th>
+                            <th className="py-4 px-6 text-xs font-bold text-gray-600 uppercase tracking-widest text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -114,7 +114,7 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit, onDelete }) =
                                         {task.stage}
                                     </span>
                                     {task.total_time !== undefined && task.total_time > 0 && (
-                                        <div className="mt-2 flex items-center gap-1.5 text-xs text-gray-400 font-medium">
+                                        <div className="mt-2 flex items-center gap-1.5 text-xs text-gray-600 font-medium">
                                             <Clock className="w-3.5 h-3.5" />
                                             {formatTime(task.total_time)}
                                         </div>
@@ -127,7 +127,7 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit, onDelete }) =
                                             <span className="text-sm font-medium text-gray-700">{task.assignee_name}</span>
                                         </div>
                                     ) : (
-                                        <span className="text-sm text-gray-400 italic">Unassigned</span>
+                                        <span className="text-sm text-gray-600 italic">Unassigned</span>
                                     )}
                                 </td>
                                 <td className="py-4 px-6 align-top">
@@ -141,7 +141,7 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit, onDelete }) =
                                             })}
                                         </div>
                                     ) : (
-                                        <span className="text-sm text-gray-300">-</span>
+                                        <span className="text-sm text-gray-600">-</span>
                                     )}
                                 </td>
                                 <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
@@ -151,7 +151,7 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit, onDelete }) =
                                                 onDelete(task.id);
                                             }
                                         }}
-                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                         title="Delete Task"
                                     >
                                         <Trash2 className="w-4 h-4" />

@@ -36,7 +36,7 @@ export default function AdminDashboard() {
                 </div>
                 <button
                     onClick={fetchStats}
-                    className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                    className="p-2 text-gray-600 hover:text-blue-600 transition-colors"
                 >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -62,7 +62,7 @@ export default function AdminDashboard() {
                     <div className="text-sm font-medium text-gray-500 mb-2 uppercase tracking-wider">Cloud Storage</div>
                     <div className="flex items-baseline gap-1">
                         <span className="text-4xl font-black text-purple-600">{stats.storage_used_mb}</span>
-                        <span className="text-gray-400 font-medium">MB</span>
+                        <span className="text-gray-600 font-medium">MB</span>
                     </div>
                 </div>
             </div>
@@ -96,13 +96,13 @@ export default function AdminDashboard() {
                                     className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-purple-500 transition-all duration-500"
                                 ></div>
                             </div>
-                            <p className="text-xs text-gray-400 italic">Plan: Free Tier (Next upgrade at 90% usage)</p>
+                            <p className="text-xs text-gray-600 italic">Plan: Free Tier (Next upgrade at 90% usage)</p>
                         </div>
                     </div>
 
                     {/* Quick Settings Placeholder */}
                     <div className="bg-gray-50 p-6 rounded-xl border border-dashed border-gray-200">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Organization Settings</h3>
+                        <h3 className="text-sm font-bold text-gray-600 uppercase tracking-widest mb-4">Organization Settings</h3>
                         <div className="space-y-3 opacity-50 pointer-events-none">
                             <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                             <div className="h-4 bg-gray-200 rounded w-1/2"></div>

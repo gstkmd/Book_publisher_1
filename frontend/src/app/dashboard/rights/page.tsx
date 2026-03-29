@@ -81,7 +81,7 @@ export default function RightsPortal() {
                             ))}
                             {licenses.length === 0 && (
                                 <tr>
-                                    <td colSpan={5} className="p-8 text-center text-gray-400 italic">No licenses found.</td>
+                                    <td colSpan={5} className="p-8 text-center text-gray-600 italic">No licenses found.</td>
                                 </tr>
                             )}
                         </tbody>
@@ -138,7 +138,7 @@ export default function RightsPortal() {
                             </div>
                         ))}
                         {contracts.length === 0 && (
-                            <div className="text-gray-400 italic text-center py-4">No contracts registered.</div>
+                            <div className="text-gray-600 italic text-center py-4">No contracts registered.</div>
                         )}
                     </div>
                 </div>

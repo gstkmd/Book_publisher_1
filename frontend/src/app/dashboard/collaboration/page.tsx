@@ -121,18 +121,18 @@ export default function CollaborationPage() {
                                                 {task.stage || 'To Do'}
                                             </span>
                                             {task.due_date && (
-                                                <span className="text-[10px] font-bold text-gray-400">
+                                                <span className="text-[10px] font-bold text-gray-600">
                                                     📅 {new Date(task.due_date).toLocaleDateString()}
                                                 </span>
                                             )}
                                             {task.assignee_name && (
-                                                <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1">
+                                                <span className="text-[10px] font-bold text-gray-600 flex items-center gap-1">
                                                     👤 {task.assignee_name}
                                                 </span>
                                             )}
                                         </div>
                                         {task.assigner_name && (
-                                            <div className="mt-2 text-[9px] text-gray-400 italic">
+                                            <div className="mt-2 text-[9px] text-gray-600 italic">
                                                 Assigned by: {task.assigner_name}
                                             </div>
                                         )}

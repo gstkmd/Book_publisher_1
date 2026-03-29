@@ -118,7 +118,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ initialValue, on
                     <div className="absolute top-0 right-0 m-2 p-3 bg-white border shadow-xl rounded-lg z-20 w-64 animate-in fade-in slide-in-from-top-2">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Integrity Scan</span>
-                            <button onClick={() => setShowOptions(false)} className="text-gray-400 hover:text-gray-600">×</button>
+                            <button onClick={() => setShowOptions(false)} className="text-gray-600 hover:text-gray-600">×</button>
                         </div>
 
                         <div className="space-y-2 mb-3">

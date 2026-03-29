@@ -4,6 +4,9 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --text-primary: #111827;   /* gray-900 */
+  --text-secondary: #374151; /* gray-700 */
+  --text-muted: #6B7280;     /* gray-500 */
 }
 
 @theme inline {

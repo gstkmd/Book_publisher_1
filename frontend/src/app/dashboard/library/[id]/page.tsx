@@ -106,7 +106,7 @@ export default function ContentDetailPage() {
 
                     <div className="p-8 md:p-12 bg-gray-50/30">
                         <div className="max-w-4xl mx-auto bg-white p-8 md:p-12 rounded-2xl shadow-sm border border-gray-100 min-h-[400px]">
-                            <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-8 pb-4 border-b border-gray-50">Document Content</h2>
+                            <h2 className="text-sm font-black text-gray-600 uppercase tracking-widest mb-8 pb-4 border-b border-gray-50">Document Content</h2>
                             <div
                                 className="prose prose-indigo max-w-none text-gray-800"
                                 dangerouslySetInnerHTML={{ __html: typeof content.body === 'string' ? content.body : (content.body?.text || '') }}
@@ -132,7 +132,7 @@ export default function ContentDetailPage() {
                         </Link>
 
                         <div className="p-8 space-y-6">
-                            <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest">Quick Actions</h3>
+                            <h3 className="text-sm font-black text-gray-600 uppercase tracking-widest">Quick Actions</h3>
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => handleShareClick(content)}

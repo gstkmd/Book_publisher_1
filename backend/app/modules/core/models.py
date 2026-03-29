@@ -63,13 +63,33 @@ class Organization(Document):
             IndexModel([("is_active", ASCENDING)])
         ]
 
+class OrganizationMember(Document):
+    organization_id: str
+    user_id: str
+    role: str = "user" # user, admin, etc.
+    status: str = "active" # active, disabled
+    invited_by: Optional[str] = None
+    joined_at: datetime = datetime.now(timezone.utc)
+
+    class Settings:
+        name = "organization_members"
+        indexes = [
+            IndexModel([("organization_id", ASCENDING), ("user_id", ASCENDING)], unique=True),
+            IndexModel([("user_id", ASCENDING)]),
+            IndexModel([("organization_id", ASCENDING)])
+        ]
+
 class InviteToken(Document):
     token: str              # UUID token
     email: str              # Invited email
     role: str = "user"      # Role to assign
     organization_id: str    # Org they'll join
+    status: str = "pending" # pending, accepted, expired, revoked
+    invited_by: Optional[str] = None
+    accepted_by_user_id: Optional[str] = None
+    accepted_at: Optional[datetime] = None
     expires_at: datetime    # 48-hour expiry
-    used: bool = False      # Consumed after join
+    used: bool = False      # Keep for backward compatibility if needed, though status supersedes
     created_at: datetime = datetime.now(timezone.utc)
 
     class Settings:
@@ -78,5 +98,5 @@ class InviteToken(Document):
             IndexModel([("token", ASCENDING)], unique=True),
             IndexModel([("email", ASCENDING)]),
             IndexModel([("organization_id", ASCENDING)]),
-            IndexModel([("used", ASCENDING)])
+            IndexModel([("status", ASCENDING)])
         ]

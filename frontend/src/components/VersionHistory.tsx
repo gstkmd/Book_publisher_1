@@ -70,7 +70,7 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({ contentId, onRes
                 <button onClick={fetchVersions} className="text-xs text-blue-600 hover:underline">Refresh</button>
             </div>
             <div className="overflow-y-auto flex-1 p-2 space-y-2">
-                {versions.length === 0 && <p className="text-gray-400 text-sm text-center mt-4">No revisions found.</p>}
+                {versions.length === 0 && <p className="text-gray-600 text-sm text-center mt-4">No revisions found.</p>}
                 {versions.map((v) => (
                     <div key={v._id} className={`bg-white p-3 rounded shadow-sm border text-sm group transition-all ${selectedCompareId === v._id ? 'ring-2 ring-blue-500 border-blue-200' : ''}`}>
                         <div className="flex justify-between items-start mb-1">

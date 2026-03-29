@@ -294,7 +294,7 @@ export default function ContentReview({
             {/* Main Content Area */}
             <div className={`${showSidebar ? (isEmbedded ? 'lg:col-span-2' : 'col-span-2') : 'col-span-1'} bg-white rounded-lg shadow-sm p-4 md:p-6 lg:p-8`}>
                 {!isEmbedded && <h1 className="text-2xl md:text-3xl font-bold mb-4 leading-tight">{content.title}</h1>}
-                <div className="text-sm text-gray-400 mb-6 flex items-center justify-between">
+                <div className="text-sm text-gray-600 mb-6 flex items-center justify-between">
                     <span>Last updated: {new Date(content.updated_at).toLocaleString()}</span>
                     {isEmbedded && <Link href={`/dashboard/library/${contentId}/review`} className="text-blue-600 hover:underline">Open Full View</Link>}
                 </div>
@@ -416,7 +416,7 @@ export default function ContentReview({
                                         {auditReport.ai_score !== null && (
                                             <div className="bg-white p-3 rounded border border-indigo-200 shadow-sm">
                                                 <div className="flex justify-between items-center mb-1">
-                                                    <span className="text-[10px] uppercase font-bold text-gray-400">AI Probability</span>
+                                                    <span className="text-[10px] uppercase font-bold text-gray-600">AI Probability</span>
                                                     <span className={`text-sm font-black ${(auditReport.ai_score > 0.7) ? 'text-red-600' : 'text-green-600'}`}>
                                                         {(auditReport.ai_score * 100).toFixed(0)}%
                                                     </span>
@@ -433,7 +433,7 @@ export default function ContentReview({
                                         {auditReport.plagiarism_matches !== null && (
                                             <div className="bg-white p-3 rounded border border-indigo-200 shadow-sm">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <span className="text-[10px] uppercase font-bold text-gray-400">Copyright Signal</span>
+                                                    <span className="text-[10px] uppercase font-bold text-gray-600">Copyright Signal</span>
                                                     <span className={`text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${auditReport.plagiarism_matches.length > 0 ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
                                                         }`}>
                                                         {auditReport.plagiarism_matches.length > 0 ? 'Conflict Found' : 'Clean'}
@@ -494,7 +494,7 @@ export default function ContentReview({
                     {!showIntegrityDashboard && (
                         <div className="p-4 max-h-[calc(100vh-350px)] overflow-y-auto space-y-4">
                             {filteredComments.length === 0 && (
-                                <p className="text-gray-400 italic text-sm text-center py-8">
+                                <p className="text-gray-600 italic text-sm text-center py-8">
                                     No {filter !== 'all' ? filter : ''} comments
                                 </p>
                             )}

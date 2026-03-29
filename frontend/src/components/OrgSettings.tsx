@@ -308,7 +308,7 @@ export const OrgSettings = () => {
                         </div>
                     ))}
                     {contentSettings.customFields.length === 0 && (
-                        <p className="text-sm text-center text-gray-400 py-4 italic border-2 border-dashed rounded">No custom fields defined yet.</p>
+                        <p className="text-sm text-center text-gray-600 py-4 italic border-2 border-dashed rounded">No custom fields defined yet.</p>
                     )}
                 </div>
             </div>

@@ -108,13 +108,13 @@ export const SupportingDocuments: React.FC<SupportingDocumentsProps> = ({ attach
                                     >
                                         {file.name}
                                     </a>
-                                    <span className="text-[10px] text-gray-400">Supporting Document</span>
+                                    <span className="text-[10px] text-gray-600">Supporting Document</span>
                                 </div>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => removeAttachment(index)}
-                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                                className="p-1.5 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -123,7 +123,7 @@ export const SupportingDocuments: React.FC<SupportingDocumentsProps> = ({ attach
                 </div>
             ) : (
                 <div className="text-center py-8 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/50">
-                    <div className="flex flex-col items-center gap-2 text-gray-400">
+                    <div className="flex flex-col items-center gap-2 text-gray-600">
                         <UploadCloud className="w-8 h-8 opacity-20" />
                         <p className="text-sm">No files attached yet. Click "Attach File" to add supporting docs.</p>
                     </div>
