@@ -5,12 +5,21 @@ import { useAuth } from '@/context/AuthContext';
 import { MemberList } from '@/components/MemberList';
 
 export default function AdminDashboard() {
-    const { token } = useAuth();
+    const { token, user, login } = useAuth();
     const [stats, setStats] = useState<any>(null);
+    const [isCreatingOrg, setIsCreatingOrg] = useState(false);
+    const [orgName, setOrgName] = useState('');
+    const [orgSlug, setOrgSlug] = useState('');
+    const [orgError, setOrgError] = useState('');
 
     useEffect(() => {
-        if (token) fetchStats();
-    }, [token]);
+        if (token && user?.organization_id) {
+            fetchStats();
+        } else if (token && user && !user.organization_id) {
+            // Give them empty stats so the loading screen goes away
+            setStats({ members: 1, content_items: 0, storage_used_mb: 0, plan_limit_mb: 1024 });
+        }
+    }, [token, user]);
 
     const fetchStats = async () => {
         try {
@@ -25,7 +34,75 @@ export default function AdminDashboard() {
         </div>
     );
 
-    const storagePercent = (stats.storage_used_mb / stats.plan_limit_mb) * 100;
+    const storagePercent = stats.plan_limit_mb ? (stats.storage_used_mb / stats.plan_limit_mb) * 100 : 0;
+
+    const toSlug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+    const handleOrgNameChange = (val: string) => {
+        setOrgName(val);
+        setOrgSlug(toSlug(val));
+    };
+
+    const handleCreateOrg = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setOrgError('');
+        if (!orgName.trim() || !orgSlug.trim()) {
+            setOrgError('Please provide both name and slug.');
+            return;
+        }
+        setIsCreatingOrg(true);
+        try {
+            await api.post('/organizations/', { name: orgName, slug: orgSlug }, token!);
+            // Reload user via login mechanism to fetch organization_id
+            login(token!);
+        } catch (err: any) {
+            let msg = 'Failed to create organization';
+            try { msg = JSON.parse(err.message).detail || msg; } catch { msg = err.message || msg; }
+            setOrgError(msg);
+            setIsCreatingOrg(false);
+        }
+    };
+
+    if (user && !user.organization_id) {
+        return (
+            <div className="container mx-auto py-12 px-4 max-w-md">
+                <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-6 text-center">Set up your Workspace</h1>
+                    <p className="text-slate-500 text-sm mb-6 text-center">You need an organization to invite members and manage content.</p>
+                    
+                    {orgError && (
+                        <div className="bg-red-50 text-red-600 border border-red-100 p-3 rounded-lg mb-6 text-sm">
+                            {orgError}
+                        </div>
+                    )}
+                    
+                    <form onSubmit={handleCreateOrg} className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Organization Name</label>
+                            <input
+                                type="text" required autoFocus
+                                value={orgName} onChange={e => handleOrgNameChange(e.target.value)}
+                                placeholder="Book Publisher Inc."
+                                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Slug</label>
+                            <input
+                                type="text" required
+                                value={orgSlug} onChange={e => setOrgSlug(toSlug(e.target.value))}
+                                placeholder="book-publisher-inc"
+                                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900"
+                            />
+                        </div>
+                        <button type="submit" disabled={isCreatingOrg} className="w-full py-3 mt-4 bg-indigo-600 text-white rounded-xl font-bold text-sm uppercase tracking-wider hover:bg-indigo-700 disabled:opacity-50">
+                            {isCreatingOrg ? 'Creating...' : 'Create Organization'}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="container mx-auto py-8 px-4">
