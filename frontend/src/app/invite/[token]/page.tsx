@@ -58,17 +58,36 @@ export default function InvitePage() {
                     const res = await api.post('/auth/access-token', formData, undefined, true);
                     activeToken = res.access_token;
                 } else {
-                    const res = await api.post('/users/', {
-                        email: inviteData.email,
-                        password,
-                        full_name: fullName
-                    });
-                    // After signup, login to get token
-                    const formData = new URLSearchParams();
-                    formData.append('username', inviteData.email);
-                    formData.append('password', password);
-                    const authRes = await api.post('/auth/access-token', formData, undefined, true);
-                    activeToken = authRes.access_token;
+                    let userExisted = false;
+                    try {
+                        const res = await api.post('/users/', {
+                            email: inviteData.email,
+                            password,
+                            full_name: fullName
+                        });
+                    } catch (err: any) {
+                        // If they already exist, we seamlessly switch context and try logging them in
+                        if (err.message && err.message.includes('already exists')) {
+                            userExisted = true;
+                            setIsLoginMode(true); // Flip UI mode to login for them
+                        } else {
+                            throw err; // Re-throw other errors normally
+                        }
+                    }
+                    
+                    // After signup (or if we fell back because they exist), login to get token
+                    try {
+                        const formData = new URLSearchParams();
+                        formData.append('username', inviteData.email);
+                        formData.append('password', password);
+                        const authRes = await api.post('/auth/access-token', formData, undefined, true);
+                        activeToken = authRes.access_token;
+                    } catch (loginErr: any) {
+                        if (userExisted) {
+                            throw new Error('This email is already registered. Please sign in with your existing password.');
+                        }
+                        throw loginErr;
+                    }
                 }
             }
 
