@@ -60,9 +60,12 @@ export const Sidebar = () => {
         <>
             {/* Mobile Header / Hamburger */}
             <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 z-50 px-4 flex items-center justify-between">
-                <span className="text-xl font-black bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
-                    {displayName}
-                </span>
+                <div className="flex flex-col min-w-0 pr-4">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Workspace</span>
+                    <span className="text-lg font-black bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate leading-none block pb-1">
+                        {displayName}
+                    </span>
+                </div>
                 <button
                     onClick={toggleSidebar}
                     className="p-2 text-slate-600 hover:bg-slate-50 rounded-xl transition-all"
@@ -89,9 +92,12 @@ export const Sidebar = () => {
                 {/* Desktop Logo Area */}
                 <div className="hidden lg:flex h-20 items-center justify-between px-6 border-b border-slate-50">
                     {!isCollapsed && (
-                        <span className="text-xl font-black bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate">
-                            {displayName}
-                        </span>
+                        <div className="flex flex-col justify-center min-w-0 pr-4">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Workspace</span>
+                            <span className="text-xl font-black bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate leading-none pb-1 block">
+                                {displayName}
+                            </span>
+                        </div>
                     )}
                     <button
                         onClick={toggleCollapse}
@@ -193,9 +199,12 @@ export const Sidebar = () => {
                     >
                         <UserAvatar name={user?.full_name || ''} size={isCollapsed ? "xs" : "sm"} className="ring-2 ring-white shadow-sm" />
                         {!isCollapsed && (
-                            <div className="min-w-0 text-left">
-                                <p className="text-xs font-black text-slate-900 truncate uppercase tracking-tight">{user?.full_name}</p>
-                                <p className="text-[10px] font-bold text-slate-400 truncate uppercase tracking-widest">{user?.role}</p>
+                            <div className="min-w-0 text-left flex-1">
+                                <p className="text-xs font-black text-slate-900 truncate uppercase tracking-tight leading-tight">{user?.full_name}</p>
+                                <div className="flex flex-col gap-0.5 mt-0.5">
+                                    <p className="text-[9px] font-bold text-slate-400 truncate tracking-wide">{user?.email}</p>
+                                    <span className="text-[8px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded uppercase self-start leading-none">{user?.role}</span>
+                                </div>
                             </div>
                         )}
                     </button>
