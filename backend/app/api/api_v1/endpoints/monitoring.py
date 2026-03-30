@@ -450,6 +450,7 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
 @router.get("/dashboard/screenshots")
 async def get_screenshots(
     agent_id: Optional[str] = None,
+    date: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
     current_user: User = Depends(deps.get_current_user)
@@ -458,6 +459,16 @@ async def get_screenshots(
     from bson import ObjectId
     
     query = {"organization_id": current_user.organization_id}
+    
+    if date:
+        try:
+            start_date = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            end_date = start_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+            query["timestamp"] = {"$gte": start_date, "$lte": end_date}
+        except Exception:
+            pass
+
     if agent_id:
         try:
             # Try both raw ID and DBRef style just in case
@@ -572,10 +583,12 @@ async def get_agent_activity(
     
     # Ensure hours are padded (0, 1, 2... 23) if needed by frontend but usually frontend handles results
     # 3. Raw Logs
+    raw_logs_query = {
+        **user_match,
+        "timestamp": {"$gte": start_date, "$lte": end_date}
+    }
     raw_logs = await MonitoringActivity.find(
-        {"user.$id": user_oid},
-        MonitoringActivity.timestamp >= start_date,
-        MonitoringActivity.timestamp <= end_date,
+        raw_logs_query,
         fetch_links=True
     ).sort(-MonitoringActivity.timestamp).limit(200).to_list()
     

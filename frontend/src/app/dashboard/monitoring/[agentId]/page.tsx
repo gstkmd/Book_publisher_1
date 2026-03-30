@@ -53,7 +53,7 @@ export default function AgentDetailPage() {
         try {
             const [activityData, screenshotsData] = await Promise.all([
                 api.get(`/monitoring/dashboard/agent/${agentId}/activity?date=${selectedDate}`, token || undefined),
-                api.get(`/monitoring/dashboard/screenshots?agent_id=${agentId}&limit=50`, token || undefined)
+                api.get(`/monitoring/dashboard/screenshots?agent_id=${agentId}&date=${selectedDate}&limit=50`, token || undefined)
             ]);
             setActivity(activityData);
             setScreenshots(screenshotsData);
