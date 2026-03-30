@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { useParams, useRouter } from 'next/navigation';
 import { ScreenshotGallery } from '@/components/monitoring/ScreenshotGallery';
+import { Modal } from '@/components/ui/Modal';
 import Link from 'next/link';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -41,6 +42,7 @@ export default function AgentDetailPage() {
     const [screenshots, setScreenshots] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedScreenshot, setSelectedScreenshot] = useState<any>(null);
 
     useEffect(() => {
         if (token && agentId) {
@@ -203,7 +205,31 @@ export default function AgentDetailPage() {
             </div>
 
             {/* Screenshots */}
-            <ScreenshotGallery screenshots={screenshots} apiUrl={API_BASE.replace('/api/v1', '/api/v1')} />
+            <ScreenshotGallery 
+                screenshots={screenshots} 
+                apiUrl={API_BASE} 
+                onScreenshotClick={(shot) => setSelectedScreenshot(shot)}
+            />
+
+            {/* Image Preview Modal */}
+            <Modal 
+                isOpen={!!selectedScreenshot} 
+                onClose={() => setSelectedScreenshot(null)}
+                title={`Screenshot Preview - ${selectedScreenshot?.computer_name}`}
+            >
+                {selectedScreenshot && (
+                    <div className="flex flex-col items-center gap-4">
+                        <img 
+                            src={`${API_BASE}/monitoring/dashboard/screenshot/${selectedScreenshot.id}`} 
+                            alt="Full Size Screenshot"
+                            className="max-w-full h-auto rounded-lg shadow-lg border border-gray-200"
+                        />
+                        <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full border border-gray-100 shadow-sm">
+                            Captured at: {formatDateTimeIST(selectedScreenshot.timestamp)}
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 }

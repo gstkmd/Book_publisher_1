@@ -8,6 +8,7 @@ import uuid
 from typing import List, Optional
 from pathlib import Path
 from contextlib import contextmanager
+import mimetypes
 
 from app.api import deps
 from app.modules.core.models import User
@@ -582,40 +583,32 @@ async def get_agent_activity(
     
     hourly_result = await MonitoringActivity.aggregate(hourly_pipeline).to_list()
     
-    # 3. Raw Logs
-    # We use a explicit find call with $or to match documents regardless of DBRef/ObjectId storage
-    raw_logs = await MonitoringActivity.find(
+    # 3. Raw Logs - Using Aggregation for absolute consistency with app usage
+    logs_pipeline = [
         {
-            "$and": [
-                user_match,
-                {"timestamp": {"$gte": start_date, "$lte": end_date}}
-            ]
+            "$match": {
+                **user_match,
+                "timestamp": {"$gte": start_date, "$lte": end_date}
+            }
         },
-        fetch_links=True
-    ).sort(-MonitoringActivity.timestamp).limit(200).to_list()
+        {"$sort": {"timestamp": -1}},
+        {"$limit": 200}
+    ]
+    raw_logs_dicts = await MonitoringActivity.aggregate(logs_pipeline).to_list()
     
     # We serialize safely so FastAPI handles it
     serialized_logs = []
-    for log in raw_logs:
-        log_dict = log.dict()
-        # Handle User link both when fetched and when not
-        if log.user:
-            try:
-                # If resolved to a User document
-                if hasattr(log.user, 'full_name'):
-                    log_dict["user"] = {
-                        "id": str(log.user.id),
-                        "full_name": log.user.full_name,
-                        "email": log.user.email
-                    }
-                else:
-                    # If it's a Link proxy (shouldn't happen with fetch_links=True but good fallback)
-                    log_dict["user"] = {"id": str(log.user.id)}
-            except Exception:
-                log_dict["user"] = None
-        else:
-            log_dict["user"] = None
+    for log_dict in raw_logs_dicts:
+        # Convert ObjectId to str for frontend
+        if "_id" in log_dict:
+            log_dict["id"] = str(log_dict["_id"])
+        
+        # Handle timestamp (if it's a datetime object)
+        if isinstance(log_dict.get("timestamp"), datetime):
+            log_dict["timestamp"] = log_dict["timestamp"].isoformat()
             
+        # Add basic user info if present (not strictly needed but good for consistency)
+        # In aggregation, 'user' field might be an ObjectId or DBRef
         serialized_logs.append(log_dict)
     
     return {
@@ -630,9 +623,20 @@ async def get_screenshot(screenshot_id: str):
     from bson import ObjectId
     try:
         shot = await MonitoringScreenshot.get(ObjectId(screenshot_id))
-        if shot and shot.file_url and os.path.exists(shot.file_url):
-            return FileResponse(shot.file_url)
-    except Exception:
-        pass
+        if shot and shot.file_url:
+            # Check for path existence (handle both relative and absolute)
+            path = shot.file_url
+            if not os.path.isabs(path):
+                # Try relative to app root or storage root
+                if os.path.exists(path):
+                    pass
+                elif os.path.exists(os.path.join(os.getcwd(), path)):
+                    path = os.path.join(os.getcwd(), path)
+            
+            if os.path.exists(path):
+                content_type, _ = mimetypes.guess_type(path)
+                return FileResponse(path, media_type=content_type or "image/png")
+    except Exception as e:
+        print(f"Error serving screenshot: {e}")
         
     raise HTTPException(status_code=404, detail="Screenshot not found")
