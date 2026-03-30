@@ -11,7 +11,7 @@ from contextlib import contextmanager
 
 from app.api import deps
 from app.modules.core.models import User
-from app.modules.generic.monitoring_models import MonitoringActivity, MonitoringScreenshot
+from app.modules.generic.monitoring_models import MonitoringActivity, MonitoringScreenshot, MonitoringAgent
 
 router = APIRouter()
 
@@ -158,11 +158,21 @@ async def register_agent(
     nickname: Optional[str] = Form(None),
     current_user: User = Depends(deps.get_current_user)
 ):
-    """Register a new monitoring agent (Dummy Success for migration)"""
-    # We no longer track agents separately from users in SQLite.
-    # We generate a consistent ID for the agent session.
-    agent_id = str(uuid.uuid4())
-    return {"agent_id": agent_id, "status": "registered"}
+    """Register a new monitoring agent"""
+    if not current_user.organization_id:
+        # If user isn't in an org, we can't create the agent properly, but we can fallback for local testing
+        agent_id = str(uuid.uuid4())
+        return {"agent_id": agent_id, "status": "registered"}
+
+    agent = MonitoringAgent(
+        user=current_user,
+        organization_id=current_user.organization_id,
+        computer_name=computer_name,
+        os_version=os_version,
+        last_seen=datetime.now(timezone.utc)
+    )
+    await agent.create()
+    return {"agent_id": str(agent.id), "status": "registered"}
 
 @router.post("/screenshots/upload")
 async def upload_screenshot(
@@ -387,6 +397,11 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
     
     agents_list = []
     for member in members:
+        # Find latest agent registration
+        agent_doc = await MonitoringAgent.find(
+            {"user.$id": member.id}
+        ).sort(-MonitoringAgent.created_at).first_or_none()
+
         # Find latest activity for this member
         latest_activity = await MonitoringActivity.find(
             {"user.$id": member.id}
@@ -400,8 +415,8 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
         agents_list.append({
             "id": str(member.id),
             "full_name": member.full_name,
-            "computer_name": "Remote Device", # Placeholder since we don't have agent registration in Mongo yet
-            "os_version": "N/A",
+            "computer_name": agent_doc.computer_name if agent_doc else "Remote Device",
+            "os_version": agent_doc.os_version if agent_doc else "N/A",
             "last_seen": latest_activity.timestamp if latest_activity else None,
             "screenshot_count": screenshot_count
         })

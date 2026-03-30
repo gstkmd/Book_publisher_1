@@ -5,6 +5,21 @@ from pydantic import Field
 from datetime import datetime, timezone
 from app.modules.core.models import User
 
+class MonitoringAgent(Document):
+    user: Link[User]
+    organization_id: str
+    computer_name: Optional[str] = None
+    os_version: Optional[str] = None
+    last_seen: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    class Settings:
+        name = "monitoring_agents"
+        indexes = [
+            IndexModel([("organization_id", ASCENDING)]),
+            IndexModel([("user", ASCENDING)])
+        ]
+
 class MonitoringActivity(Document):
     user: Link[User]
     organization_id: str

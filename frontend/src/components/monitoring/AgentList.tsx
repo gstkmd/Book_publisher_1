@@ -13,6 +13,26 @@ interface AgentListProps {
     agents: Agent[];
 }
 
+const formatDateTimeIST = (dateString: string | null | undefined) => {
+    if (!dateString) return '-';
+    try {
+        const d = new Date(dateString);
+        if (isNaN(d.getTime())) return '-';
+        return new Intl.DateTimeFormat('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        }).format(d).toUpperCase();
+    } catch {
+        return '-';
+    }
+};
+
 export function AgentList({ agents }: AgentListProps) {
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -41,7 +61,7 @@ export function AgentList({ agents }: AgentListProps) {
                                 <td className="px-6 py-4 font-medium text-gray-900">{agent.computer_name}</td>
                                 <td className="px-6 py-4 text-gray-600 text-sm">{agent.os_version}</td>
                                 <td className="px-6 py-4 text-gray-600 text-sm">
-                                    {agent.last_seen ? new Date(agent.last_seen).toLocaleString() : 'Never'}
+                                    {agent.last_seen ? formatDateTimeIST(agent.last_seen) : 'Never'}
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">

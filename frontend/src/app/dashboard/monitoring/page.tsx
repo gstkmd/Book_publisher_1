@@ -17,6 +17,26 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v
 let globalInstanceId = typeof window !== 'undefined' ? Math.random().toString(36).substring(7) : 'server';
 let mountCount = 0;
 
+const formatDateTimeIST = (dateString: string | null | undefined) => {
+    if (!dateString) return '-';
+    try {
+        const d = new Date(dateString);
+        if (isNaN(d.getTime())) return '-';
+        return new Intl.DateTimeFormat('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        }).format(d).toUpperCase();
+    } catch {
+        return '-';
+    }
+};
+
 export default function MonitoringDashboardPage() {
     const { token, user } = useAuth();
     const [summary, setSummary] = useState<any>(null);
@@ -250,7 +270,7 @@ export default function MonitoringDashboardPage() {
                                 .map((activity, idx) => (
                                     <tr key={activity.id || idx} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                                            {activity.timestamp ? new Date(activity.timestamp).toLocaleString() : '-'}
+                                            {formatDateTimeIST(activity.timestamp)}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
