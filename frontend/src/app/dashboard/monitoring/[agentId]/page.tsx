@@ -9,6 +9,30 @@ import Link from 'next/link';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+const formatDateTimeIST = (dateString: string | null | undefined) => {
+    if (!dateString) return '-';
+    try {
+        let dStr = dateString;
+        if (!dStr.endsWith('Z') && !dStr.includes('+') && !dStr.match(/-\d{2}:\d{2}$/)) {
+            dStr += 'Z';
+        }
+        const d = new Date(dStr);
+        if (isNaN(d.getTime())) return '-';
+        return new Intl.DateTimeFormat('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        }).format(d).toUpperCase();
+    } catch {
+        return '-';
+    }
+};
+
 export default function AgentDetailPage() {
     const { agentId } = useParams();
     const { token } = useAuth();
@@ -84,7 +108,6 @@ export default function AgentDetailPage() {
                                 <tr>
                                     <th className="px-6 py-3">App Name</th>
                                     <th className="px-6 py-3">Duration</th>
-                                    <th className="px-6 py-3">Clicks/Keys</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
@@ -94,14 +117,11 @@ export default function AgentDetailPage() {
                                         <td className="px-6 py-4 text-sm text-gray-600">
                                             {Math.round(app.total_seconds / 60)} mins
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
-                                            🖱️ {app.total_clicks} / ⌨️ {app.total_keys}
-                                        </td>
                                     </tr>
                                 ))}
                                 {(!activity?.app_usage || activity.app_usage.length === 0) && (
                                     <tr>
-                                        <td colSpan={3} className="px-6 py-8 text-center text-gray-500">No activity recorded for this date ({selectedDate}).</td>
+                                        <td colSpan={2} className="px-6 py-8 text-center text-gray-500">No activity recorded for this date ({selectedDate}).</td>
                                     </tr>
                                 )}
                             </tbody>
@@ -126,6 +146,59 @@ export default function AgentDetailPage() {
                             </div>
                         ))}
                     </div>
+                </div>
+            </div>
+
+            {/* Raw Recent Activity Table */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-8">
+                <div className="px-6 py-4 border-b border-gray-50 flex flex-wrap justify-between items-center gap-4">
+                    <h3 className="font-bold text-gray-900">Recent Activity Logs</h3>
+                    <span className="text-sm text-gray-500">
+                        {activity?.raw_logs ? activity.raw_logs.length : 0} logs shown
+                    </span>
+                </div>
+                <div className="overflow-x-auto max-h-[600px]">
+                    <table className="w-full text-left">
+                        <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-semibold sticky top-0">
+                            <tr>
+                                <th className="px-6 py-4">Time</th>
+                                <th className="px-6 py-4">App / Window</th>
+                                <th className="px-6 py-4">URL / Path</th>
+                                <th className="px-6 py-4">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {activity?.raw_logs?.map((log: any, idx: number) => (
+                                <tr key={log.id || idx} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                                        {formatDateTimeIST(log.timestamp)}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="text-sm font-medium text-gray-900">{log.app_name}</div>
+                                        <div className="text-xs text-gray-500 truncate max-w-[300px]">{log.window_title}</div>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-blue-600">
+                                        <span className="truncate max-w-[200px] inline-block" title={log.web_url || log.file_path}>
+                                            {log.web_url || log.file_path || '-'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${log.activity_type === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                            }`}>
+                                            {log.activity_type}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                            {(!activity?.raw_logs || activity.raw_logs.length === 0) && (
+                                <tr>
+                                    <td colSpan={4} className="px-6 py-10 text-center text-gray-500">
+                                        No recent activity logs found for this date.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 

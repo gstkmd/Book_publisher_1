@@ -379,8 +379,32 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
     minutes_result = await MonitoringActivity.aggregate(pipeline).to_list()
     active_minutes = minutes_result[0]["total_minutes"] if minutes_result else 0
     
-    # Productivity score (placeholder)
-    productive_score = 75 
+    # 4. Total idle minutes today
+    idle_pipeline = [
+        {
+            "$match": {
+                "organization_id": current_user.organization_id,
+                "timestamp": {"$gte": today},
+                "activity_type": "idle"
+            }
+        },
+        {
+            "$group": {
+                "_id": None,
+                "total_idle_seconds": {"$sum": "$idle_duration"}
+            }
+        }
+    ]
+    idle_result = await MonitoringActivity.aggregate(idle_pipeline).to_list()
+    idle_seconds = idle_result[0]["total_idle_seconds"] if idle_result else 0
+    idle_minutes = idle_seconds / 60
+    
+    total_tracked = active_minutes + idle_minutes
+    
+    if total_tracked > 0:
+        productive_score = min(100, round((active_minutes / total_tracked) * 100))
+    else:
+        productive_score = 0
     
     return {
         "active_agents": active_agents,
@@ -547,11 +571,31 @@ async def get_agent_activity(
     hourly_result = await MonitoringActivity.aggregate(hourly_pipeline).to_list()
     
     # Ensure hours are padded (0, 1, 2... 23) if needed by frontend but usually frontend handles results
-    # But let's return it as a list of dicts consistent with the previous SQLite rows
+    # 3. Raw Logs
+    raw_logs = await MonitoringActivity.find(
+        {"$and": [
+            {"$or": [{"user": user_oid}, {"user.$id": user_oid}]},
+            {"timestamp": {"$gte": start_date, "$lte": end_date}}
+        ]},
+        fetch_links=True
+    ).sort(-MonitoringActivity.timestamp).to_list()
+    
+    # We serialize safely so FastAPI handles it
+    serialized_logs = []
+    for log in raw_logs:
+        log_dict = log.dict()
+        if log.user:
+            log_dict["user"] = {
+                "id": str(log.user.id),
+                "full_name": log.user.full_name,
+                "email": log.user.email
+            }
+        serialized_logs.append(log_dict)
     
     return {
         "app_usage": apps_result,
-        "hourly_activity": hourly_result
+        "hourly_activity": hourly_result,
+        "raw_logs": serialized_logs
     }
 
 @router.get("/dashboard/screenshot/{screenshot_id}")
