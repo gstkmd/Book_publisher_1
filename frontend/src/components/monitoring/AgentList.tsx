@@ -4,7 +4,7 @@ import Link from 'next/link';
 interface Agent {
     id: string;
     computer_name: string;
-    os_version: string;
+    email: string;
     last_seen: string;
     screenshot_count: number;
 }
@@ -49,7 +49,7 @@ export function AgentList({ agents }: AgentListProps) {
                     <thead className="bg-gray-50 text-gray-600 text-xs uppercase font-semibold">
                         <tr>
                             <th className="px-6 py-3">Computer Name</th>
-                            <th className="px-6 py-3">OS Version</th>
+                            <th className="px-6 py-3">User Email</th>
                             <th className="px-6 py-3">Last Seen</th>
                             <th className="px-6 py-3">Screenshots</th>
                             <th className="px-6 py-3">Action</th>
@@ -63,7 +63,7 @@ export function AgentList({ agents }: AgentListProps) {
                                 onClick={() => window.location.href = `/dashboard/monitoring/${agent.id}`}
                             >
                                 <td className="px-6 py-4 font-medium text-gray-900">{agent.computer_name}</td>
-                                <td className="px-6 py-4 text-gray-600 text-sm">{agent.os_version}</td>
+                                <td className="px-6 py-4 text-gray-600 text-sm">{agent.email}</td>
                                 <td className="px-6 py-4 text-gray-600 text-sm">
                                     {agent.last_seen ? formatDateTimeIST(agent.last_seen) : 'Never'}
                                 </td>

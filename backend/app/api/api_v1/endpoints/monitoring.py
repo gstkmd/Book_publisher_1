@@ -439,8 +439,8 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
         agents_list.append({
             "id": str(member.id),
             "full_name": member.full_name,
+            "email": member.email,
             "computer_name": agent_doc.computer_name if agent_doc else "Remote Device",
-            "os_version": agent_doc.os_version if agent_doc else "N/A",
             "last_seen": latest_activity.timestamp if latest_activity else None,
             "screenshot_count": screenshot_count
         })
