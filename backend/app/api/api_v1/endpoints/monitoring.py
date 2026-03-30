@@ -573,12 +573,11 @@ async def get_agent_activity(
     # Ensure hours are padded (0, 1, 2... 23) if needed by frontend but usually frontend handles results
     # 3. Raw Logs
     raw_logs = await MonitoringActivity.find(
-        {"$and": [
-            {"$or": [{"user": user_oid}, {"user.$id": user_oid}]},
-            {"timestamp": {"$gte": start_date, "$lte": end_date}}
-        ]},
+        {"user.$id": user_oid},
+        MonitoringActivity.timestamp >= start_date,
+        MonitoringActivity.timestamp <= end_date,
         fetch_links=True
-    ).sort(-MonitoringActivity.timestamp).to_list()
+    ).sort(-MonitoringActivity.timestamp).limit(200).to_list()
     
     # We serialize safely so FastAPI handles it
     serialized_logs = []
