@@ -51,6 +51,7 @@ async def submit_activity(
             organization_id=current_user.organization_id,
             **{**log.dict(), "timestamp": ts}
         ))
+    print(f"DEBUG: Submitting {len(activities)} activities for user {current_user.email}")
     await MonitoringActivity.insert_many(activities)
     return {"status": "success", "count": len(activities)}
 
@@ -107,4 +108,5 @@ async def upload_screenshot(
         window_title=window_title
     )
     await screenshot.create()
+    print(f"DEBUG: Screenshot created for user {current_user.email}, ID: {screenshot.id}")
     return {"status": "success", "file_url": file_url}

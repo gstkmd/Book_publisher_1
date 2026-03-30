@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks, Depends
 from fastapi.responses import JSONResponse, FileResponse
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import shutil
 import os
 import sqlite3
@@ -173,6 +173,7 @@ async def register_agent(
         last_seen=datetime.now(timezone.utc)
     )
     await agent.create()
+    print(f"DEBUG: Agent registered for user {current_user.email}, ID: {agent.id}")
     return {"agent_id": str(agent.id), "status": "registered"}
 
 @router.post("/screenshots/upload")
@@ -323,8 +324,8 @@ async def track_idle_time(
 @router.get("/dashboard/summary")
 async def get_dashboard_summary(current_user: User = Depends(deps.get_current_user)):
     """Get summary data for dashboard from MongoDB"""
-    # Start of day UTC (naive to match potentially naive logs in DB)
-    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).replace(tzinfo=None)
+    # Start of day UTC (Ensure 'today' is UTC aware for consistent comparison)
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     
     # 1. Total active agents today (unique users with activity)
     # Use aggregation to get unique user IDs efficiently
@@ -422,19 +423,19 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
     
     agents_list = []
     for member in members:
-        # Find latest agent registration
+        # Find latest agent registration - use direct comparison for Beanie Links
         agent_doc = await MonitoringAgent.find(
-            {"user.$id": member.id}
+            MonitoringAgent.user.id == member.id
         ).sort(-MonitoringAgent.created_at).first_or_none()
 
         # Find latest activity for this member
         latest_activity = await MonitoringActivity.find(
-            {"user.$id": member.id}
+            MonitoringActivity.user.id == member.id
         ).sort(-MonitoringActivity.timestamp).first_or_none()
         
         # Find screenshot count
         screenshot_count = await MonitoringScreenshot.find(
-            {"user.$id": member.id}
+            MonitoringScreenshot.user.id == member.id
         ).count()
         
         agents_list.append({
@@ -463,9 +464,12 @@ async def get_screenshots(
     
     if date:
         try:
-            start_date = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-            start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-            end_date = start_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+            # When a single date is provided (e.g. from a date picker),
+            # we expand the range to ensure we capture activity in different timezones (like IST).
+            # IST is UTC+5:30, so we subtract and add some buffer.
+            base_date = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            start_date = base_date - timedelta(hours=6) # Capture from late night yesterday UTC
+            end_date = base_date + timedelta(hours=30)  # Capture until early morning tomorrow UTC
             query["timestamp"] = {"$gte": start_date, "$lte": end_date}
         except Exception:
             pass
@@ -475,14 +479,15 @@ async def get_screenshots(
     if agent_id:
         try:
             agent_oid = ObjectId(agent_id)
-            # Match both raw ID and DBRef style
+            # Match both raw ID and DBRef style for maximum robustness
             beanie_query = beanie_query.find({
                 "$or": [
                     {"user": agent_oid},
-                    {"user.$id": agent_oid}
+                    {"user.$id": agent_oid},
+                    {"user._id": agent_oid}
                 ]
             })
-        except:
+        except Exception:
             pass
             
     screenshots = await beanie_query.sort(-MonitoringScreenshot.timestamp).skip(offset).limit(limit).to_list()
@@ -509,22 +514,15 @@ async def get_agent_activity(
     if not date:
         date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     
-    try:
-        start_date = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_date = start_date.replace(hour=23, minute=59, second=59, microsecond=999999)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
-
-    try:
-        user_oid = ObjectId(agent_id)
-    except:
-        raise HTTPException(status_code=400, detail="Invalid agent_id")
-
-    # Match both raw ID and DBRef style for user
+    print(f"DEBUG: Getting activity for agent_id {agent_id}, user_oid: {user_oid}, date: {date}")
+    print(f"DEBUG: Search range: {start_date} to {end_date}")
+    
+    # Match both raw ID and DBRef style for user in aggregation
+    # We include several patterns to be absolutely sure we catch the link field
     user_match = {"$or": [
         {"user": user_oid},
-        {"user.$id": user_oid}
+        {"user.$id": user_oid},
+        {"user._id": user_oid}
     ]}
 
     # 1. App usage aggregation
@@ -556,6 +554,7 @@ async def get_agent_activity(
     ]
     
     apps_result = await MonitoringActivity.aggregate(app_pipeline).to_list()
+    print(f"DEBUG: Found {len(apps_result)} app usage entries")
     
     # 2. Hourly activity aggregation
     hourly_pipeline = [
@@ -626,12 +625,16 @@ async def get_screenshot(screenshot_id: str):
         if shot and shot.file_url:
             # Check for path existence (handle both relative and absolute)
             path = shot.file_url
+            # Handle relative paths - assume storage is in app root
             if not os.path.isabs(path):
-                # Try relative to app root or storage root
-                if os.path.exists(path):
-                    pass
-                elif os.path.exists(os.path.join(os.getcwd(), path)):
-                    path = os.path.join(os.getcwd(), path)
+                # Try relative to CWD, then relative to script location
+                cwd_path = os.path.abspath(path)
+                script_dir_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), path)
+                
+                if os.path.exists(cwd_path):
+                    path = cwd_path
+                elif os.path.exists(script_dir_path):
+                    path = script_dir_path
             
             if os.path.exists(path):
                 content_type, _ = mimetypes.guess_type(path)
