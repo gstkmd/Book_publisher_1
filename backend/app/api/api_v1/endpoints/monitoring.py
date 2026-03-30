@@ -469,21 +469,22 @@ async def get_screenshots(
         except Exception:
             pass
 
+    beanie_query = MonitoringScreenshot.find(query, fetch_links=True)
+    
     if agent_id:
         try:
-            # Try both raw ID and DBRef style just in case
             agent_oid = ObjectId(agent_id)
-            query["$or"] = [
-                {"user": agent_oid},
-                {"user.$id": agent_oid}
-            ]
+            # Match both raw ID and DBRef style
+            beanie_query = beanie_query.find({
+                "$or": [
+                    {"user": agent_oid},
+                    {"user.$id": agent_oid}
+                ]
+            })
         except:
             pass
             
-    screenshots = await MonitoringScreenshot.find(
-        query,
-        fetch_links=True
-    ).sort(-MonitoringScreenshot.timestamp).skip(offset).limit(limit).to_list()
+    screenshots = await beanie_query.sort(-MonitoringScreenshot.timestamp).skip(offset).limit(limit).to_list()
     
     return [
         {
@@ -491,7 +492,7 @@ async def get_screenshots(
             "filename": s.file_url.split('/')[-1] if s.file_url else "unknown.png",
             "filepath": s.file_url,
             "timestamp": s.timestamp,
-            "computer_name": s.user.full_name if s.user else "Unknown"
+            "computer_name": s.user.full_name if (s.user and hasattr(s.user, 'full_name')) else "Unknown"
         } for s in screenshots
     ]
 
@@ -581,14 +582,15 @@ async def get_agent_activity(
     
     hourly_result = await MonitoringActivity.aggregate(hourly_pipeline).to_list()
     
-    # Ensure hours are padded (0, 1, 2... 23) if needed by frontend but usually frontend handles results
     # 3. Raw Logs
-    raw_logs_query = {
-        **user_match,
-        "timestamp": {"$gte": start_date, "$lte": end_date}
-    }
+    # We use a explicit find call with $or to match documents regardless of DBRef/ObjectId storage
     raw_logs = await MonitoringActivity.find(
-        raw_logs_query,
+        {
+            "$and": [
+                user_match,
+                {"timestamp": {"$gte": start_date, "$lte": end_date}}
+            ]
+        },
         fetch_links=True
     ).sort(-MonitoringActivity.timestamp).limit(200).to_list()
     
@@ -596,12 +598,24 @@ async def get_agent_activity(
     serialized_logs = []
     for log in raw_logs:
         log_dict = log.dict()
+        # Handle User link both when fetched and when not
         if log.user:
-            log_dict["user"] = {
-                "id": str(log.user.id),
-                "full_name": log.user.full_name,
-                "email": log.user.email
-            }
+            try:
+                # If resolved to a User document
+                if hasattr(log.user, 'full_name'):
+                    log_dict["user"] = {
+                        "id": str(log.user.id),
+                        "full_name": log.user.full_name,
+                        "email": log.user.email
+                    }
+                else:
+                    # If it's a Link proxy (shouldn't happen with fetch_links=True but good fallback)
+                    log_dict["user"] = {"id": str(log.user.id)}
+            except Exception:
+                log_dict["user"] = None
+        else:
+            log_dict["user"] = None
+            
         serialized_logs.append(log_dict)
     
     return {
