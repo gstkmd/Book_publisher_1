@@ -16,7 +16,11 @@ interface AgentListProps {
 const formatDateTimeIST = (dateString: string | null | undefined) => {
     if (!dateString) return '-';
     try {
-        const d = new Date(dateString);
+        let dStr = dateString;
+        if (!dStr.endsWith('Z') && !dStr.includes('+') && !dStr.match(/-\d{2}:\d{2}$/)) {
+            dStr += 'Z';
+        }
+        const d = new Date(dStr);
         if (isNaN(d.getTime())) return '-';
         return new Intl.DateTimeFormat('en-IN', {
             timeZone: 'Asia/Kolkata',
