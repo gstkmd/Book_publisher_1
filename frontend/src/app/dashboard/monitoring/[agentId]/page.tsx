@@ -41,7 +41,15 @@ export default function AgentDetailPage() {
     const [activity, setActivity] = useState<any>(null);
     const [screenshots, setScreenshots] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    // Initialize with local date instead of UTC date to avoid day-offset issues in IST
+    const getLocalDateString = () => {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    const [selectedDate, setSelectedDate] = useState(getLocalDateString());
     const [selectedScreenshot, setSelectedScreenshot] = useState<any>(null);
 
     useEffect(() => {

@@ -479,14 +479,8 @@ async def get_screenshots(
     if agent_id:
         try:
             agent_oid = ObjectId(agent_id)
-            # Match both raw ID and DBRef style for maximum robustness
-            beanie_query = beanie_query.find({
-                "$or": [
-                    {"user": agent_oid},
-                    {"user.$id": agent_oid},
-                    {"user._id": agent_oid}
-                ]
-            })
+            # Use Beanie's built-in link matching for maximum reliability
+            beanie_query = beanie_query.find(MonitoringScreenshot.user.id == agent_oid)
         except Exception:
             pass
             
@@ -529,7 +523,12 @@ async def get_agent_activity(
     app_pipeline = [
         {
             "$match": {
-                **user_match,
+                "organization_id": current_user.organization_id,
+                "$or": [
+                    {"user": user_oid},
+                    {"user.$id": user_oid},
+                    {"user._id": user_oid}
+                ],
                 "timestamp": {"$gte": start_date, "$lte": end_date}
             }
         },
@@ -560,7 +559,12 @@ async def get_agent_activity(
     hourly_pipeline = [
         {
             "$match": {
-                **user_match,
+                "organization_id": current_user.organization_id,
+                "$or": [
+                    {"user": user_oid},
+                    {"user.$id": user_oid},
+                    {"user._id": user_oid}
+                ],
                 "timestamp": {"$gte": start_date, "$lte": end_date}
             }
         },
@@ -582,32 +586,19 @@ async def get_agent_activity(
     
     hourly_result = await MonitoringActivity.aggregate(hourly_pipeline).to_list()
     
-    # 3. Raw Logs - Using Aggregation for absolute consistency with app usage
-    logs_pipeline = [
-        {
-            "$match": {
-                **user_match,
-                "timestamp": {"$gte": start_date, "$lte": end_date}
-            }
-        },
-        {"$sort": {"timestamp": -1}},
-        {"$limit": 200}
-    ]
-    raw_logs_dicts = await MonitoringActivity.aggregate(logs_pipeline).to_list()
+    # 3. Raw Logs - Switching back to find() for maximum reliability with Beanie links
+    raw_logs = await MonitoringActivity.find(
+        MonitoringActivity.user.id == user_oid,
+        MonitoringActivity.timestamp >= start_date,
+        MonitoringActivity.timestamp <= end_date
+    ).sort(-MonitoringActivity.timestamp).limit(200).to_list()
     
-    # We serialize safely so FastAPI handles it
     serialized_logs = []
-    for log_dict in raw_logs_dicts:
-        # Convert ObjectId to str for frontend
-        if "_id" in log_dict:
-            log_dict["id"] = str(log_dict["_id"])
-        
-        # Handle timestamp (if it's a datetime object)
+    for log in raw_logs:
+        log_dict = log.dict()
+        log_dict["id"] = str(log.id)
         if isinstance(log_dict.get("timestamp"), datetime):
             log_dict["timestamp"] = log_dict["timestamp"].isoformat()
-            
-        # Add basic user info if present (not strictly needed but good for consistency)
-        # In aggregation, 'user' field might be an ObjectId or DBRef
         serialized_logs.append(log_dict)
     
     return {
