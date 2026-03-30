@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { MetricCard } from '@/components/monitoring/MetricCard';
 import { AgentList } from '@/components/monitoring/AgentList';
 import { ScreenshotGallery } from '@/components/monitoring/ScreenshotGallery';
+import { Modal } from '@/components/ui/Modal';
 import Link from 'next/link';
 
 // Helper to get the API base URL (without version suffix if needed, but here we use it relative to our api helper)
@@ -51,6 +52,7 @@ export default function MonitoringDashboardPage() {
     const [error, setError] = useState<string | null>(null);
     const [users, setUsers] = useState<any[]>([]);
     const [selectedUserId, setSelectedUserId] = useState<string>('all');
+    const [selectedScreenshot, setSelectedScreenshot] = useState<any>(null);
 
     const agentsSectionRef = useRef<HTMLDivElement>(null);
     const screenshotsSectionRef = useRef<HTMLDivElement>(null);
@@ -315,8 +317,32 @@ export default function MonitoringDashboardPage() {
 
             {/* Screenshot Gallery */}
             <div ref={screenshotsSectionRef}>
-                <ScreenshotGallery screenshots={screenshots} apiUrl={API_BASE.replace('/api/v1', '/api/v1')} />
+                <ScreenshotGallery 
+                    screenshots={screenshots} 
+                    apiUrl={API_BASE} 
+                    onScreenshotClick={(shot) => setSelectedScreenshot(shot)}
+                />
             </div>
+
+            {/* Image Preview Modal */}
+            <Modal 
+                isOpen={!!selectedScreenshot} 
+                onClose={() => setSelectedScreenshot(null)}
+                title={`Screenshot Preview - ${selectedScreenshot?.computer_name}`}
+            >
+                {selectedScreenshot && (
+                    <div className="flex flex-col items-center gap-4">
+                        <img 
+                            src={`${API_BASE}/monitoring/dashboard/screenshot/${selectedScreenshot.id}`} 
+                            alt="Full Size Screenshot"
+                            className="max-w-full h-auto rounded-lg shadow-lg border border-gray-200"
+                        />
+                        <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full border border-gray-100 shadow-sm">
+                            Captured at: {formatDateTimeIST(selectedScreenshot.timestamp)}
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 }
