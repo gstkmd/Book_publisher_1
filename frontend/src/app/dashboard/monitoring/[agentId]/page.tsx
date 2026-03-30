@@ -18,7 +18,6 @@ const formatDateTimeIST = (dateString: string | null | undefined) => {
             dStr += 'Z';
         }
         const d = new Date(dStr);
-        if (isNaN(d.getTime())) return '-';
         return new Intl.DateTimeFormat('en-IN', {
             timeZone: 'Asia/Kolkata',
             day: '2-digit',
@@ -28,7 +27,7 @@ const formatDateTimeIST = (dateString: string | null | undefined) => {
             minute: '2-digit',
             second: '2-digit',
             hour12: true
-        }).format(d).toUpperCase();
+        }).format(d);
     } catch {
         return '-';
     }

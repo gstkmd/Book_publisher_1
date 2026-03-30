@@ -36,7 +36,7 @@ const formatDateTimeIST = (dateString: string | null | undefined) => {
             minute: '2-digit',
             second: '2-digit',
             hour12: true
-        }).format(d).toUpperCase();
+        }).format(d).replace(/\//g, '/'); // Ensure standard separator
     } catch {
         return '-';
     }
@@ -283,7 +283,7 @@ export default function MonitoringDashboardPage() {
                                                 <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
                                                     {activity.user?.full_name?.charAt(0) || 'U'}
                                                 </div>
-                                                <span className="text-sm font-medium text-gray-900">{activity.user?.full_name || (typeof activity.user === 'string' ? 'User ID: ' + activity.user : 'Unknown User')}</span>
+                                                <span className="text-sm font-medium text-gray-900">{activity.user?.email || (typeof activity.user === 'string' ? activity.user : 'Unknown User')}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">

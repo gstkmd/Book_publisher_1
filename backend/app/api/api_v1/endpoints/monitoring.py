@@ -527,7 +527,8 @@ async def get_agent_activity(
                 "$or": [
                     {"user": user_oid},
                     {"user.$id": user_oid},
-                    {"user._id": user_oid}
+                    {"user._id": user_oid},
+                    {"user": str(user_oid)}
                 ],
                 "timestamp": {"$gte": start_date, "$lte": end_date}
             }
@@ -563,7 +564,8 @@ async def get_agent_activity(
                 "$or": [
                     {"user": user_oid},
                     {"user.$id": user_oid},
-                    {"user._id": user_oid}
+                    {"user._id": user_oid},
+                    {"user": str(user_oid)}
                 ],
                 "timestamp": {"$gte": start_date, "$lte": end_date}
             }
