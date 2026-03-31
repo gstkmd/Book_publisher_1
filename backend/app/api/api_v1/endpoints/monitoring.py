@@ -445,12 +445,19 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
             {"$or": user_match_or}
         ).sort(-MonitoringActivity.timestamp).first_or_none()
         
-        # Find screenshot count for TODAY to be consistent with dashboard cards
-        screenshot_count = await MonitoringScreenshot.find(
-            {"$or": user_match_or},
-            MonitoringScreenshot.organization_id == current_user.organization_id,
-            MonitoringScreenshot.timestamp >= today
-        ).count()
+        # Find screenshot count for TODAY using aggregation for consistency
+        sc_pipeline = [
+            {
+                "$match": {
+                    "organization_id": current_user.organization_id,
+                    "$or": user_match_or,
+                    "timestamp": {"$gte": today}
+                }
+            },
+            {"$count": "count"}
+        ]
+        sc_res = await MonitoringScreenshot.aggregate(sc_pipeline).to_list()
+        screenshot_count = sc_res[0]["count"] if sc_res else 0
         
         agents_list.append({
             "id": str(member.id),

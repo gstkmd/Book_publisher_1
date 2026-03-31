@@ -95,7 +95,7 @@ export default function MonitoringDashboardPage() {
             const [summaryData, agentsData, screenshotsData, teamActivitiesData, usersData] = await Promise.all([
                 api.get('/monitoring/dashboard/summary', token || undefined),
                 api.get('/monitoring/dashboard/agents', token || undefined),
-                api.get('/monitoring/dashboard/screenshots?limit=8', token || undefined),
+                api.get('/monitoring/dashboard/screenshots?limit=24', token || undefined),
                 api.get('/team-monitoring/team-activity', token || undefined),
                 user?.organization_id ? api.get(`/organizations/${user.organization_id}/members`, token || undefined) : Promise.resolve([])
             ]);
