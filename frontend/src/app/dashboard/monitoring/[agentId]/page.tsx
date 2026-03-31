@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { useParams, useRouter } from 'next/navigation';
 import { ScreenshotGallery } from '@/components/monitoring/ScreenshotGallery';
+import { MetricCard } from '@/components/monitoring/MetricCard';
 import { Modal } from '@/components/ui/Modal';
 import Link from 'next/link';
 
@@ -103,6 +104,38 @@ export default function AgentDetailPage() {
                         className="border-0 focus:ring-0 text-sm font-bold text-indigo-600 cursor-pointer"
                     />
                 </div>
+            </div>
+
+            {/* Metrics Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <MetricCard
+                    title="Agent Status"
+                    value={activity?.summary?.is_online ? 'Online' : 'Offline'}
+                    icon="👤"
+                    color={activity?.summary?.is_online ? 'green' : 'orange'}
+                    description={activity?.summary?.is_online ? 'Online now' : `Last: ${formatDateTimeIST(activity?.summary?.last_seen).split(',')[1] || '-'}`}
+                />
+                <MetricCard
+                    title="Screenshots"
+                    value={activity?.summary?.screenshot_count || 0}
+                    icon="📸"
+                    color="green"
+                    description="For selected date"
+                />
+                <MetricCard
+                    title="Active Minutes"
+                    value={activity?.summary?.active_minutes || 0}
+                    icon="⏱️"
+                    color="purple"
+                    description="Total time"
+                />
+                <MetricCard
+                    title="Productivity Score"
+                    value={`${activity?.summary?.productivity_score || 0}%`}
+                    icon="📈"
+                    color="orange"
+                    description="Avg. efficiency"
+                />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
