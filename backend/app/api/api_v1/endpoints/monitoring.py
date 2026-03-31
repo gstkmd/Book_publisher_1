@@ -423,19 +423,26 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
     
     agents_list = []
     for member in members:
+        user_match_or = [
+            {"user": member.id},
+            {"user.$id": member.id},
+            {"user._id": member.id},
+            {"user": str(member.id)}
+        ]
+
         # Find latest agent registration - use direct comparison for Beanie Links
         agent_doc = await MonitoringAgent.find(
-            MonitoringAgent.user.id == member.id
+            {"$or": user_match_or}
         ).sort(-MonitoringAgent.created_at).first_or_none()
 
         # Find latest activity for this member
         latest_activity = await MonitoringActivity.find(
-            MonitoringActivity.user.id == member.id
+            {"$or": user_match_or}
         ).sort(-MonitoringActivity.timestamp).first_or_none()
         
         # Find screenshot count
         screenshot_count = await MonitoringScreenshot.find(
-            MonitoringScreenshot.user.id == member.id
+            {"$or": user_match_or}
         ).count()
         
         agents_list.append({
@@ -586,7 +593,7 @@ async def get_agent_activity(
     # Agent Status & Identification
     user_obj = await User.get(user_oid)
     latest_activity = await MonitoringActivity.find(
-        MonitoringActivity.user.id == user_oid
+        {"$or": user_match_or}
     ).sort(-MonitoringActivity.timestamp).first_or_none()
     
     is_online = False
