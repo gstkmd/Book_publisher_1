@@ -418,6 +418,9 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
 @router.get("/dashboard/agents")
 async def get_agents(current_user: User = Depends(deps.get_current_user)):
     """Get list of all agents from MongoDB for current organization"""
+    # Start of day UTC
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    
     # Fetch all members of the organization
     members = await User.find(User.organization_id == current_user.organization_id).to_list()
     
@@ -430,7 +433,7 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
             {"user": str(member.id)}
         ]
 
-        # Find latest agent registration - use direct comparison for Beanie Links
+        # Find latest agent registration
         agent_doc = await MonitoringAgent.find(
             {"$or": user_match_or}
         ).sort(-MonitoringAgent.created_at).first_or_none()
@@ -440,9 +443,11 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
             {"$or": user_match_or}
         ).sort(-MonitoringActivity.timestamp).first_or_none()
         
-        # Find screenshot count
+        # Find screenshot count for TODAY to be consistent with dashboard cards
         screenshot_count = await MonitoringScreenshot.find(
-            {"$or": user_match_or}
+            {"$or": user_match_or},
+            MonitoringScreenshot.organization_id == current_user.organization_id,
+            MonitoringScreenshot.timestamp >= today
         ).count()
         
         agents_list.append({

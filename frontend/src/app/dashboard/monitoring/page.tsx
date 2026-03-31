@@ -181,7 +181,7 @@ export default function MonitoringDashboardPage() {
                     value={summary?.screenshots_today || 0}
                     icon="📸"
                     color="green"
-                    description="Last 24h"
+                    description="Today"
                     onClick={() => scrollToSection(screenshotsSectionRef)}
                 />
                 <MetricCard
