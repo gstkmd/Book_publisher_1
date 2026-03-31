@@ -84,11 +84,15 @@ async def upload_screenshot(
     timestamp: str = Form(...), # Change to str for flexible parsing
     file: UploadFile = File(...),
     agent_id: Optional[str] = Form(None), # Add optional agent_id
+    agentId: Optional[str] = Form(None), # Add agentId alias for compatibility
     current_user: User = Depends(get_current_user)
 ):
     if not current_user.organization_id:
         raise HTTPException(status_code=400, detail="User not part of an organization")
 
+    # Handle agent tracking (matches monitoring.py style)
+    target_agent_id = agent_id or agentId # Use whichever is provided
+    
     # Ensure directory exists
     os.makedirs("storage/screenshots", exist_ok=True)
     
