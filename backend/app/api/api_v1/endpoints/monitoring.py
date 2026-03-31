@@ -488,13 +488,21 @@ async def get_screenshots(
         except Exception:
             pass
 
+    # Use aggregation for robust link handling
     beanie_query = MonitoringScreenshot.find(query, fetch_links=True)
     
     if agent_id:
         try:
             agent_oid = ObjectId(agent_id)
-            # Use Beanie's built-in link matching for maximum reliability
-            beanie_query = beanie_query.find(MonitoringScreenshot.user.id == agent_oid)
+            # Use aggregation style for matching links if find fails
+            beanie_query = beanie_query.find({
+                "$or": [
+                    {"user": agent_oid},
+                    {"user.$id": agent_oid},
+                    {"user._id": agent_oid},
+                    {"user": str(agent_oid)}
+                ]
+            })
         except Exception:
             pass
             
@@ -544,6 +552,7 @@ async def get_agent_activity(
             {"user": user_oid},
             {"user.$id": user_oid},
             {"user._id": user_oid},
+            {"user.id": user_oid},
             {"user": str(user_oid)}
         ]
 
@@ -604,11 +613,19 @@ async def get_agent_activity(
         productivity_score = min(100, round((total_active_minutes / total_tracked) * 100)) if total_tracked > 0 else 0
 
         # Screenshot count
-        screenshot_count = await MonitoringScreenshot.find(
-            {"$or": user_match_or},
-            MonitoringScreenshot.timestamp >= start_date,
-            MonitoringScreenshot.timestamp <= end_date
-        ).count()
+        # Use aggregation for consistency with active minutes
+        screenshot_pipeline = [
+            {
+                "$match": {
+                    "organization_id": current_user.organization_id,
+                    "$or": user_match_or,
+                    "timestamp": {"$gte": start_date, "$lte": end_date}
+                }
+            },
+            {"$count": "total_count"}
+        ]
+        sc_res = await MonitoringScreenshot.aggregate(screenshot_pipeline).to_list()
+        screenshot_count = sc_res[0]["total_count"] if sc_res else 0
 
         print(f"DEBUG: [AgentDetail-7] Screenshots: {screenshot_count}")
 

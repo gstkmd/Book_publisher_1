@@ -124,12 +124,13 @@ async def upload_screenshot(
     screenshot = MonitoringScreenshot(
         user=current_user,
         organization_id=current_user.organization_id,
-        agent_id=agent_id, # Added agent_id
+        agent_id=target_agent_id, # Use target_agent_id which captures both aliases
         timestamp=ts,
         file_url=file_url,
         app_name=app_name,
         window_title=window_title
     )
     await screenshot.create()
-    print(f"DEBUG: Screenshot created for user {current_user.email}, ID: {screenshot.id}, Agent: {agent_id}")
+    print(f"DEBUG: [Screenshot] Created document for {current_user.email} (Org: {current_user.organization_id})")
+    print(f"DEBUG: [Screenshot] Path: {file_url}, TS: {ts}, Agent: {target_agent_id}")
     return {"status": "success", "file_url": file_url}
