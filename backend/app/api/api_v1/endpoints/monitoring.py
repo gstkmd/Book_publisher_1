@@ -591,7 +591,10 @@ async def get_agent_activity(
             }
         ]
         idle_res = await MonitoringActivity.aggregate(idle_pipeline).to_list()
-        total_idle_seconds = idle_res[0]["total_seconds"] if idle_res else 0
+        total_idle_seconds = 0
+        if idle_res and len(idle_res) > 0 and idle_res[0].get("total_seconds"):
+            total_idle_seconds = idle_res[0]["total_seconds"]
+        
         total_idle_minutes = round(total_idle_seconds / 60, 1)
 
         print(f"DEBUG: [AgentDetail-6] Idle mins: {total_idle_minutes}")
@@ -705,15 +708,29 @@ async def get_agent_activity(
         raw_logs = await MonitoringActivity.find(
             {"$or": user_match_or},
             MonitoringActivity.timestamp >= start_date,
-            MonitoringActivity.timestamp <= end_date
+            MonitoringActivity.timestamp <= end_date,
+            fetch_links=True # Fetch link to ensure serialization is easier
         ).sort(-MonitoringActivity.timestamp).limit(200).to_list()
         
         serialized_logs = []
         for log in raw_logs:
+            # Safely convert document to dict
             log_dict = log.dict()
             log_dict["id"] = str(log.id)
+            
+            # Remove complex 'user' field entirely to avoid serialization errors
+            # (The frontend already has user info in the 'summary')
+            if "user" in log_dict:
+                log_dict.pop("user")
+            
+            # Handle datetime serialization explicitly
             if isinstance(log_dict.get("timestamp"), datetime):
                 log_dict["timestamp"] = log_dict["timestamp"].isoformat()
+            
+            # Ensure organization_id is string
+            if "organization_id" in log_dict:
+                log_dict["organization_id"] = str(log_dict["organization_id"])
+                
             serialized_logs.append(log_dict)
         
         print(f"DEBUG: [AgentDetail-13] Returning results")
