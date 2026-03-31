@@ -423,9 +423,11 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
     
     # Fetch all members of the organization
     members = await User.find(User.organization_id == current_user.organization_id).to_list()
+    print(f"DEBUG: [get_agents] Admin {current_user.email} (Org: {current_user.organization_id}) fetched {len(members)} members")
     
     agents_list = []
     for member in members:
+        print(f"DEBUG: [get_agents] Processing member: {member.email}, OrgID: {member.organization_id}, Role: {member.role}")
         user_match_or = [
             {"user": member.id},
             {"user.$id": member.id},

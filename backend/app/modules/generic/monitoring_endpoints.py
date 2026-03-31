@@ -41,6 +41,8 @@ async def submit_activity(
         raise HTTPException(status_code=400, detail="User not part of an organization")
 
     activities = []
+    print(f"DEBUG: [Activity] User: {current_user.email}, Org: {current_user.organization_id}, Role: {current_user.role}, Logs: {len(req.logs)}")
+    
     for log in req.logs:
         ts = log.timestamp
         if ts.tzinfo is None:
@@ -51,8 +53,14 @@ async def submit_activity(
             organization_id=current_user.organization_id,
             **{**log.dict(), "timestamp": ts}
         ))
-    print(f"DEBUG: Submitting {len(activities)} activities for user {current_user.email}")
-    await MonitoringActivity.insert_many(activities)
+    
+    try:
+        await MonitoringActivity.insert_many(activities)
+        print(f"DEBUG: [Activity] Successfully inserted {len(activities)} logs for {current_user.email}")
+    except Exception as e:
+        print(f"DEBUG: [Activity] FAILED to insert logs for {current_user.email}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save activities: {e}")
+
     return {"status": "success", "count": len(activities)}
 
 @router.get("/team-activity")
