@@ -518,7 +518,7 @@ async def get_screenshots(
     return [
         {
             "id": str(s.id),
-            "filename": s.file_url.split('/')[-1] if s.file_url else "unknown.png",
+            "filename": os.path.basename(s.file_url) if s.file_url else "unknown.png",
             "filepath": s.file_url,
             "timestamp": s.timestamp,
             "computer_name": s.user.full_name if (s.user and hasattr(s.user, 'full_name')) else "Unknown"
@@ -775,26 +775,24 @@ async def get_agent_activity(
 @router.get("/dashboard/screenshot/{screenshot_id}")
 async def get_screenshot(screenshot_id: str):
     """Serve screenshot file from MongoDB record"""
-    from bson import ObjectId
     try:
         shot = await MonitoringScreenshot.get(ObjectId(screenshot_id))
         if shot and shot.file_url:
-            # Check for path existence (handle both relative and absolute)
+            # Try multiple possible locations for the storage directory
             path = shot.file_url
-            # Handle relative paths - assume storage is in app root
-            if not os.path.isabs(path):
-                # Try relative to CWD, then relative to script location
-                cwd_path = os.path.abspath(path)
-                script_dir_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), path)
-                
-                if os.path.exists(cwd_path):
-                    path = cwd_path
-                elif os.path.exists(script_dir_path):
-                    path = script_dir_path
             
-            if os.path.exists(path):
-                content_type, _ = mimetypes.guess_type(path)
-                return FileResponse(path, media_type=content_type or "image/png")
+            possible_paths = [
+                path,
+                os.path.join(os.getcwd(), path),
+                os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), path),
+                os.path.join("..", path), # Project root if running from backend/
+                os.path.abspath(path)
+            ]
+            
+            for p in possible_paths:
+                if os.path.exists(p) and os.path.isfile(p):
+                    content_type, _ = mimetypes.guess_type(p)
+                    return FileResponse(p, media_type=content_type or "image/png")
     except Exception as e:
         print(f"Error serving screenshot: {e}")
         

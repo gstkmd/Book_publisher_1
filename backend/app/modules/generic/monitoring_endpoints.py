@@ -97,10 +97,14 @@ async def upload_screenshot(
     os.makedirs("storage/screenshots", exist_ok=True)
     
     # Generate unique filename
-    file_id = str(uuid.uuid4())
-    file_extension = os.path.splitext(file.filename)[1] or ".png"
-    filename = f"{file_id}{file_extension}"
+    extension = file.filename.split(".")[-1] if "." in file.filename else "png"
+    # Use descriptive filename from agent with a short unique suffix
+    base_name = file.filename.split(".")[0]
+    filename = f"{base_name}_{uuid.uuid4().hex[:6]}.{extension}"
     filepath = f"storage/screenshots/{filename}"
+    
+    # Ensure storage directory exists at project root if not found locally
+    os.makedirs("storage/screenshots", exist_ok=True)
     
     # Save file to disk
     with open(filepath, "wb") as buffer:
