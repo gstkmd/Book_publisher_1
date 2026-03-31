@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../lib/api';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { AlertCircle } from 'lucide-react';
 
@@ -41,6 +41,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [showTwoHourWorkCheck, setShowTwoHourWorkCheck] = useState<{ taskId: string, taskTitle: string } | null>(null);
     const [activeStatus, setActiveStatus] = useState<any>(null);
     const router = useRouter();
+    const pathname = usePathname();
     const [instanceId] = useState(() => Math.random().toString(36).substring(7));
 
     useEffect(() => {
@@ -103,14 +104,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         const checkActiveStatus = async () => {
             try {
-                // Only monitor roles that typically perform tasks
-                const taskRoles = ['admin', 'editor_in_chief', 'section_editor', 'author', 'reviewer', 'illustrator'];
-                if (!taskRoles.includes(user.role)) return;
-
+                if (user.role === 'admin') return;
                 const status = await api.get('/generic/tasks/active-status', token);
                 setActiveStatus(status);
 
                 if (status.active_count === 0) {
+                    // Skip showing the toast if the user is on an auth page or the home page
+                    const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password' || pathname === '/';
+                    if (isAuthPage) return;
+
                     const lastActivityAt = status.last_activity_at ? new Date(status.last_activity_at) : null;
                     const serverTime = new Date(status.server_time);
 
@@ -174,7 +176,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             clearInterval(interval);
             clearTimeout(timeout);
         };
-    }, [token, user, router]);
+    }, [token, user, router, pathname]);
 
     const refreshActiveStatus = async () => {
         if (!token || !user) return;
