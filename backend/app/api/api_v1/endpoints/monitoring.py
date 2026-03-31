@@ -522,13 +522,20 @@ async def get_agent_activity(
     print(f"DEBUG: Getting activity for agent_id {agent_id}, user_oid: {user_oid}, date: {date}")
     print(f"DEBUG: Search range: {start_date} to {end_date}")
     
+    user_match_or = [
+        {"user": user_oid},
+        {"user.$id": user_oid},
+        {"user._id": user_oid},
+        {"user": str(user_oid)}
+    ]
+
     # 0. Summary Stats Calculation
     # Active minutes
     active_pipeline = [
         {
             "$match": {
                 "organization_id": current_user.organization_id,
-                "user": user_oid,
+                "$or": user_match_or,
                 "timestamp": {"$gte": start_date, "$lte": end_date},
                 "activity_type": "active"
             }
@@ -549,7 +556,7 @@ async def get_agent_activity(
         {
             "$match": {
                 "organization_id": current_user.organization_id,
-                "user": user_oid,
+                "$or": user_match_or,
                 "timestamp": {"$gte": start_date, "$lte": end_date},
                 "activity_type": "idle"
             }
@@ -571,7 +578,7 @@ async def get_agent_activity(
 
     # Screenshot count
     screenshot_count = await MonitoringScreenshot.find(
-        MonitoringScreenshot.user.id == user_oid,
+        {"$or": user_match_or},
         MonitoringScreenshot.timestamp >= start_date,
         MonitoringScreenshot.timestamp <= end_date
     ).count()
@@ -597,12 +604,8 @@ async def get_agent_activity(
         "last_seen": latest_activity.timestamp if latest_activity else None
     }
 
-    # Match both raw ID and DBRef style for user in aggregation
-    user_match = {"$or": [
-        {"user": user_oid},
-        {"user.$id": user_oid},
-        {"user._id": user_oid}
-    ]}
+    # No changes needed to user_match if it's not used locally.
+    # But I will update the apps_pipeline below it to use the new user_match_or.
 
     # 1. App usage aggregation
     app_pipeline = [
@@ -673,9 +676,9 @@ async def get_agent_activity(
     
     hourly_result = await MonitoringActivity.aggregate(hourly_pipeline).to_list()
     
-    # 3. Raw Logs - Switching back to find() for maximum reliability with Beanie links
+    # 3. Raw Logs - Ensuring robust user matching
     raw_logs = await MonitoringActivity.find(
-        MonitoringActivity.user.id == user_oid,
+        {"$or": user_match_or},
         MonitoringActivity.timestamp >= start_date,
         MonitoringActivity.timestamp <= end_date
     ).sort(-MonitoringActivity.timestamp).limit(200).to_list()
