@@ -589,7 +589,7 @@ async def get_agent_activity(
 
     summary = {
         "user_email": user_obj.email if user_obj else "Unknown",
-        "user_full_name": user_obj.full_name if user_obj else "Unknown Agent",
+        "user_full_name": (user_obj.full_name or "Unknown Agent") if user_obj else "Unknown Agent",
         "active_minutes": total_active_minutes,
         "screenshot_count": screenshot_count,
         "productivity_score": productivity_score,

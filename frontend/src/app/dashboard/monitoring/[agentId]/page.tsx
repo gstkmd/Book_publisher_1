@@ -92,14 +92,20 @@ export default function AgentDetailPage() {
                     >
                         ⬅️
                     </button>
-                    <h1 className="text-2xl font-bold text-gray-900">
-                        Agent Activity Detail
-                        {activity?.summary?.user_full_name && (
-                            <span className="ml-3 text-lg font-medium text-gray-500">
-                                — {activity.summary.user_full_name} ({activity.summary.user_email})
+                <div className="flex flex-col">
+                    <h1 className="text-2xl font-bold text-gray-900 leading-tight">Agent Activity Detail</h1>
+                    {activity?.summary && (
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="text-lg font-semibold text-indigo-600">
+                                {activity.summary.user_full_name}
                             </span>
-                        )}
-                    </h1>
+                            <span className="text-gray-400">•</span>
+                            <span className="text-sm font-medium text-gray-500">
+                                {activity.summary.user_email}
+                            </span>
+                        </div>
+                    )}
+                </div>
                 </div>
 
                 <div className="flex items-center gap-2 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
@@ -116,11 +122,11 @@ export default function AgentDetailPage() {
             {/* Metrics Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <MetricCard
-                    title="Agent Status"
+                    title={activity?.summary?.user_full_name || 'Agent Status'}
                     value={activity?.summary?.is_online ? 'Online' : 'Offline'}
                     icon="👤"
                     color={activity?.summary?.is_online ? 'green' : 'orange'}
-                    description={activity?.summary?.is_online ? 'Online now' : `Last: ${formatDateTimeIST(activity?.summary?.last_seen).split(',')[1] || '-'}`}
+                    description={activity?.summary?.user_email || (activity?.summary?.is_online ? 'Online now' : `Last: ${formatDateTimeIST(activity?.summary?.last_seen).split(',')[1] || '-'}`)}
                 />
                 <MetricCard
                     title="Screenshots"
