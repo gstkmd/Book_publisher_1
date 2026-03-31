@@ -520,21 +520,25 @@ async def get_agent_activity(
     from bson import ObjectId
     
     try:
+        print(f"DEBUG: [AgentDetail-1] Starting request for agent_id: {agent_id}, date: {date}")
         user_oid = ObjectId(agent_id)
         
         if not date:
             date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        
+        print(f"DEBUG: [AgentDetail-2] Parsed date: {date}")
         
         # Range expanded for IST/UTC overlap
         try:
             base_date = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
             start_date = base_date - timedelta(hours=6)
             end_date = base_date + timedelta(hours=30)
-        except Exception:
+        except Exception as date_err:
+            print(f"DEBUG: [AgentDetail-DateErr] {date_err}")
             start_date = datetime.now(timezone.utc) - timedelta(days=1)
             end_date = datetime.now(timezone.utc) + timedelta(days=1)
 
-        print(f"DEBUG: Getting activity for agent_id {agent_id}, user_oid: {user_oid}, date: {date}")
+        print(f"DEBUG: [AgentDetail-3] Range: {start_date} to {end_date}")
         
         user_match_or = [
             {"user": user_oid},
@@ -544,6 +548,8 @@ async def get_agent_activity(
         ]
 
         # 0. Summary Stats Calculation
+        print(f"DEBUG: [AgentDetail-4] Calculating summary stats...")
+        
         # Active minutes
         active_pipeline = [
             {
@@ -564,6 +570,8 @@ async def get_agent_activity(
         active_res = await MonitoringActivity.aggregate(active_pipeline).to_list()
         total_active_seconds = active_res[0]["total_seconds"] if active_res else 0
         total_active_minutes = round(total_active_seconds / 60, 1)
+
+        print(f"DEBUG: [AgentDetail-5] Active mins: {total_active_minutes}")
 
         # Idle minutes
         idle_pipeline = [
@@ -586,6 +594,8 @@ async def get_agent_activity(
         total_idle_seconds = idle_res[0]["total_seconds"] if idle_res else 0
         total_idle_minutes = round(total_idle_seconds / 60, 1)
 
+        print(f"DEBUG: [AgentDetail-6] Idle mins: {total_idle_minutes}")
+
         # Productivity Score
         total_tracked = total_active_minutes + total_idle_minutes
         productivity_score = min(100, round((total_active_minutes / total_tracked) * 100)) if total_tracked > 0 else 0
@@ -597,12 +607,14 @@ async def get_agent_activity(
             MonitoringScreenshot.timestamp <= end_date
         ).count()
 
+        print(f"DEBUG: [AgentDetail-7] Screenshots: {screenshot_count}")
+
         # Agent Status & Identification
         user_obj = await User.get(user_oid)
         if not user_obj:
-            print(f"DEBUG: [AgentDetail] User NOT FOUND for ID: {agent_id}")
+            print(f"DEBUG: [AgentDetail-8] User NOT FOUND for ID: {agent_id}")
         else:
-            print(f"DEBUG: [AgentDetail] Found User: {user_obj.email}, Name: {user_obj.full_name}")
+            print(f"DEBUG: [AgentDetail-8] Found User: {user_obj.email}")
 
         latest_activity = await MonitoringActivity.find(
             {"$or": user_match_or}
@@ -616,6 +628,8 @@ async def get_agent_activity(
             # Check if last activity was within last 10 minutes
             is_online = (datetime.now(timezone.utc) - ts).total_seconds() < 600
 
+        print(f"DEBUG: [AgentDetail-9] Online status: {is_online}")
+
         summary = {
             "user_email": user_obj.email if user_obj else "Unknown",
             "user_full_name": (user_obj.full_name or "Unknown Agent") if user_obj else "Unknown Agent",
@@ -627,6 +641,7 @@ async def get_agent_activity(
         }
 
         # 1. App usage aggregation
+        print(f"DEBUG: [AgentDetail-10] Aggregating app usage...")
         app_pipeline = [
             {
                 "$match": {
@@ -658,6 +673,7 @@ async def get_agent_activity(
         apps_result = await MonitoringActivity.aggregate(app_pipeline).to_list()
         
         # 2. Hourly activity aggregation
+        print(f"DEBUG: [AgentDetail-11] Aggregating hourly activity...")
         hourly_pipeline = [
             {
                 "$match": {
@@ -685,6 +701,7 @@ async def get_agent_activity(
         hourly_result = await MonitoringActivity.aggregate(hourly_pipeline).to_list()
         
         # 3. Raw Logs
+        print(f"DEBUG: [AgentDetail-12] Fetching raw logs...")
         raw_logs = await MonitoringActivity.find(
             {"$or": user_match_or},
             MonitoringActivity.timestamp >= start_date,
@@ -699,6 +716,7 @@ async def get_agent_activity(
                 log_dict["timestamp"] = log_dict["timestamp"].isoformat()
             serialized_logs.append(log_dict)
         
+        print(f"DEBUG: [AgentDetail-13] Returning results")
         return {
             "summary": summary,
             "app_usage": apps_result,
@@ -707,9 +725,11 @@ async def get_agent_activity(
         }
     except Exception as e:
         import traceback
-        print(f"ERROR: [AgentDetail] Critical error for agent_id {agent_id}:")
+        err_msg = f"{type(e).__name__}: {str(e)}"
+        print(f"ERROR: [AgentDetail-Critical] {err_msg}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        # Return full traceback in detail for debugging
+        raise HTTPException(status_code=500, detail=f"{err_msg}\n{traceback.format_exc()}")
 
 @router.get("/dashboard/screenshot/{screenshot_id}")
 async def get_screenshot(screenshot_id: str):
