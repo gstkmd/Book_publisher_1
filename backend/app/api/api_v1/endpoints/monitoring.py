@@ -346,11 +346,18 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
     agents_result = await MonitoringActivity.aggregate(active_agents_pipeline).to_list()
     active_agents = agents_result[0]["count"] if agents_result else 0
     
-    # 2. Total screenshots today
-    screenshots_today = await MonitoringScreenshot.find(
-        MonitoringScreenshot.organization_id == current_user.organization_id,
-        MonitoringScreenshot.timestamp >= today
-    ).count()
+    # 2. Total screenshots today (using robust aggregation for organization)
+    sc_today_pipeline = [
+        {
+            "$match": {
+                "organization_id": current_user.organization_id,
+                "timestamp": {"$gte": today}
+            }
+        },
+        {"$count": "count"}
+    ]
+    sc_today_res = await MonitoringScreenshot.aggregate(sc_today_pipeline).to_list()
+    screenshots_today = sc_today_res[0]["count"] if sc_today_res else 0
     
     # 3. Total active minutes today
     pipeline = [
@@ -513,7 +520,8 @@ async def get_screenshots(
         except Exception:
             pass
             
-    screenshots = await beanie_query.sort(-MonitoringScreenshot.timestamp).skip(offset).limit(limit).to_list()
+    # Enforce strict sort order: latest timestamp first, then latest record ID as fallback
+    screenshots = await beanie_query.sort("-timestamp", "-_id").skip(offset).limit(limit).to_list()
     
     return [
         {
