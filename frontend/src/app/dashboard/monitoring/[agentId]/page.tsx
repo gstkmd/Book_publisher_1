@@ -51,6 +51,7 @@ export default function AgentDetailPage() {
     };
     const [selectedDate, setSelectedDate] = useState(getLocalDateString());
     const [selectedScreenshot, setSelectedScreenshot] = useState<any>(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (token && agentId) {
@@ -60,6 +61,7 @@ export default function AgentDetailPage() {
 
     const fetchAgentData = async () => {
         setIsLoading(true);
+        setError(null);
         try {
             const [activityData, screenshotsData] = await Promise.all([
                 api.get(`/monitoring/dashboard/agent/${agentId}/activity?date=${selectedDate}`, token || undefined),
@@ -67,8 +69,12 @@ export default function AgentDetailPage() {
             ]);
             setActivity(activityData);
             setScreenshots(screenshotsData);
-        } catch (err) {
+            if (!activityData?.summary) {
+                console.warn('Agent summary is missing in backend response');
+            }
+        } catch (err: any) {
             console.error('Failed to fetch agent details:', err);
+            setError(err.message || 'Failed to fetch agent details');
         } finally {
             setIsLoading(false);
         }
@@ -78,6 +84,29 @@ export default function AgentDetailPage() {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-8 max-w-7xl mx-auto">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                    <h2 className="text-red-800 font-bold text-lg mb-2">Error Loading Agent Details</h2>
+                    <p className="text-red-600 mb-4">{error}</p>
+                    <button 
+                        onClick={() => fetchAgentData()}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                        Retry
+                    </button>
+                    <button 
+                        onClick={() => router.back()}
+                        className="ml-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    >
+                        Go Back
+                    </button>
+                </div>
             </div>
         );
     }

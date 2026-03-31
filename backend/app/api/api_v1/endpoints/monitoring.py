@@ -519,198 +519,194 @@ async def get_agent_activity(
     """Get detailed activity for a specific agent (MongoDB)"""
     from bson import ObjectId
     
-    user_oid = ObjectId(agent_id)
-    
-    if not date:
-        date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    
-    # Range expanded for IST/UTC overlap
     try:
-        base_date = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-        start_date = base_date - timedelta(hours=6)
-        end_date = base_date + timedelta(hours=30)
-    except Exception:
-        start_date = datetime.now(timezone.utc) - timedelta(days=1)
-        end_date = datetime.now(timezone.utc) + timedelta(days=1)
+        user_oid = ObjectId(agent_id)
+        
+        if not date:
+            date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        
+        # Range expanded for IST/UTC overlap
+        try:
+            base_date = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            start_date = base_date - timedelta(hours=6)
+            end_date = base_date + timedelta(hours=30)
+        except Exception:
+            start_date = datetime.now(timezone.utc) - timedelta(days=1)
+            end_date = datetime.now(timezone.utc) + timedelta(days=1)
 
-    print(f"DEBUG: Getting activity for agent_id {agent_id}, user_oid: {user_oid}, date: {date}")
-    print(f"DEBUG: Search range: {start_date} to {end_date}")
-    
-    user_match_or = [
-        {"user": user_oid},
-        {"user.$id": user_oid},
-        {"user._id": user_oid},
-        {"user": str(user_oid)}
-    ]
+        print(f"DEBUG: Getting activity for agent_id {agent_id}, user_oid: {user_oid}, date: {date}")
+        
+        user_match_or = [
+            {"user": user_oid},
+            {"user.$id": user_oid},
+            {"user._id": user_oid},
+            {"user": str(user_oid)}
+        ]
 
-    # 0. Summary Stats Calculation
-    # Active minutes
-    active_pipeline = [
-        {
-            "$match": {
-                "organization_id": current_user.organization_id,
-                "$or": user_match_or,
-                "timestamp": {"$gte": start_date, "$lte": end_date},
-                "activity_type": "active"
+        # 0. Summary Stats Calculation
+        # Active minutes
+        active_pipeline = [
+            {
+                "$match": {
+                    "organization_id": current_user.organization_id,
+                    "$or": user_match_or,
+                    "timestamp": {"$gte": start_date, "$lte": end_date},
+                    "activity_type": "active"
+                }
+            },
+            {
+                "$group": {
+                    "_id": None,
+                    "total_seconds": {"$sum": "$duration"}
+                }
             }
-        },
-        {
-            "$group": {
-                "_id": None,
-                "total_seconds": {"$sum": "$duration"}
+        ]
+        active_res = await MonitoringActivity.aggregate(active_pipeline).to_list()
+        total_active_seconds = active_res[0]["total_seconds"] if active_res else 0
+        total_active_minutes = round(total_active_seconds / 60, 1)
+
+        # Idle minutes
+        idle_pipeline = [
+            {
+                "$match": {
+                    "organization_id": current_user.organization_id,
+                    "$or": user_match_or,
+                    "timestamp": {"$gte": start_date, "$lte": end_date},
+                    "activity_type": "idle"
+                }
+            },
+            {
+                "$group": {
+                    "_id": None,
+                    "total_seconds": {"$sum": "$duration"}
+                }
             }
+        ]
+        idle_res = await MonitoringActivity.aggregate(idle_pipeline).to_list()
+        total_idle_seconds = idle_res[0]["total_seconds"] if idle_res else 0
+        total_idle_minutes = round(total_idle_seconds / 60, 1)
+
+        # Productivity Score
+        total_tracked = total_active_minutes + total_idle_minutes
+        productivity_score = min(100, round((total_active_minutes / total_tracked) * 100)) if total_tracked > 0 else 0
+
+        # Screenshot count
+        screenshot_count = await MonitoringScreenshot.find(
+            {"$or": user_match_or},
+            MonitoringScreenshot.timestamp >= start_date,
+            MonitoringScreenshot.timestamp <= end_date
+        ).count()
+
+        # Agent Status & Identification
+        user_obj = await User.get(user_oid)
+        if not user_obj:
+            print(f"DEBUG: [AgentDetail] User NOT FOUND for ID: {agent_id}")
+        else:
+            print(f"DEBUG: [AgentDetail] Found User: {user_obj.email}, Name: {user_obj.full_name}")
+
+        latest_activity = await MonitoringActivity.find(
+            {"$or": user_match_or}
+        ).sort(-MonitoringActivity.timestamp).first_or_none()
+        
+        is_online = False
+        if latest_activity and latest_activity.timestamp:
+            # Check if last activity was within last 10 minutes
+            is_online = (datetime.now(timezone.utc) - latest_activity.timestamp).total_seconds() < 600
+
+        summary = {
+            "user_email": user_obj.email if user_obj else "Unknown",
+            "user_full_name": (user_obj.full_name or "Unknown Agent") if user_obj else "Unknown Agent",
+            "active_minutes": total_active_minutes,
+            "screenshot_count": screenshot_count,
+            "productivity_score": productivity_score,
+            "is_online": is_online,
+            "last_seen": latest_activity.timestamp if latest_activity else None
         }
-    ]
-    active_res = await MonitoringActivity.aggregate(active_pipeline).to_list()
-    total_active_seconds = active_res[0]["total_seconds"] if active_res else 0
-    total_active_minutes = round(total_active_seconds / 60, 1)
 
-    # Idle minutes
-    idle_pipeline = [
-        {
-            "$match": {
-                "organization_id": current_user.organization_id,
-                "$or": user_match_or,
-                "timestamp": {"$gte": start_date, "$lte": end_date},
-                "activity_type": "idle"
-            }
-        },
-        {
-            "$group": {
-                "_id": None,
-                "total_seconds": {"$sum": "$duration"}
-            }
+        # 1. App usage aggregation
+        app_pipeline = [
+            {
+                "$match": {
+                    "organization_id": current_user.organization_id,
+                    "$or": user_match_or,
+                    "timestamp": {"$gte": start_date, "$lte": end_date}
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$app_name",
+                    "total_seconds": {"$sum": "$duration"},
+                    "total_keys": {"$sum": "$keys_pressed"},
+                    "total_clicks": {"$sum": "$mouse_clicks"}
+                }
+            },
+            {
+                "$project": {
+                    "app_name": "$_id",
+                    "total_seconds": 1,
+                    "total_keys": 1,
+                    "total_clicks": 1,
+                    "_id": 0
+                }
+            },
+            {"$sort": {"total_seconds": -1}}
+        ]
+        
+        apps_result = await MonitoringActivity.aggregate(app_pipeline).to_list()
+        
+        # 2. Hourly activity aggregation
+        hourly_pipeline = [
+            {
+                "$match": {
+                    "organization_id": current_user.organization_id,
+                    "$or": user_match_or,
+                    "timestamp": {"$gte": start_date, "$lte": end_date}
+                }
+            },
+            {
+                "$group": {
+                    "_id": {"$hour": "$timestamp"},
+                    "active_seconds": {"$sum": "$duration"}
+                }
+            },
+            {
+                "$project": {
+                    "hour": {"$toString": "$_id"},
+                    "active_seconds": 1,
+                    "_id": 0
+                }
+            },
+            {"$sort": {"hour": 1}}
+        ]
+        
+        hourly_result = await MonitoringActivity.aggregate(hourly_pipeline).to_list()
+        
+        # 3. Raw Logs
+        raw_logs = await MonitoringActivity.find(
+            {"$or": user_match_or},
+            MonitoringActivity.timestamp >= start_date,
+            MonitoringActivity.timestamp <= end_date
+        ).sort(-MonitoringActivity.timestamp).limit(200).to_list()
+        
+        serialized_logs = []
+        for log in raw_logs:
+            log_dict = log.dict()
+            log_dict["id"] = str(log.id)
+            if isinstance(log_dict.get("timestamp"), datetime):
+                log_dict["timestamp"] = log_dict["timestamp"].isoformat()
+            serialized_logs.append(log_dict)
+        
+        return {
+            "summary": summary,
+            "app_usage": apps_result,
+            "hourly_activity": hourly_result,
+            "raw_logs": serialized_logs
         }
-    ]
-    idle_res = await MonitoringActivity.aggregate(idle_pipeline).to_list()
-    total_idle_seconds = idle_res[0]["total_seconds"] if idle_res else 0
-    total_idle_minutes = round(total_idle_seconds / 60, 1)
-
-    # Productivity Score
-    total_tracked = total_active_minutes + total_idle_minutes
-    productivity_score = min(100, round((total_active_minutes / total_tracked) * 100)) if total_tracked > 0 else 0
-
-    # Screenshot count
-    screenshot_count = await MonitoringScreenshot.find(
-        {"$or": user_match_or},
-        MonitoringScreenshot.timestamp >= start_date,
-        MonitoringScreenshot.timestamp <= end_date
-    ).count()
-
-    # Agent Status & Identification
-    user_obj = await User.get(user_oid)
-    latest_activity = await MonitoringActivity.find(
-        {"$or": user_match_or}
-    ).sort(-MonitoringActivity.timestamp).first_or_none()
-    
-    is_online = False
-    if latest_activity and latest_activity.timestamp:
-        # Check if last activity was within last 10 minutes
-        is_online = (datetime.now(timezone.utc) - latest_activity.timestamp).total_seconds() < 600
-
-    summary = {
-        "user_email": user_obj.email if user_obj else "Unknown",
-        "user_full_name": (user_obj.full_name or "Unknown Agent") if user_obj else "Unknown Agent",
-        "active_minutes": total_active_minutes,
-        "screenshot_count": screenshot_count,
-        "productivity_score": productivity_score,
-        "is_online": is_online,
-        "last_seen": latest_activity.timestamp if latest_activity else None
-    }
-
-    # No changes needed to user_match if it's not used locally.
-    # But I will update the apps_pipeline below it to use the new user_match_or.
-
-    # 1. App usage aggregation
-    app_pipeline = [
-        {
-            "$match": {
-                "organization_id": current_user.organization_id,
-                "$or": [
-                    {"user": user_oid},
-                    {"user.$id": user_oid},
-                    {"user._id": user_oid},
-                    {"user": str(user_oid)}
-                ],
-                "timestamp": {"$gte": start_date, "$lte": end_date}
-            }
-        },
-        {
-            "$group": {
-                "_id": "$app_name",
-                "total_seconds": {"$sum": "$duration"},
-                "total_keys": {"$sum": "$keys_pressed"},
-                "total_clicks": {"$sum": "$mouse_clicks"}
-            }
-        },
-        {
-            "$project": {
-                "app_name": "$_id",
-                "total_seconds": 1,
-                "total_keys": 1,
-                "total_clicks": 1,
-                "_id": 0
-            }
-        },
-        {"$sort": {"total_seconds": -1}}
-    ]
-    
-    apps_result = await MonitoringActivity.aggregate(app_pipeline).to_list()
-    print(f"DEBUG: Found {len(apps_result)} app usage entries")
-    
-    # 2. Hourly activity aggregation
-    hourly_pipeline = [
-        {
-            "$match": {
-                "organization_id": current_user.organization_id,
-                "$or": [
-                    {"user": user_oid},
-                    {"user.$id": user_oid},
-                    {"user._id": user_oid},
-                    {"user": str(user_oid)}
-                ],
-                "timestamp": {"$gte": start_date, "$lte": end_date}
-            }
-        },
-        {
-            "$group": {
-                "_id": {"$hour": "$timestamp"},
-                "active_seconds": {"$sum": "$duration"}
-            }
-        },
-        {
-            "$project": {
-                "hour": {"$toString": "$_id"},
-                "active_seconds": 1,
-                "_id": 0
-            }
-        },
-        {"$sort": {"hour": 1}}
-    ]
-    
-    hourly_result = await MonitoringActivity.aggregate(hourly_pipeline).to_list()
-    
-    # 3. Raw Logs - Ensuring robust user matching
-    raw_logs = await MonitoringActivity.find(
-        {"$or": user_match_or},
-        MonitoringActivity.timestamp >= start_date,
-        MonitoringActivity.timestamp <= end_date
-    ).sort(-MonitoringActivity.timestamp).limit(200).to_list()
-    
-    serialized_logs = []
-    for log in raw_logs:
-        log_dict = log.dict()
-        log_dict["id"] = str(log.id)
-        if isinstance(log_dict.get("timestamp"), datetime):
-            log_dict["timestamp"] = log_dict["timestamp"].isoformat()
-        serialized_logs.append(log_dict)
-    
-    return {
-        "summary": summary,
-        "app_usage": apps_result,
-        "hourly_activity": hourly_result,
-        "raw_logs": serialized_logs
-    }
+    except Exception as e:
+        import traceback
+        print(f"ERROR: [AgentDetail] Critical error for agent_id {agent_id}:")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/dashboard/screenshot/{screenshot_id}")
 async def get_screenshot(screenshot_id: str):
