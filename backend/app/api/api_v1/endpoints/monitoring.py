@@ -576,7 +576,8 @@ async def get_agent_activity(
         MonitoringScreenshot.timestamp <= end_date
     ).count()
 
-    # Agent Status
+    # Agent Status & Identification
+    user_obj = await User.get(user_oid)
     latest_activity = await MonitoringActivity.find(
         MonitoringActivity.user.id == user_oid
     ).sort(-MonitoringActivity.timestamp).first_or_none()
@@ -587,6 +588,8 @@ async def get_agent_activity(
         is_online = (datetime.now(timezone.utc) - latest_activity.timestamp).total_seconds() < 600
 
     summary = {
+        "user_email": user_obj.email if user_obj else "Unknown",
+        "user_full_name": user_obj.full_name if user_obj else "Unknown Agent",
         "active_minutes": total_active_minutes,
         "screenshot_count": screenshot_count,
         "productivity_score": productivity_score,

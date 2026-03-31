@@ -92,7 +92,14 @@ export default function AgentDetailPage() {
                     >
                         ⬅️
                     </button>
-                    <h1 className="text-2xl font-bold text-gray-900">Agent Activity Detail</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">
+                        Agent Activity Detail
+                        {activity?.summary?.user_full_name && (
+                            <span className="ml-3 text-lg font-medium text-gray-500">
+                                — {activity.summary.user_full_name} ({activity.summary.user_email})
+                            </span>
+                        )}
+                    </h1>
                 </div>
 
                 <div className="flex items-center gap-2 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
