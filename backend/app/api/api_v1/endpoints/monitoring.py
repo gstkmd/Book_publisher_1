@@ -610,8 +610,11 @@ async def get_agent_activity(
         
         is_online = False
         if latest_activity and latest_activity.timestamp:
+            ts = latest_activity.timestamp
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
             # Check if last activity was within last 10 minutes
-            is_online = (datetime.now(timezone.utc) - latest_activity.timestamp).total_seconds() < 600
+            is_online = (datetime.now(timezone.utc) - ts).total_seconds() < 600
 
         summary = {
             "user_email": user_obj.email if user_obj else "Unknown",
