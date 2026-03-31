@@ -81,8 +81,9 @@ async def get_team_activity(
 async def upload_screenshot(
     app_name: str = Form(...),
     window_title: str = Form(...),
-    timestamp: datetime = Form(...),
+    timestamp: str = Form(...), # Change to str for flexible parsing
     file: UploadFile = File(...),
+    agent_id: Optional[str] = Form(None), # Add optional agent_id
     current_user: User = Depends(get_current_user)
 ):
     if not current_user.organization_id:
@@ -103,18 +104,28 @@ async def upload_screenshot(
         
     file_url = filepath # Store local path for internal use
 
-    ts = timestamp
+    # Robust timestamp parsing to handle JS ISO strings (e.g., .000Z)
+    try:
+        ts = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+    except Exception:
+        try:
+            # Fallback if fromisoformat fails
+            ts = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ")
+        except Exception:
+            ts = datetime.now(timezone.utc)
+
     if ts.tzinfo is None:
         ts = ts.replace(tzinfo=timezone.utc)
 
     screenshot = MonitoringScreenshot(
         user=current_user,
         organization_id=current_user.organization_id,
+        agent_id=agent_id, # Added agent_id
         timestamp=ts,
         file_url=file_url,
         app_name=app_name,
         window_title=window_title
     )
     await screenshot.create()
-    print(f"DEBUG: Screenshot created for user {current_user.email}, ID: {screenshot.id}")
+    print(f"DEBUG: Screenshot created for user {current_user.email}, ID: {screenshot.id}, Agent: {agent_id}")
     return {"status": "success", "file_url": file_url}

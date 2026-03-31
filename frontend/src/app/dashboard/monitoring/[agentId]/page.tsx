@@ -52,6 +52,7 @@ export default function AgentDetailPage() {
     const [selectedDate, setSelectedDate] = useState(getLocalDateString());
     const [selectedScreenshot, setSelectedScreenshot] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'activity' | 'screenshots'>('activity');
 
     useEffect(() => {
         if (token && agentId) {
@@ -180,118 +181,147 @@ export default function AgentDetailPage() {
                 />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* App Usage Table */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-100">
-                        <h2 className="font-bold text-gray-900">Application Usage</h2>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 text-gray-600 text-xs uppercase">
-                                <tr>
-                                    <th className="px-6 py-3">App Name</th>
-                                    <th className="px-6 py-3">Duration</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {activity?.app_usage?.map((app: any, idx: number) => (
-                                    <tr key={idx} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 font-medium text-sm text-gray-900">{app.app_name}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-600">
-                                            {Math.round(app.total_seconds / 60)} mins
-                                        </td>
-                                    </tr>
-                                ))}
-                                {(!activity?.app_usage || activity.app_usage.length === 0) && (
-                                    <tr>
-                                        <td colSpan={2} className="px-6 py-8 text-center text-gray-500">No activity recorded for this date ({selectedDate}).</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            {/* Tabs Navigation */}
+            <div className="flex items-center gap-2 border-b border-gray-100 mb-6">
+                <button
+                    onClick={() => setActiveTab('activity')}
+                    className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${
+                        activeTab === 'activity'
+                            ? 'border-indigo-600 text-indigo-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                >
+                    Recent Activity
+                </button>
+                <button
+                    onClick={() => setActiveTab('screenshots')}
+                    className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${
+                        activeTab === 'screenshots'
+                            ? 'border-indigo-600 text-indigo-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                >
+                    Screenshots
+                </button>
+            </div>
 
-                {/* Hourly Activity (Simple list for now, could be a chart) */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h2 className="font-bold text-gray-900 mb-4">Hourly Activity (Seconds)</h2>
-                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                        {activity?.hourly_activity?.map((h: any, idx: number) => (
-                            <div key={idx} className="flex items-center gap-4">
-                                <span className="text-xs font-mono text-gray-500 w-8">{h.hour}:00</span>
-                                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-blue-500 rounded-full"
-                                        style={{ width: `${Math.min(100, (h.active_seconds / 3600) * 100)}%` }}
-                                    ></div>
-                                </div>
-                                <span className="text-xs text-gray-600">{Math.round(h.active_seconds / 60)}m</span>
+            {activeTab === 'activity' ? (
+                <>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* App Usage Table */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="px-6 py-4 border-b border-gray-100">
+                                <h2 className="font-bold text-gray-900">Application Usage</h2>
                             </div>
-                        ))}
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-gray-50 text-gray-600 text-xs uppercase">
+                                        <tr>
+                                            <th className="px-6 py-3">App Name</th>
+                                            <th className="px-6 py-3">Duration</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {activity?.app_usage?.map((app: any, idx: number) => (
+                                            <tr key={idx} className="hover:bg-gray-50">
+                                                <td className="px-6 py-4 font-medium text-sm text-gray-900">{app.app_name}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-600">
+                                                    {Math.round(app.total_seconds / 60)} mins
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {(!activity?.app_usage || activity.app_usage.length === 0) && (
+                                            <tr>
+                                                <td colSpan={2} className="px-6 py-8 text-center text-gray-500">No activity recorded for this date ({selectedDate}).</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Hourly Activity */}
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                            <h2 className="font-bold text-gray-900 mb-4">Hourly Activity (Seconds)</h2>
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                                {activity?.hourly_activity?.map((h: any, idx: number) => (
+                                    <div key={idx} className="flex items-center gap-4">
+                                        <span className="text-xs font-mono text-gray-500 w-8">{h.hour}:00</span>
+                                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-blue-500 rounded-full"
+                                                style={{ width: `${Math.min(100, (h.active_seconds / 3600) * 100)}%` }}
+                                            ></div>
+                                        </div>
+                                        <span className="text-xs text-gray-600">{Math.round(h.active_seconds / 60)}m</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            {/* Raw Recent Activity Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-8">
-                <div className="px-6 py-4 border-b border-gray-50 flex flex-wrap justify-between items-center gap-4">
-                    <h3 className="font-bold text-gray-900">Recent Activity Logs</h3>
-                    <span className="text-sm text-gray-500">
-                        {activity?.raw_logs ? activity.raw_logs.length : 0} logs shown
-                    </span>
+                    {/* Raw Recent Activity Table */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-8">
+                        <div className="px-6 py-4 border-b border-gray-50 flex flex-wrap justify-between items-center gap-4">
+                            <h3 className="font-bold text-gray-900">Recent Activity Logs</h3>
+                            <span className="text-sm text-gray-500">
+                                {activity?.raw_logs ? activity.raw_logs.length : 0} logs shown
+                            </span>
+                        </div>
+                        <div className="overflow-x-auto max-h-[600px]">
+                            <table className="w-full text-left">
+                                <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-semibold sticky top-0">
+                                    <tr>
+                                        <th className="px-6 py-4">Time</th>
+                                        <th className="px-6 py-4">App / Window</th>
+                                        <th className="px-6 py-4">URL / Path</th>
+                                        <th className="px-6 py-4">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {activity?.raw_logs?.map((log: any, idx: number) => (
+                                        <tr key={log.id || idx} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                                                {formatDateTimeIST(log.timestamp)}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="text-sm font-medium text-gray-900">{log.app_name}</div>
+                                                <div className="text-xs text-gray-500 truncate max-w-[300px]">{log.window_title}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-blue-600">
+                                                <span className="truncate max-w-[200px] inline-block" title={log.web_url || log.file_path}>
+                                                    {log.web_url || log.file_path || '-'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${log.activity_type === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                                    }`}>
+                                                    {log.activity_type}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {(!activity?.raw_logs || activity.raw_logs.length === 0) && (
+                                        <tr>
+                                            <td colSpan={4} className="px-6 py-10 text-center text-gray-500">
+                                                No recent activity logs found for this date.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </>
+            ) : (
+                <div className="mt-8">
+                    <ScreenshotGallery 
+                        screenshots={screenshots} 
+                        apiUrl={API_BASE} 
+                        onScreenshotClick={(shot) => setSelectedScreenshot(shot)}
+                    />
                 </div>
-                <div className="overflow-x-auto max-h-[600px]">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-semibold sticky top-0">
-                            <tr>
-                                <th className="px-6 py-4">Time</th>
-                                <th className="px-6 py-4">App / Window</th>
-                                <th className="px-6 py-4">URL / Path</th>
-                                <th className="px-6 py-4">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {activity?.raw_logs?.map((log: any, idx: number) => (
-                                <tr key={log.id || idx} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                                        {formatDateTimeIST(log.timestamp)}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm font-medium text-gray-900">{log.app_name}</div>
-                                        <div className="text-xs text-gray-500 truncate max-w-[300px]">{log.window_title}</div>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-blue-600">
-                                        <span className="truncate max-w-[200px] inline-block" title={log.web_url || log.file_path}>
-                                            {log.web_url || log.file_path || '-'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${log.activity_type === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                            }`}>
-                                            {log.activity_type}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
-                            {(!activity?.raw_logs || activity.raw_logs.length === 0) && (
-                                <tr>
-                                    <td colSpan={4} className="px-6 py-10 text-center text-gray-500">
-                                        No recent activity logs found for this date.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Screenshots */}
-            <ScreenshotGallery 
-                screenshots={screenshots} 
-                apiUrl={API_BASE} 
-                onScreenshotClick={(shot) => setSelectedScreenshot(shot)}
-            />
+            )}
 
             {/* Image Preview Modal */}
             <Modal 
