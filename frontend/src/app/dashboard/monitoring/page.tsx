@@ -241,7 +241,7 @@ export default function MonitoringDashboardPage() {
                                 {users.map(u => {
                                     const userId = u.id || u._id;
                                     return (
-                                        <option key={userId} value={userId}>{u.full_name}</option>
+                                        <option key={userId} value={userId}>{u.email}</option>
                                     );
                                 })}
                             </select>
