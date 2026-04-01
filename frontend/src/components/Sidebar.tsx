@@ -51,8 +51,6 @@ export const Sidebar = () => {
 
     const systemItems = [
         { name: 'Settings', href: '/dashboard/settings', icon: Settings },
-        ...(user?.role === 'admin' ? [{ name: 'Admin', href: '/dashboard/admin', icon: Shield }] : []),
-        ...(user?.role === 'super_admin' ? [{ name: 'Super Admin', href: '/dashboard/superadmin', icon: Globe }] : []),
     ];
 
     const toggleSidebar = () => setIsOpen(!isOpen);
@@ -143,8 +141,8 @@ export const Sidebar = () => {
                         })}
                     </div>
 
-                    {/* Admin Accordion (admin role only) */}
-                    {user?.role === 'admin' && (
+                    {/* Admin Section (admin or super_admin) */}
+                    {(user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'super_admin') && (
                         <div className="mt-4 pt-4 border-t border-slate-100">
                             <button
                                 onClick={() => setAdminOpen(!adminOpen)}
@@ -164,8 +162,8 @@ export const Sidebar = () => {
                                     </>
                                 )}
                             </button>
-
-                            {/* Sub-items */}
+ 
+                            {/* Admin Sub-items */}
                             {adminOpen && !isCollapsed && (
                                 <div className="ml-4 mt-1 space-y-1 border-l-2 border-indigo-100 pl-3">
                                     {[
@@ -189,6 +187,33 @@ export const Sidebar = () => {
                                     })}
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* Super Admin Section (super_admin role only) */}
+                    {(user?.role?.toLowerCase() === 'super_admin') && (
+                        <div className="mt-4 pt-4 border-t border-slate-100">
+                             <Link
+                                href="/dashboard/superadmin"
+                                onClick={() => setIsOpen(false)}
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group
+                                ${pathname === '/dashboard/superadmin'
+                                        ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50'
+                                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
+                                ${isCollapsed ? 'justify-center lg:px-0 lg:w-12 lg:mx-auto' : ''}
+                            `}
+                                title={isCollapsed ? 'Super Admin' : ''}
+                            >
+                                <Globe className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${pathname === '/dashboard/superadmin' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                                <span className={`text-[13px] font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300
+                                ${isCollapsed ? 'lg:hidden opacity-0 w-0' : 'opacity-100 w-auto'}
+                            `}>
+                                    Super Admin
+                                </span>
+                                {pathname === '/dashboard/superadmin' && !isCollapsed && (
+                                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
+                                )}
+                            </Link>
                         </div>
                     )}
                 </nav>
