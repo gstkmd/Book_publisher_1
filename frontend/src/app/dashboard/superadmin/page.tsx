@@ -27,6 +27,7 @@ interface Organization {
     plan: string;
     is_active: boolean;
     enabled_modules: string[];
+    hide_disabled_features: boolean;
     monitoring_retention_days: number;
     screenshot_retention_days: number;
     sync_interval_seconds: number;
@@ -53,7 +54,8 @@ export default function SuperAdminDashboard() {
         monitoring_retention_days: 30,
         screenshot_retention_days: 7,
         sync_interval_seconds: 300,
-        enabled_modules: [] as string[]
+        enabled_modules: [] as string[],
+        hide_disabled_features: false
     });
 
     // User Search State
@@ -95,7 +97,8 @@ export default function SuperAdminDashboard() {
             monitoring_retention_days: org.monitoring_retention_days || 30,
             screenshot_retention_days: org.screenshot_retention_days || 7,
             sync_interval_seconds: org.sync_interval_seconds || 300,
-            enabled_modules: org.enabled_modules || []
+            enabled_modules: org.enabled_modules || [],
+            hide_disabled_features: org.hide_disabled_features || false
         });
     };
 
@@ -383,21 +386,46 @@ export default function SuperAdminDashboard() {
                                 />
                             </div>
                             <div className="col-span-2 space-y-4">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Enabled Modules</label>
-                                <div className="grid grid-cols-3 gap-3">
-                                    {['monitoring', 'tasks', 'educational', 'integrity'].map(mod => (
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Feature Control (Granular)</label>
+                                <div className="grid grid-cols-3 gap-3 font-bold">
+                                    {[
+                                        { id: 'monitoring', label: 'Monitoring' },
+                                        { id: 'tasks', label: 'Tasks' },
+                                        { id: 'workflow', label: 'Workflow' },
+                                        { id: 'library', label: 'Library' },
+                                        { id: 'standards', label: 'Standards' },
+                                        { id: 'lesson_plans', label: 'Lesson Plans' },
+                                        { id: 'assessments', label: 'Assessments' },
+                                        { id: 'rights', label: 'Rights & Integrity' },
+                                    ].map(feat => (
                                         <button 
-                                            key={mod}
-                                            onClick={() => toggleModule(mod)}
+                                            key={feat.id}
+                                            onClick={() => toggleModule(feat.id)}
                                             className={`flex items-center justify-center p-3 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all
-                                                ${editData.enabled_modules.includes(mod) 
+                                                ${editData.enabled_modules.includes(feat.id) 
                                                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' 
                                                     : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}
                                             `}
                                         >
-                                            {mod}
+                                            {feat.label}
                                         </button>
                                     ))}
+                                </div>
+                            </div>
+
+                            <div className="col-span-2 space-y-4 pt-4 border-t border-slate-100">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Appearance Settings</label>
+                                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                                    <div>
+                                        <p className="text-sm font-black text-slate-900 uppercase tracking-tight">Hide Disabled Features</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Completely remove locked items from the user's sidebar</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => setEditData({...editData, hide_disabled_features: !editData.hide_disabled_features})}
+                                        className={`w-12 h-6 rounded-full transition-all relative ${editData.hide_disabled_features ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                                    >
+                                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${editData.hide_disabled_features ? 'left-7' : 'left-1'}`} />
+                                    </button>
                                 </div>
                             </div>
                         </div>

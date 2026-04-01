@@ -24,7 +24,7 @@ export default function AssessmentsPage() {
     };
 
     return (
-        <ModuleGuard moduleName="educational">
+        <ModuleGuard moduleName="assessments">
             <div className="container mx-auto p-8 text-slate-900">
                 <div className="flex justify-between items-center mb-8">
                     <div>

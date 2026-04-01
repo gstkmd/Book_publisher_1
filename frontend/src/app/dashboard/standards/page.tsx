@@ -54,7 +54,7 @@ export default function StandardsDashboard() {
     };
 
     return (
-        <ModuleGuard moduleName="educational">
+        <ModuleGuard moduleName="standards">
             <div className="container mx-auto p-8 text-slate-900">
                 <h1 className="text-3xl font-black mb-6 uppercase tracking-tight">Curriculum Standards</h1>
 

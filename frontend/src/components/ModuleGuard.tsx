@@ -6,7 +6,7 @@ import { Lock, Sparkles, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 interface ModuleGuardProps {
-    moduleName: 'monitoring' | 'tasks' | 'educational' | 'integrity';
+    moduleName: string;
     children: React.ReactNode;
 }
 
@@ -19,9 +19,13 @@ export default function ModuleGuard({ moduleName, children }: ModuleGuardProps) 
     // Mapping internal module names to human-readable labels
     const moduleLabels: Record<string, string> = {
         monitoring: 'Employee Monitoring & Screenshots',
-        tasks: 'Advanced Task & Workflow Management',
-        educational: 'Educational Resources & Assessment Tools',
-        integrity: 'Rights & Content Integrity'
+        tasks: 'Direct Task Management',
+        workflow: 'Editorial Workflow System',
+        library: 'Digital Content Library',
+        standards: 'Curriculum Standards',
+        lesson_plans: 'Lesson Planning Tools',
+        assessments: 'Assessment & Examination Tools',
+        rights: 'Rights & Content Integrity'
     };
 
     if (isEnabled) {

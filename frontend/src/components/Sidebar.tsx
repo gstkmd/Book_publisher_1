@@ -40,14 +40,14 @@ export const Sidebar = () => {
 
     const mainItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Library', href: '/dashboard/library', icon: Library, module: 'educational' },
-        { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare, module: 'tasks' },
-        { name: 'Workflow', href: '/dashboard/workflow', icon: GitBranch, module: 'tasks' },
-        { name: 'Standards', href: '/dashboard/standards', icon: ClipboardList, module: 'educational' },
-        { name: 'Lesson Plans', href: '/dashboard/lesson-plans', icon: FileEdit, module: 'educational' },
-        { name: 'Assessments', href: '/dashboard/assessments', icon: CheckSquare, module: 'educational' },
-        { name: 'Rights', href: '/dashboard/rights', icon: Scale, module: 'integrity' },
-        { name: 'Monitoring', href: '/dashboard/monitoring', icon: Activity, module: 'monitoring' },
+        { name: 'Library', href: '/dashboard/library', icon: Library, featureId: 'library' },
+        { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare, featureId: 'tasks' },
+        { name: 'Workflow', href: '/dashboard/workflow', icon: GitBranch, featureId: 'workflow' },
+        { name: 'Standards', href: '/dashboard/standards', icon: ClipboardList, featureId: 'standards' },
+        { name: 'Lesson Plans', href: '/dashboard/lesson-plans', icon: FileEdit, featureId: 'lesson_plans' },
+        { name: 'Assessments', href: '/dashboard/assessments', icon: CheckSquare, featureId: 'assessments' },
+        { name: 'Rights', href: '/dashboard/rights', icon: Scale, featureId: 'rights' },
+        { name: 'Monitoring', href: '/dashboard/monitoring', icon: Activity, featureId: 'monitoring' },
     ];
 
     const systemItems = [
@@ -112,10 +112,22 @@ export const Sidebar = () => {
                 <nav className="flex-1 overflow-y-auto py-6 px-3 custom-scrollbar">
                     {/* Main Items */}
                     <div className="space-y-1">
-                        {mainItems.map((item) => {
-                            const Icon = item.icon;
-                            const isActive = pathname === item.href;
-                            const isLocked = item.module && !org?.enabled_modules?.includes(item.module);
+                        {[...mainItems]
+                            .sort((a, b) => {
+                                const aEnabled = !a.featureId || org?.enabled_modules?.includes(a.featureId);
+                                const bEnabled = !b.featureId || org?.enabled_modules?.includes(b.featureId);
+                                if (aEnabled === bEnabled) return 0;
+                                return aEnabled ? -1 : 1;
+                            })
+                            .map((item) => {
+                                const Icon = item.icon;
+                                const isActive = pathname === item.href;
+                                const isEnabled = !item.featureId || org?.enabled_modules?.includes(item.featureId);
+                                const shouldHide = !isEnabled && org?.hide_disabled_features;
+
+                            if (shouldHide) return null;
+
+                            const isLocked = !isEnabled;
                             
                             return (
                                 <Link

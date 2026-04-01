@@ -20,6 +20,7 @@ interface Org {
     slug: string;
     plan?: string;
     enabled_modules?: string[];
+    hide_disabled_features?: boolean;
 }
 
 interface AuthContextType {

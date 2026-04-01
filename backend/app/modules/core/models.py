@@ -59,6 +59,7 @@ class Organization(Document):
     monitoring_retention_days: int = 30
     screenshot_retention_days: int = 7
     sync_interval_seconds: int = 300 # Default 5 mins
+    hide_disabled_features: bool = False # Option to hide instead of lock
     content_settings: Dict[str, Any] = {} # Custom labels and custom fields setup
 
     class Settings:

@@ -24,7 +24,7 @@ export default function LessonPlansPage() {
     };
 
     return (
-        <ModuleGuard moduleName="educational">
+        <ModuleGuard moduleName="lesson_plans">
             <div className="container mx-auto p-8 text-slate-900">
                 <div className="flex justify-between items-center mb-8">
                     <div>

@@ -46,7 +46,7 @@ export default function RightsPortal() {
     if (loading) return <div className="p-8 font-black uppercase tracking-widest text-slate-400 animate-pulse text-xs text-center border-2 border-dashed border-slate-100 rounded-[3rem] my-20">Loading rights & integrity data...</div>;
 
     return (
-        <ModuleGuard moduleName="integrity">
+        <ModuleGuard moduleName="rights">
             <div className="container mx-auto py-8 text-slate-900">
                 <div className="mb-10">
                     <h1 className="text-4xl font-black uppercase tracking-tighter">Rights & Integrity</h1>

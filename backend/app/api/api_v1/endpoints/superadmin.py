@@ -21,6 +21,7 @@ class OrgUpdate(BaseModel):
     screenshot_retention_days: Optional[int] = None
     sync_interval_seconds: Optional[int] = None
     enabled_modules: Optional[List[str]] = None
+    hide_disabled_features: Optional[bool] = None
 
 class ModuleUpdate(BaseModel):
     enabled_modules: List[str]
