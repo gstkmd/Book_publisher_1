@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { api } from '@/lib/api';
 import { 
     Globe, 
     Users, 
@@ -62,17 +63,16 @@ export default function SuperAdminDashboard() {
     const [newPassword, setNewPassword] = useState('');
 
     const fetchData = async () => {
+        if (!token) return;
         setLoading(true);
         try {
-            const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/superadmin/organizations`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await resp.json();
-            setOrganizations(data);
-            
-            // Calc basic stats
-            const totalUsers = data.reduce((acc: number, curr: Organization) => acc + (curr.member_count || 0), 0);
-            setStats({ total_orgs: data.length, total_users: totalUsers });
+            const data = await api.get('/superadmin/organizations', token);
+            if (Array.isArray(data)) {
+                setOrganizations(data);
+                // Calc basic stats
+                const totalUsers = data.reduce((acc: number, curr: Organization) => acc + (curr.member_count || 0), 0);
+                setStats({ total_orgs: data.length, total_users: totalUsers });
+            }
         } catch (err) {
             console.error('Failed to fetch orgs:', err);
         } finally {
@@ -97,32 +97,21 @@ export default function SuperAdminDashboard() {
 
     const handleSaveOrg = async () => {
         try {
-            if (!editingOrg) return;
-            const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/superadmin/organizations/${editingOrg.id}`, {
-                method: 'PATCH',
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(editData)
-            });
-            if (resp.ok) {
-                setEditingOrg(null);
-                fetchData();
-            }
+            if (!editingOrg || !token) return;
+            await api.patch(`/superadmin/organizations/${editingOrg.id}`, editData, token);
+            setEditingOrg(null);
+            fetchData();
         } catch (err) {
+            console.error('Save failed:', err);
             alert('Failed to save organization settings');
         }
     };
 
     const handleSearchUsers = async () => {
-        if (!userSearchText) return;
+        if (!userSearchText || !token) return;
         try {
-            const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/superadmin/users?email=${userSearchText}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await resp.json();
-            setFoundUsers(data);
+            const data = await api.get(`/superadmin/users?email=${encodeURIComponent(userSearchText)}`, token);
+            setFoundUsers(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('User search failed:', err);
         }
@@ -130,21 +119,13 @@ export default function SuperAdminDashboard() {
 
     const handleResetPassword = async () => {
         try {
-            if (!resettingUser) return;
-            const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/superadmin/users/${resettingUser.id}/reset-password`, {
-                method: 'POST',
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ new_password: newPassword })
-            });
-            if (resp.ok) {
-                alert(`Password for ${resettingUser.email} has been reset.`);
-                setResettingUser(null);
-                setNewPassword('');
-            }
+            if (!resettingUser || !token) return;
+            await api.post(`/superadmin/users/${resettingUser.id}/reset-password`, { new_password: newPassword }, token);
+            alert(`Password for ${resettingUser.email} has been reset.`);
+            setResettingUser(null);
+            setNewPassword('');
         } catch (err) {
+            console.error('Reset failed:', err);
             alert('Failed to reset password');
         }
     };
@@ -152,13 +133,11 @@ export default function SuperAdminDashboard() {
     const handleTriggerCleanup = async () => {
         if (!confirm('This will permanently delete old logs and screenshots across all organizations based on their retention policies. Proceed?')) return;
         try {
-            const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/superadmin/data/cleanup`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await resp.json();
+            if (!token) return;
+            const data = await api.delete('/superadmin/data/cleanup', token);
             alert(`Cleanup finished. Deleted ${data.activities_deleted} logs and ${data.screenshots_deleted} screenshots.`);
         } catch (err) {
+            console.error('Cleanup failed:', err);
             alert('Cleanup failed');
         }
     };
