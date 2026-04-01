@@ -45,7 +45,7 @@ export default function SuperAdminDashboard() {
     const { token, impersonateOrganization } = useAuth();
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [loading, setLoading] = useState(true);
-    const [stats, setStats] = useState({ total_orgs: 0, total_users: 0 });
+    const [stats, setStats] = useState({ total_orgs: 0, total_users: 0, total_storage_formatted: '0 B' });
     
     // Org Edit State
     const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
@@ -72,15 +72,22 @@ export default function SuperAdminDashboard() {
         if (!token) return;
         setLoading(true);
         try {
-            const data = await api.get('/superadmin/organizations', token);
-            if (Array.isArray(data)) {
-                setOrganizations(data);
-                // Calc basic stats
-                const totalUsers = data.reduce((acc: number, curr: Organization) => acc + (curr.member_count || 0), 0);
-                setStats({ total_orgs: data.length, total_users: totalUsers });
+            const orgsData = await api.get('/superadmin/organizations', token);
+            const statsData = await api.get('/superadmin/stats', token);
+            
+            if (Array.isArray(orgsData)) {
+                setOrganizations(orgsData);
+            }
+            
+            if (statsData) {
+                setStats({
+                    total_orgs: statsData.total_orgs,
+                    total_users: statsData.total_users,
+                    total_storage_formatted: statsData.total_storage_formatted
+                });
             }
         } catch (err) {
-            console.error('Failed to fetch orgs:', err);
+            console.error('Failed to fetch data:', err);
         } finally {
             setLoading(false);
         }
@@ -197,7 +204,7 @@ export default function SuperAdminDashboard() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
                     <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600"><Globe className="w-6 h-6" /></div>
                     <div>
@@ -213,10 +220,17 @@ export default function SuperAdminDashboard() {
                     </div>
                 </div>
                 <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-                    <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600"><Shield className="w-6 h-6" /></div>
+                    <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600"><Database className="w-6 h-6" /></div>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Storage</p>
+                        <p className="text-2xl font-black text-slate-900">{stats.total_storage_formatted}</p>
+                    </div>
+                </div>
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
+                    <div className="p-3 bg-blue-50 rounded-2xl text-blue-600"><Shield className="w-6 h-6" /></div>
                     <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">System Status</p>
-                        <p className="text-2xl font-black text-slate-900">Health Check: OK</p>
+                        <p className="text-2xl font-black text-slate-900 leading-none">Healthy</p>
                     </div>
                 </div>
             </div>

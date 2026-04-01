@@ -1,3 +1,5 @@
+import os
+import shutil
 from typing import List, Optional, Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.modules.core.models import User, Organization, UserRole, WebhookSubscription, InviteToken, OrganizationMember
@@ -28,6 +30,51 @@ class ModuleUpdate(BaseModel):
 
 class UserResetPassword(BaseModel):
     new_password: str
+
+def get_dir_size(path: str) -> int:
+    """Calculate total size of a directory in bytes."""
+    total_size = 0
+    try:
+        if not os.path.exists(path):
+            return 0
+        for dirpath, dirnames, filenames in os.walk(path):
+            for f in filenames:
+                fp = os.path.join(dirpath, f)
+                # skip if it is symbolic link
+                if not os.path.islink(fp):
+                    total_size += os.path.getsize(fp)
+    except Exception:
+        pass
+    return total_size
+
+def format_size(size_bytes: int) -> str:
+    """Format bytes into human readable format."""
+    if size_bytes == 0: return "0 B"
+    size_name = ("B", "KB", "MB", "GB", "TB")
+    import math
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return "%s %s" % (s, size_name[i])
+
+@router.get("/stats")
+async def get_platform_stats(
+    current_user: User = Depends(get_current_super_admin)
+):
+    """Platform-wide statistics for the super admin dashboard."""
+    total_orgs = await Organization.find_all().count()
+    total_users = await User.find_all().count()
+    
+    # Calculate storage size - Screenshots are in storage/screenshots
+    # On host, this is ./storage. Mapping in docker is /app/storage
+    screenshot_size = get_dir_size("storage")
+    
+    return {
+        "total_orgs": total_orgs,
+        "total_users": total_users,
+        "total_storage_bytes": screenshot_size,
+        "total_storage_formatted": format_size(screenshot_size)
+    }
 
 @router.get("/organizations")
 async def list_organizations(
