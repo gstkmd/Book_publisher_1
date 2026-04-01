@@ -20,6 +20,7 @@ class OrgUpdate(BaseModel):
     monitoring_retention_days: Optional[int] = None
     screenshot_retention_days: Optional[int] = None
     sync_interval_seconds: Optional[int] = None
+    enabled_modules: Optional[List[str]] = None
 
 class ModuleUpdate(BaseModel):
     enabled_modules: List[str]
