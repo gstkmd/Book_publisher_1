@@ -334,7 +334,12 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
         {
             "$match": {
                 "organization_id": current_user.organization_id,
-                "timestamp": {"$gte": today}
+                "timestamp": {"$gte": today},
+                "$or": [
+                    {"user": {"$type": "objectId"}}, # Direct ObjectId
+                    {"user.$id": {"$exists": True}},  # DBRef Link
+                    {"user": {"$type": "string"}}    # String fallbacks
+                ]
             }
         },
         {
@@ -352,7 +357,12 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
         {
             "$match": {
                 "organization_id": current_user.organization_id,
-                "timestamp": {"$gte": today}
+                "timestamp": {"$gte": today},
+                "$or": [
+                    {"user": {"$type": "objectId"}},
+                    {"user.$id": {"$exists": True}},
+                    {"user": {"$type": "string"}}
+                ]
             }
         },
         {"$count": "count"}
@@ -366,7 +376,12 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
             "$match": {
                 "organization_id": current_user.organization_id,
                 "timestamp": {"$gte": today},
-                "activity_type": "active"
+                "activity_type": "active",
+                "$or": [
+                    {"user": {"$type": "objectId"}},
+                    {"user.$id": {"$exists": True}},
+                    {"user": {"$type": "string"}}
+                ]
             }
         },
         {
@@ -395,7 +410,12 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
             "$match": {
                 "organization_id": current_user.organization_id,
                 "timestamp": {"$gte": today},
-                "activity_type": "idle"
+                "activity_type": "idle",
+                "$or": [
+                    {"user": {"$type": "objectId"}},
+                    {"user.$id": {"$exists": True}},
+                    {"user": {"$type": "string"}}
+                ]
             }
         },
         {
@@ -440,7 +460,8 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
             {"user": member.id},
             {"user.$id": member.id},
             {"user._id": member.id},
-            {"user": str(member.id)}
+            {"user": str(member.id)},
+            {"user": {"$ref": "users", "$id": member.id}} # Explicit DBRef match
         ]
 
         # Find latest agent registration
@@ -569,7 +590,8 @@ async def get_agent_activity(
             {"user.$id": user_oid},
             {"user._id": user_oid},
             {"user.id": user_oid},
-            {"user": str(user_oid)}
+            {"user": str(user_oid)},
+            {"user": {"$ref": "users", "$id": user_oid}} # Explicit DBRef match
         ]
 
         # 0. Summary Stats Calculation
