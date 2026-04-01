@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import ModuleGuard from '@/components/ModuleGuard';
 
 interface Standard {
     id: string;
@@ -53,43 +54,48 @@ export default function StandardsDashboard() {
     };
 
     return (
-        <div className="container mx-auto p-8">
-            <h1 className="text-3xl font-bold mb-6">Curriculum Standards</h1>
+        <ModuleGuard moduleName="educational">
+            <div className="container mx-auto p-8 text-slate-900">
+                <h1 className="text-3xl font-black mb-6 uppercase tracking-tight">Curriculum Standards</h1>
 
-            <div className="flex flex-col md:flex-row justify-between mb-8 gap-4">
-                {/* Search */}
-                <input
-                    type="text"
-                    placeholder="Search standards (e.g. MATH.5.NF)..."
-                    className="p-2 border rounded w-full md:w-1/2"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                />
+                <div className="flex flex-col md:flex-row justify-between mb-8 gap-4">
+                    {/* Search */}
+                    <input
+                        type="text"
+                        placeholder="Search standards (e.g. MATH.5.NF)..."
+                        className="p-3 border border-slate-200 rounded-xl w-full md:w-1/2 focus:ring-2 focus:ring-indigo-500 transition-all font-medium"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
 
-                {/* Upload */}
-                <div className="flex items-center gap-2">
-                    <label className="btn bg-blue-600 text-white px-4 py-2 rounded cursor-pointer hover:bg-blue-700 transition">
-                        {uploading ? 'Uploading...' : 'Upload JSON'}
-                        <input type="file" accept=".json" onChange={handleFileUpload} className="hidden" disabled={uploading} />
-                    </label>
+                    {/* Upload */}
+                    <div className="flex items-center gap-2">
+                        <label className="bg-indigo-600 text-white px-6 py-3 rounded-xl cursor-pointer hover:bg-slate-900 transition-all font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-100 flex items-center gap-2">
+                            {uploading ? 'Uploading...' : 'Upload Standards (JSON)'}
+                            <input type="file" accept=".json" onChange={handleFileUpload} className="hidden" disabled={uploading} />
+                        </label>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {standards.map((std) => (
+                        <div key={std.id} className="p-6 border border-slate-100 rounded-2xl bg-white shadow-sm hover:shadow-xl transition-all group">
+                            <div className="flex justify-between items-start mb-3">
+                                <h3 className="text-lg font-black text-indigo-600 tracking-tight transition-colors group-hover:text-slate-900">{std.code}</h3>
+                                <span className="bg-indigo-50 text-indigo-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">{std.subject} • {std.grade_level}</span>
+                            </div>
+                            <p className="text-slate-600 font-medium text-sm leading-relaxed">{std.description}</p>
+                        </div>
+                    ))}
+
+                    {standards.length === 0 && (
+                        <div className="col-span-full py-20 text-center bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+                            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No standards found</p>
+                            <p className="text-slate-400 text-xs mt-1">Try uploading a curriculum JSON file to get started.</p>
+                        </div>
+                    )}
                 </div>
             </div>
-
-            <div className="grid grid-cols-1 gap-4">
-                {standards.map((std) => (
-                    <div key={std.id} className="p-4 border rounded bg-white shadow-sm hover:shadow-md transition">
-                        <div className="flex justify-between items-start">
-                            <h3 className="text-lg font-bold text-blue-800">{std.code}</h3>
-                            <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">{std.subject} - {std.grade_level}</span>
-                        </div>
-                        <p className="text-gray-700 mt-2">{std.description}</p>
-                    </div>
-                ))}
-
-                {standards.length === 0 && (
-                    <p className="text-center text-gray-500 py-8">No standards found. Try uploading a JSON file.</p>
-                )}
-            </div>
-        </div>
+        </ModuleGuard>
     );
 }

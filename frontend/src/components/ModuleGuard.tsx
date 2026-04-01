@@ -1,0 +1,71 @@
+'use client';
+
+import React from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { Lock, Sparkles, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+
+interface ModuleGuardProps {
+    moduleName: 'monitoring' | 'tasks' | 'educational' | 'integrity';
+    children: React.ReactNode;
+}
+
+export default function ModuleGuard({ moduleName, children }: ModuleGuardProps) {
+    const { org } = useAuth();
+    
+    // Check if the module is enabled in the current organization context
+    const isEnabled = org?.enabled_modules?.includes(moduleName);
+    
+    // Mapping internal module names to human-readable labels
+    const moduleLabels: Record<string, string> = {
+        monitoring: 'Employee Monitoring & Screenshots',
+        tasks: 'Advanced Task & Workflow Management',
+        educational: 'Educational Resources & Assessment Tools',
+        integrity: 'Rights & Content Integrity'
+    };
+
+    if (isEnabled) {
+        return <>{children}</>;
+    }
+
+    return (
+        <div className="min-h-[80vh] flex items-center justify-center p-8 animate-in fade-in duration-700">
+            <div className="max-w-md w-full text-center space-y-8">
+                {/* Icon Stack */}
+                <div className="relative inline-block">
+                    <div className="w-24 h-24 bg-indigo-50 rounded-[2.5rem] flex items-center justify-center border-4 border-white shadow-xl shadow-indigo-100 rotate-6 transition-transform hover:rotate-0">
+                        <Lock className="w-10 h-10 text-indigo-600" />
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center border-4 border-white shadow-lg animate-bounce duration-1000">
+                        <Sparkles className="w-6 h-6 text-amber-600" />
+                    </div>
+                </div>
+
+                <div className="space-y-3">
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+                        Premium Feature
+                    </h2>
+                    <p className="text-slate-500 font-medium leading-relaxed">
+                        The <span className="font-extrabold text-indigo-600 italic">"{moduleLabels[moduleName] || moduleName}"</span> module is not included in your organization's current plan.
+                    </p>
+                </div>
+
+                <div className="bg-slate-50 p-6 rounded-3xl border border-dashed border-slate-200">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">How to access?</p>
+                    <p className="text-xs text-slate-600 font-bold">
+                        Please contact your Super Admin to enable this module for your organization.
+                    </p>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                    <Link 
+                        href="/dashboard"
+                        className="flex items-center justify-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-black transition-all shadow-lg active:scale-95"
+                    >
+                        <ArrowLeft className="w-4 h-4" /> Go to Dashboard
+                    </Link>
+                </div>
+            </div>
+        </div>
+    );
+}

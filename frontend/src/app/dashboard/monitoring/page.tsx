@@ -8,6 +8,7 @@ import { AgentList } from '@/components/monitoring/AgentList';
 import { ScreenshotGallery } from '@/components/monitoring/ScreenshotGallery';
 import { Modal } from '@/components/ui/Modal';
 import Link from 'next/link';
+import ModuleGuard from '@/components/ModuleGuard';
 
 // Helper to get the API base URL (without version suffix if needed, but here we use it relative to our api helper)
 // The api helper uses process.env.NEXT_PUBLIC_API_URL or 'http://localhost:8000/api/v1'
@@ -152,7 +153,8 @@ export default function MonitoringDashboardPage() {
     }
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-10">
+        <ModuleGuard moduleName="monitoring">
+            <div className="p-8 max-w-7xl mx-auto space-y-10">
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Team Monitoring</h1>
@@ -373,5 +375,6 @@ export default function MonitoringDashboardPage() {
                 )}
             </Modal>
         </div>
+        </ModuleGuard>
     );
 }

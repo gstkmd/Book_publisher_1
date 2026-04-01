@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ShareContentModal from '@/components/ShareContentModal';
+import ModuleGuard from '@/components/ModuleGuard';
 
 export default function ContentLibrary() {
     const { token, user, isLoading: authLoading } = useAuth();
@@ -302,7 +303,8 @@ export default function ContentLibrary() {
     const activeFilterCount = Object.values(activeFilters).flat().length;
 
     return (
-        <div className="container mx-auto py-8 px-4">
+        <ModuleGuard moduleName="educational">
+            <div className="container mx-auto py-8 px-4">
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-3xl font-bold">Content Library</h1>
                 <Link href="/dashboard/editor/new" className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition font-medium">
@@ -600,5 +602,6 @@ export default function ContentLibrary() {
                 />
             )}
         </div>
+        </ModuleGuard>
     );
 }

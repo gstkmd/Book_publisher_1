@@ -1,12 +1,15 @@
 from typing import List, Optional, Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.modules.core.models import User, Organization, UserRole
+from app.modules.core.models import User, Organization, UserRole, WebhookSubscription, InviteToken, OrganizationMember
 from app.api.deps import get_current_super_admin
 from pydantic import BaseModel
 from app.core.security import get_password_hash
 from beanie import PydanticObjectId
 from datetime import datetime, timezone, timedelta
-from app.modules.generic.monitoring_models import MonitoringActivity, MonitoringScreenshot
+from app.modules.generic.monitoring_models import MonitoringActivity, MonitoringScreenshot, MonitoringAgent
+from app.modules.generic.models import Content, ContentVersion, Comment, Task, TaskComment, ActivityLog, Notification
+from app.modules.generic.rights_models import License, Contract
+from app.modules.educational.models import Standard, Assessment, LessonPlan
 
 router = APIRouter()
 
@@ -148,3 +151,38 @@ async def impersonate_organization(
     await current_user.save()
     
     return {"message": f"Successfully switched context to {org.name}", "org_id": org_id, "org_name": org.name}
+
+@router.delete("/organizations/{org_id}")
+async def delete_organization(
+    org_id: str,
+    current_user: User = Depends(get_current_super_admin)
+):
+    """Permanently delete an organization and ALL associated data."""
+    org = await Organization.get(PydanticObjectId(org_id))
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    
+    # 1. Collect all Content IDs to delete their versions
+    content_list = await Content.find(Content.organization_id == org_id).to_list()
+    content_ids = [c.id for c in content_list]
+    
+    # 2. Batch Purge for models with organization_id
+    models_to_purge = [
+        User, WebhookSubscription, InviteToken, OrganizationMember,
+        MonitoringActivity, MonitoringScreenshot, MonitoringAgent,
+        Content, Comment, Task, TaskComment, ActivityLog, Notification,
+        License, Contract, Standard, Assessment, LessonPlan
+    ]
+    
+    for model in models_to_purge:
+        await model.find(model.organization_id == org_id).delete()
+    
+    # 3. Purge ContentVersions
+    if content_ids:
+        # Delete versions referencing these contents
+        await ContentVersion.find({"content_id.$id": {"$in": content_ids}}).delete()
+
+    # 4. Finally, delete the Org metadata itself
+    await org.delete()
+    
+    return {"message": f"Organization {org.name} and all data have been purged."}

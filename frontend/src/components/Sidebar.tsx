@@ -23,7 +23,8 @@ import {
     Activity,
     Scale,
     ChevronDown,
-    Globe
+    Globe,
+    Lock
 } from 'lucide-react';
 import { UserAvatar } from './UserAvatar';
 
@@ -39,14 +40,14 @@ export const Sidebar = () => {
 
     const mainItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Library', href: '/dashboard/library', icon: Library },
-        { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
-        { name: 'Workflow', href: '/dashboard/workflow', icon: GitBranch },
-        { name: 'Standards', href: '/dashboard/standards', icon: ClipboardList },
-        { name: 'Lesson Plans', href: '/dashboard/lesson-plans', icon: FileEdit },
-        { name: 'Assessments', href: '/dashboard/assessments', icon: CheckSquare },
-        { name: 'Rights', href: '/dashboard/rights', icon: Scale },
-        { name: 'Monitoring', href: '/dashboard/monitoring', icon: Activity },
+        { name: 'Library', href: '/dashboard/library', icon: Library, module: 'educational' },
+        { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare, module: 'tasks' },
+        { name: 'Workflow', href: '/dashboard/workflow', icon: GitBranch, module: 'tasks' },
+        { name: 'Standards', href: '/dashboard/standards', icon: ClipboardList, module: 'educational' },
+        { name: 'Lesson Plans', href: '/dashboard/lesson-plans', icon: FileEdit, module: 'educational' },
+        { name: 'Assessments', href: '/dashboard/assessments', icon: CheckSquare, module: 'educational' },
+        { name: 'Rights', href: '/dashboard/rights', icon: Scale, module: 'integrity' },
+        { name: 'Monitoring', href: '/dashboard/monitoring', icon: Activity, module: 'monitoring' },
     ];
 
     const systemItems = [
@@ -114,6 +115,8 @@ export const Sidebar = () => {
                         {mainItems.map((item) => {
                             const Icon = item.icon;
                             const isActive = pathname === item.href;
+                            const isLocked = item.module && !org?.enabled_modules?.includes(item.module);
+                            
                             return (
                                 <Link
                                     key={item.href}
@@ -122,18 +125,26 @@ export const Sidebar = () => {
                                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group
                                     ${isActive
                                             ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50'
-                                            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
+                                            : isLocked 
+                                                ? 'text-slate-300 hover:bg-slate-50/50'
+                                                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
                                     ${isCollapsed ? 'justify-center lg:px-0 lg:w-12 lg:mx-auto' : ''}
                                 `}
                                     title={isCollapsed ? item.name : ''}
                                 >
-                                    <Icon className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                                    <Icon className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 
+                                        ${isActive ? 'text-indigo-600' : isLocked ? 'text-slate-200' : 'text-slate-400'}`} 
+                                    />
                                     <span className={`text-[13px] font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300
                                     ${isCollapsed ? 'lg:hidden opacity-0 w-0' : 'opacity-100 w-auto'}
+                                    ${isLocked ? 'text-slate-300 italic font-medium' : ''}
                                 `}>
                                         {item.name}
                                     </span>
-                                    {isActive && !isCollapsed && (
+                                    {isLocked && !isCollapsed && (
+                                        <Lock className="ml-auto w-3 h-3 text-slate-200" />
+                                    )}
+                                    {isActive && !isCollapsed && !isLocked && (
                                         <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
                                     )}
                                 </Link>

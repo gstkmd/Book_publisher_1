@@ -19,6 +19,7 @@ interface Org {
     name: string;
     slug: string;
     plan?: string;
+    enabled_modules?: string[];
 }
 
 interface AuthContextType {

@@ -61,6 +61,10 @@ export default function SuperAdminDashboard() {
     const [foundUsers, setFoundUsers] = useState<UserRes[]>([]);
     const [resettingUser, setResettingUser] = useState<UserRes | null>(null);
     const [newPassword, setNewPassword] = useState('');
+    
+    // Deletion State
+    const [deletingOrg, setDeletingOrg] = useState<Organization | null>(null);
+    const [deleteConfirmName, setDeleteConfirmName] = useState('');
 
     const fetchData = async () => {
         if (!token) return;
@@ -139,6 +143,25 @@ export default function SuperAdminDashboard() {
         } catch (err) {
             console.error('Cleanup failed:', err);
             alert('Cleanup failed');
+        }
+    };
+
+    const handleDeleteOrg = async () => {
+        if (!deletingOrg || !token) return;
+        if (deleteConfirmName !== deletingOrg.name) {
+            alert('Organization name does not match. Deletion cancelled.');
+            return;
+        }
+
+        try {
+            await api.delete(`/superadmin/organizations/${deletingOrg.id}`, token);
+            alert(`Organization ${deletingOrg.name} and all its data have been purged.`);
+            setDeletingOrg(null);
+            setDeleteConfirmName('');
+            fetchData();
+        } catch (err) {
+            console.error('Deletion failed:', err);
+            alert('Failed to delete organization. Please check logs.');
         }
     };
 
@@ -232,12 +255,25 @@ export default function SuperAdminDashboard() {
                                     <td className="px-6 py-4 text-slate-500 text-xs">{org.monitoring_retention_days || 30}d / {org.screenshot_retention_days || 7}d</td>
                                     <td className="px-6 py-4 text-slate-500 text-xs">{org.sync_interval_seconds || 300}s</td>
                                     <td className="px-6 py-4">
-                                        <button 
-                                            onClick={() => handleEditOrg(org)}
-                                            className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-indigo-600 transition-all"
-                                        >
-                                            <Settings className="w-4 h-4" />
-                                        </button>
+                                        <div className="flex items-center gap-1">
+                                            <button 
+                                                onClick={() => handleEditOrg(org)}
+                                                className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-indigo-600 transition-all"
+                                                title="Edit Settings"
+                                            >
+                                                <Settings className="w-4 h-4" />
+                                            </button>
+                                            <button 
+                                                onClick={() => {
+                                                    setDeletingOrg(org);
+                                                    setDeleteConfirmName('');
+                                                }}
+                                                className="p-2 hover:bg-rose-50 rounded-xl text-slate-400 hover:text-rose-600 transition-all"
+                                                title="Delete Organization"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -405,6 +441,57 @@ export default function SuperAdminDashboard() {
                                         className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px]"
                                     >
                                         Confirm Reset
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Organization Modal */}
+            {deletingOrg && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+                    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95">
+                        <div className="p-8 space-y-6">
+                            <div className="text-center">
+                                <div className="w-16 h-16 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-bounce">
+                                    <Trash2 className="w-8 h-8" />
+                                </div>
+                                <h3 className="text-xl font-black text-rose-600 uppercase tracking-tighter">Extreme Danger</h3>
+                                <p className="text-sm text-slate-500 font-medium px-4">
+                                    You are about to permanently purge <span className="font-black text-slate-900">"{deletingOrg.name}"</span>. 
+                                    This will delete all users, monitoring logs, and related content.
+                                </p>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
+                                        Type <span className="text-slate-900">{deletingOrg.name}</span> to confirm
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Confirm organization name..."
+                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 text-slate-900 font-bold outline-none focus:border-rose-200 transition-all"
+                                        value={deleteConfirmName}
+                                        onChange={(e) => setDeleteConfirmName(e.target.value)}
+                                    />
+                                </div>
+                                
+                                <div className="flex gap-3">
+                                    <button 
+                                        onClick={() => setDeletingOrg(null)} 
+                                        className="flex-1 py-4 font-bold text-slate-400 hover:text-slate-600 transition-all uppercase tracking-widest text-[10px]"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button 
+                                        onClick={handleDeleteOrg}
+                                        disabled={deleteConfirmName !== deletingOrg.name}
+                                        className="flex-1 py-4 bg-rose-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-rose-100 active:scale-95 disabled:bg-slate-100 disabled:text-slate-300 disabled:shadow-none transition-all"
+                                    >
+                                        Purge All Data
                                     </button>
                                 </div>
                             </div>
