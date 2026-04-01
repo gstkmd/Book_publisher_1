@@ -93,8 +93,15 @@ async def upload_screenshot(
     # Handle agent tracking (matches monitoring.py style)
     target_agent_id = agent_id or agentId # Use whichever is provided
     
+    # DIAGNOSTIC LOGGING
+    print(f"DEBUG: [Screenshot] Incoming upload request:")
+    print(f"DEBUG: [Screenshot] AgentID: {target_agent_id}")
+    print(f"DEBUG: [Screenshot] App: {app_name}, Title: {window_title}")
+    
     # Ensure directory exists
     os.makedirs("storage/screenshots", exist_ok=True)
+    abs_dir = os.path.abspath("storage/screenshots")
+    print(f"DEBUG: [Screenshot] Absolute storage dir: {abs_dir}")
     
     # Generate unique filename
     extension = file.filename.split(".")[-1] if "." in file.filename else "png"
@@ -102,6 +109,8 @@ async def upload_screenshot(
     base_name = file.filename.split(".")[0]
     filename = f"{base_name}_{uuid.uuid4().hex[:6]}.{extension}"
     filepath = f"storage/screenshots/{filename}"
+    abs_file = os.path.abspath(filepath)
+    print(f"DEBUG: [Screenshot] Saving file to: {abs_file}")
     
     # Ensure storage directory exists at project root if not found locally
     os.makedirs("storage/screenshots", exist_ok=True)
