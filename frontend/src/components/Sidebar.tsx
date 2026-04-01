@@ -22,7 +22,6 @@ import {
     X,
     Activity,
     Scale,
-    Scale,
     ChevronDown,
     Globe
 } from 'lucide-react';
