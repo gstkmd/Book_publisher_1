@@ -9,6 +9,7 @@ from typing import List, Optional
 from pathlib import Path
 from contextlib import contextmanager
 import mimetypes
+from bson import ObjectId
 
 from app.api import deps
 from app.modules.core.models import User
