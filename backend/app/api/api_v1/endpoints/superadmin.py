@@ -133,3 +133,18 @@ async def trigger_cleanup(
         "activities_deleted": total_activities_deleted,
         "screenshots_deleted": total_screenshots_deleted
     }
+
+@router.post("/impersonate/{org_id}")
+async def impersonate_organization(
+    org_id: str,
+    current_user: User = Depends(get_current_super_admin)
+):
+    """Switch the Super Admin's current organization context."""
+    org = await Organization.get(PydanticObjectId(org_id))
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    
+    current_user.organization_id = org_id
+    await current_user.save()
+    
+    return {"message": f"Successfully switched context to {org.name}", "org_id": org_id, "org_name": org.name}

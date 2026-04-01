@@ -41,7 +41,7 @@ interface UserRes {
 }
 
 export default function SuperAdminDashboard() {
-    const { token } = useAuth();
+    const { token, impersonateOrganization } = useAuth();
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({ total_orgs: 0, total_users: 0 });
@@ -219,7 +219,14 @@ export default function SuperAdminDashboard() {
                         <tbody className="divide-y divide-slate-50">
                             {organizations.map(org => (
                                 <tr key={org.id} className="hover:bg-slate-50/30 transition-all">
-                                    <td className="px-6 py-4 font-bold text-slate-900">{org.name}</td>
+                                    <td className="px-6 py-4">
+                                        <button 
+                                            onClick={() => impersonateOrganization(org.id)}
+                                            className="font-black text-slate-900 hover:text-indigo-600 transition-all text-left uppercase tracking-tight"
+                                        >
+                                            {org.name}
+                                        </button>
+                                    </td>
                                     <td className="px-6 py-4 lowercase"><span className="px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-black">{org.plan}</span></td>
                                     <td className="px-6 py-4 text-slate-500 font-medium">{org.member_count}</td>
                                     <td className="px-6 py-4 text-slate-500 text-xs">{org.monitoring_retention_days || 30}d / {org.screenshot_retention_days || 7}d</td>

@@ -29,6 +29,7 @@ interface AuthContextType {
     logout: () => void;
     isLoading: boolean;
     refreshActiveStatus: () => Promise<void>;
+    impersonateOrganization: (orgId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -210,8 +211,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    const impersonateOrganization = async (orgId: string) => {
+        if (!token) return;
+        try {
+            await api.post(`/superadmin/impersonate/${orgId}`, {}, token);
+            // Re-fetch everything to update the context
+            const userData = await api.get('/users/me', token);
+            setUser(userData);
+            if (userData.organization_id) {
+                const orgData = await api.get('/organizations/me', token);
+                setOrg(orgData);
+            }
+            toast.success("Organization context switched!");
+            router.push('/dashboard');
+        } catch (err) {
+            console.error("Impersonation failed:", err);
+            toast.error("Failed to switch organization");
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, org, token, login, logout, isLoading, refreshActiveStatus }}>
+        <AuthContext.Provider value={{ user, org, token, login, logout, isLoading, refreshActiveStatus, impersonateOrganization }}>
             {children}
 
             {/* 2-Hour Continuous Work Confirmation Modal */}
