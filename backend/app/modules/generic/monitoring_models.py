@@ -39,6 +39,8 @@ class MonitoringActivity(Document):
     web_category: Optional[str] = None
     file_name: Optional[str] = None
     file_extension: Optional[str] = None
+    task_id: Optional[str] = None
+    content_id: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
@@ -47,6 +49,8 @@ class MonitoringActivity(Document):
             IndexModel([("organization_id", ASCENDING)]),
             IndexModel([("user", ASCENDING)]),
             IndexModel([("timestamp", DESCENDING)]),
+            IndexModel([("task_id", ASCENDING)]),
+            IndexModel([("content_id", ASCENDING)]),
             IndexModel([("created_at", ASCENDING)], expireAfterSeconds=2592000) # Keep for 30 days
         ]
 
@@ -58,6 +62,8 @@ class MonitoringScreenshot(Document):
     file_url: str # URL to stored image (e.g. S3/Wasabi)
     app_name: Optional[str] = None
     window_title: Optional[str] = None
+    task_id: Optional[str] = None
+    content_id: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
@@ -66,5 +72,7 @@ class MonitoringScreenshot(Document):
             IndexModel([("organization_id", ASCENDING)]),
             IndexModel([("user", ASCENDING)]),
             IndexModel([("timestamp", DESCENDING)]),
+            IndexModel([("task_id", ASCENDING)]),
+            IndexModel([("content_id", ASCENDING)]),
             IndexModel([("created_at", ASCENDING)], expireAfterSeconds=604800) # Keep for 7 days
         ]

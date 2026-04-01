@@ -155,7 +155,7 @@ export default function MonitoringDashboardPage() {
         <div className="p-8 max-w-7xl mx-auto space-y-10">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Employee Monitoring</h1>
+                    <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Team Monitoring</h1>
                     <p className="text-gray-500 mt-2 font-medium">Real-time overview of workforce activity and productivity.</p>
                 </div>
                 <button
@@ -170,7 +170,7 @@ export default function MonitoringDashboardPage() {
             {/* Metrics Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <MetricCard
-                    title="Active Agents Today"
+                    title="Active Team Today"
                     value={summary?.active_agents || 0}
                     icon="👥"
                     color="blue"
@@ -213,7 +213,7 @@ export default function MonitoringDashboardPage() {
                     <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-2xl text-white shadow-lg">
                         <h3 className="font-bold text-lg mb-2">Helpful Tip</h3>
                         <p className="text-blue-100 text-sm leading-relaxed">
-                            Click on an agent to see detailed app usage, hourly activity trends, and their full screenshot gallery.
+                            Click on a team member to see detailed app usage, hourly activity trends, and their full screenshot gallery.
                         </p>
                         <Link
                             href="/dashboard/workflow"
@@ -267,7 +267,7 @@ export default function MonitoringDashboardPage() {
                                         {users.map(u => {
                                             const userId = u.id || u._id;
                                             return (
-                                                <option key={userId} value={userId}>{u.email}</option>
+                                                <option key={userId} value={userId}>{u.full_name || u.email}</option>
                                             );
                                         })}
                                     </select>
@@ -309,7 +309,9 @@ export default function MonitoringDashboardPage() {
                                                         <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
                                                             {activity.user?.full_name?.charAt(0) || 'U'}
                                                         </div>
-                                                        <span className="text-sm font-medium text-gray-900">{activity.user?.email || (typeof activity.user === 'string' ? activity.user : 'Unknown User')}</span>
+                                                        <span className="text-sm font-medium text-gray-900">
+                                                            {activity.user?.full_name || activity.user?.email || (typeof activity.user === 'string' ? activity.user : 'Unknown User')}
+                                                        </span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">

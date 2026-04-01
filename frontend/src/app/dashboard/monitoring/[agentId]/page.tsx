@@ -123,15 +123,11 @@ export default function AgentDetailPage() {
                         ⬅️
                     </button>
                 <div className="flex flex-col">
-                    <h1 className="text-2xl font-bold text-gray-900 leading-tight">Agent Activity Detail</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 leading-tight">Team Activity Detail</h1>
                     {activity?.summary && (
                         <div className="flex items-center gap-2 mt-1">
                             <span className="text-lg font-semibold text-indigo-600">
                                 {activity.summary.user_full_name}
-                            </span>
-                            <span className="text-gray-400">•</span>
-                            <span className="text-sm font-medium text-gray-500">
-                                {activity.summary.user_email}
                             </span>
                         </div>
                     )}
@@ -152,11 +148,11 @@ export default function AgentDetailPage() {
             {/* Metrics Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <MetricCard
-                    title={activity?.summary?.user_full_name || 'Agent Status'}
+                    title={activity?.summary?.user_full_name || 'Member Status'}
                     value={activity?.summary?.is_online ? 'Online' : 'Offline'}
                     icon="👤"
                     color={activity?.summary?.is_online ? 'green' : 'orange'}
-                    description={activity?.summary?.user_email || (activity?.summary?.is_online ? 'Online now' : `Last: ${formatDateTimeIST(activity?.summary?.last_seen).split(',')[1] || '-'}`)}
+                    description={activity?.summary?.is_online ? 'Online now' : `Last: ${formatDateTimeIST(activity?.summary?.last_seen).split(',')[1] || '-'}`}
                 />
                 <MetricCard
                     title="Screenshots"

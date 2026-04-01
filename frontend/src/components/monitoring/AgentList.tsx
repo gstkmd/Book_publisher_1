@@ -40,15 +40,15 @@ export function AgentList({ agents }: AgentListProps) {
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                <h2 className="text-lg font-bold text-gray-900">Active Agents</h2>
-                <span className="text-sm text-gray-500">{agents.length} agents total</span>
+                <h2 className="text-lg font-bold text-gray-900">Active Team Members</h2>
+                <span className="text-sm text-gray-500">{agents.length} members total</span>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-left">
                     <thead className="bg-gray-50 text-gray-600 text-xs uppercase font-semibold">
                         <tr>
                             <th className="px-6 py-3">Computer Name</th>
-                            <th className="px-6 py-3">User Email</th>
+                            <th className="px-6 py-3">User</th>
                             <th className="px-6 py-3">Last Seen</th>
                             <th className="px-6 py-3">Screenshots</th>
                             <th className="px-6 py-3">Action</th>
@@ -62,7 +62,9 @@ export function AgentList({ agents }: AgentListProps) {
                                 onClick={() => window.location.href = `/dashboard/monitoring/${agent.id}`}
                             >
                                 <td className="px-6 py-4 font-medium text-gray-900">{agent.computer_name}</td>
-                                <td className="px-6 py-4 text-gray-600 text-sm">{agent.email}</td>
+                                <td className="px-6 py-4 text-gray-600 text-sm">
+                                    {(agent as any).full_name || agent.email}
+                                </td>
                                 <td className="px-6 py-4 text-gray-600 text-sm">
                                     {agent.last_seen ? formatDateTimeIST(agent.last_seen) : 'Never'}
                                 </td>
@@ -84,7 +86,7 @@ export function AgentList({ agents }: AgentListProps) {
                         {agents.length === 0 && (
                             <tr>
                                 <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                                    No active agents found.
+                                    No active team members found.
                                 </td>
                             </tr>
                         )}

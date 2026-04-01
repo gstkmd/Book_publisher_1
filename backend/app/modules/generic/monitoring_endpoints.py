@@ -5,6 +5,8 @@ from app.modules.generic.monitoring_models import MonitoringActivity, Monitoring
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime, timezone
+from bson import ObjectId, DBRef
+from app.modules.generic.models import Content, Task
 import os
 import shutil
 import uuid
@@ -28,6 +30,8 @@ class ActivityLog(BaseModel):
     keys_pressed: int = 0
     mouse_clicks: int = 0
     agent_id: Optional[str] = None
+    task_id: Optional[str] = None
+    content_id: Optional[str] = None
 
 class ActivitySubmitRequest(BaseModel):
     logs: List[ActivityLog]
@@ -77,14 +81,44 @@ async def get_team_activity(
     
     return activities
 
+@router.get("/my-tasks")
+async def get_my_tasks(current_user: User = Depends(get_current_user)):
+    """Fetch tasks assigned to the current user for the monitoring agent selector."""
+    tasks = await Task.find(
+        Task.organization_id == current_user.organization_id,
+        Task.assignee.id == current_user.id,
+        Task.status != "completed",
+        fetch_links=True
+    ).to_list()
+    
+    results = []
+    for t in tasks:
+        results.append({
+            "task_id": str(t.id),
+            "task_title": t.title,
+            "content_id": str(t.content_id.ref.id) if t.content_id else None,
+            "content_title": t.content_id.title if t.content_id and hasattr(t.content_id, 'title') else "General Activity"
+        })
+    
+    # Also add "General Activity" as a fallback
+    results.append({
+        "task_id": None,
+        "task_title": "General Activity",
+        "content_id": None,
+        "content_title": "No Project"
+    })
+    return results
+
 @router.post("/screenshots/upload")
 async def upload_screenshot(
     app_name: str = Form(...),
     window_title: str = Form(...),
     timestamp: str = Form(...), # Change to str for flexible parsing
     file: UploadFile = File(...),
-    agent_id: Optional[str] = Form(None), # Add optional agent_id
-    agentId: Optional[str] = Form(None), # Add agentId alias for compatibility
+    agent_id: Optional[str] = Form(None),
+    agentId: Optional[str] = Form(None),
+    task_id: Optional[str] = Form(None),
+    content_id: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user)
 ):
     if not current_user.organization_id:
@@ -137,7 +171,9 @@ async def upload_screenshot(
     screenshot = MonitoringScreenshot(
         user=current_user,
         organization_id=current_user.organization_id,
-        agent_id=target_agent_id, # Use target_agent_id which captures both aliases
+        agent_id=target_agent_id,
+        task_id=task_id,
+        content_id=content_id,
         timestamp=ts,
         file_url=file_url,
         app_name=app_name,
