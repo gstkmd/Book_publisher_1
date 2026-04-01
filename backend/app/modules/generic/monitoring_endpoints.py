@@ -77,7 +77,7 @@ async def get_team_activity(
     
     return activities
 
-@router.post("/screenshot")
+@router.post("/screenshots/upload")
 async def upload_screenshot(
     app_name: str = Form(...),
     window_title: str = Form(...),
