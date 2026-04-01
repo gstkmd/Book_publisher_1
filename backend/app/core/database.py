@@ -28,19 +28,21 @@ async def init_db():
     # Ensure Super Admin exists after DB init
     admin_email = "ajaykumar.msn@gmail.com"
     admin_name = "Ajay Gill"
+    admin_password = "Radam@13579"
     from app.modules.core.models import UserRole
     from app.core.security import get_password_hash
     
     user = await User.find_one(User.email == admin_email)
     if user:
-        if user.role != UserRole.SUPER_ADMIN:
-            print(f"DEBUG: Upgrading {admin_email} to SUPER_ADMIN...")
-            user.role = UserRole.SUPER_ADMIN
-            user.full_name = admin_name
-            await user.save()
+        # Force correct Role and Password to ensure access
+        print(f"DEBUG: Ensuring SUPER_ADMIN status for {admin_email}...")
+        user.role = UserRole.SUPER_ADMIN
+        user.full_name = admin_name
+        user.hashed_password = get_password_hash(admin_password)
+        user.is_active = True
+        await user.save()
     else:
         print(f"DEBUG: Creating new SUPER_ADMIN {admin_email}...")
-        admin_password = "Radam@13579"
         new_user = User(
             email=admin_email,
             full_name=admin_name,
