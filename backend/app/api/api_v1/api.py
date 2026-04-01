@@ -12,6 +12,7 @@ from app.modules.generic import integrity_endpoints
 from app.api.api_v1.endpoints import timesheet
 from app.modules.generic import rights_endpoints
 from app.modules.generic import monitoring_endpoints # New enhanced monitoring
+from app.api.api_v1.endpoints import superadmin
 
 api_router = APIRouter()
 api_router.include_router(users_router, prefix="/users", tags=["users"])
@@ -31,5 +32,6 @@ api_router.include_router(timesheet.router, prefix="/monitoring/time-sheet", tag
 api_router.include_router(rights_endpoints.router, prefix="/rights", tags=["rights"])
 api_router.include_router(integrity_endpoints.router, prefix="/integrity", tags=["integrity"])
 api_router.include_router(monitoring_endpoints.router, prefix="/team-monitoring", tags=["monitoring"])
+api_router.include_router(superadmin.router, prefix="/superadmin", tags=["superadmin"])
 
 

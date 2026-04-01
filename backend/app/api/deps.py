@@ -37,3 +37,10 @@ async def get_current_active_superuser(current_user: User = Depends(get_current_
             status_code=400, detail="The user doesn't have enough privileges"
         )
     return current_user
+
+async def get_current_super_admin(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(
+            status_code=403, detail="Not authorized. Super Admin privileges required."
+        )
+    return current_user

@@ -14,6 +14,7 @@ class UserRole(str, Enum):
     REVIEWER = "reviewer"
     ILLUSTRATOR = "illustrator"
     TEACHER = "teacher"
+    SUPER_ADMIN = "super_admin"
     USER = "user" # Basic consumer
 
 class User(Document):
@@ -54,6 +55,10 @@ class Organization(Document):
     stripe_customer_id: Optional[str] = None
     created_at: datetime = datetime.now(timezone.utc)
     is_active: bool = True
+    enabled_modules: List[str] = ["monitoring", "tasks"] # Feature toggles
+    monitoring_retention_days: int = 30
+    screenshot_retention_days: int = 7
+    sync_interval_seconds: int = 300 # Default 5 mins
     content_settings: Dict[str, Any] = {} # Custom labels and custom fields setup
 
     class Settings:

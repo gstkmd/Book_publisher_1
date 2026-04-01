@@ -149,3 +149,20 @@ async def upload_screenshot(
     print(f"DEBUG: [Screenshot] Created document for {current_user.email} (Org: {current_user.organization_id})")
     print(f"DEBUG: [Screenshot] Path: {file_url}, TS: {ts}, Agent: {target_agent_id}")
     return {"status": "success", "file_url": file_url}
+
+@router.get("/config")
+async def get_agent_config(current_user: User = Depends(get_current_user)):
+    """Fetch configuration for the monitoring agent (sync intervals, etc.)"""
+    if not current_user.organization_id:
+        return {"sync_interval_seconds": 300} # Default 5 mins
+        
+    org = await Organization.get(PydanticObjectId(current_user.organization_id))
+    if not org:
+        return {"sync_interval_seconds": 300}
+        
+    return {
+        "sync_interval_seconds": org.sync_interval_seconds or 300,
+        "enabled_modules": org.enabled_modules or [],
+        "monitoring_retention_days": org.monitoring_retention_days or 30,
+        "screenshot_retention_days": org.screenshot_retention_days or 7
+    }

@@ -22,7 +22,9 @@ import {
     X,
     Activity,
     Scale,
-    ChevronDown
+    Scale,
+    ChevronDown,
+    Globe
 } from 'lucide-react';
 import { UserAvatar } from './UserAvatar';
 
@@ -51,6 +53,7 @@ export const Sidebar = () => {
     const systemItems = [
         { name: 'Settings', href: '/dashboard/settings', icon: Settings },
         ...(user?.role === 'admin' ? [{ name: 'Admin', href: '/dashboard/admin', icon: Shield }] : []),
+        ...(user?.role === 'super_admin' ? [{ name: 'Super Admin', href: '/dashboard/superadmin', icon: Globe }] : []),
     ];
 
     const toggleSidebar = () => setIsOpen(!isOpen);

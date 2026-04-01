@@ -10,7 +10,7 @@ interface User {
     id: string;
     email: string;
     full_name?: string;
-    role: 'admin' | 'editor_in_chief' | 'section_editor' | 'author' | 'reviewer' | 'illustrator' | 'teacher' | 'user';
+    role: 'admin' | 'super_admin' | 'editor_in_chief' | 'section_editor' | 'author' | 'reviewer' | 'illustrator' | 'teacher' | 'user';
     organization_id?: string;
 }
 
