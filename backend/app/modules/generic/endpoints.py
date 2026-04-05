@@ -205,10 +205,10 @@ async def migrate_orphans(current_user: User = Depends(get_current_active_superu
     return {"message": f"Successfully migrated {count} orphaned content items to organization {current_user.organization_id}"}
 
 @router.get("/content/{id}", response_model=ContentSchema)
-async def get_content(id: PydanticObjectId):
-    content = await Content.get(id)
+async def get_content(id: PydanticObjectId, current_user: User = Depends(get_current_user)):
+    content = await Content.find_one(Content.id == id, Content.organization_id == current_user.organization_id)
     if not content:
-        raise HTTPException(status_code=404, detail="Content not found")
+        raise HTTPException(status_code=404, detail="Content not found or access denied")
     
     # Manually prepare dict to avoid DBRef serialization issues
     c_dict = content.dict()
@@ -259,10 +259,10 @@ async def create_content(content_in: ContentCreate, current_user: User = Depends
     return c_dict
 
 @router.put("/content/{id}", response_model=ContentSchema)
-async def update_content(id: PydanticObjectId, content_in: ContentUpdate):
-    content = await Content.get(id)
+async def update_content(id: PydanticObjectId, content_in: ContentUpdate, current_user: User = Depends(get_current_user)):
+    content = await Content.find_one(Content.id == id, Content.organization_id == current_user.organization_id)
     if not content:
-        raise HTTPException(status_code=404, detail="Content not found")
+        raise HTTPException(status_code=404, detail="Content not found or access denied")
     
     # Update fields
     if content_in.title is not None: content.title = content_in.title
@@ -300,27 +300,27 @@ async def update_content(id: PydanticObjectId, content_in: ContentUpdate):
     return c_dict
 
 @router.delete("/content/{id}")
-async def delete_content(id: PydanticObjectId):
-    content = await Content.get(id)
+async def delete_content(id: PydanticObjectId, current_user: User = Depends(get_current_user)):
+    content = await Content.find_one(Content.id == id, Content.organization_id == current_user.organization_id)
     if not content:
-        raise HTTPException(status_code=404, detail="Content not found")
+        raise HTTPException(status_code=404, detail="Content not found or access denied")
     
     await content.delete()
     return {"message": "Content deleted successfully"}
 
 @router.get("/content/{id}/versions", response_model=List[ContentVersion])
-async def get_content_versions(id: PydanticObjectId):
-    content = await Content.get(id)
+async def get_content_versions(id: PydanticObjectId, current_user: User = Depends(get_current_user)):
+    content = await Content.find_one(Content.id == id, Content.organization_id == current_user.organization_id)
     if not content:
-        raise HTTPException(status_code=404, detail="Content not found")
+        raise HTTPException(status_code=404, detail="Content not found or access denied")
     return await ContentVersion.find(ContentVersion.content_id.id == content.id).sort(-ContentVersion.version_number).to_list()
 
 @router.post("/content/{id}/restore/{version_id}")
-async def restore_version(id: PydanticObjectId, version_id: PydanticObjectId):
-    content = await Content.get(id)
+async def restore_version(id: PydanticObjectId, version_id: PydanticObjectId, current_user: User = Depends(get_current_user)):
+    content = await Content.find_one(Content.id == id, Content.organization_id == current_user.organization_id)
     version = await ContentVersion.get(version_id)
     if not content or not version:
-         raise HTTPException(status_code=404, detail="Content or Version not found")
+         raise HTTPException(status_code=404, detail="Content or Version not found or access denied")
     
     content.title = version.title
     content.body = version.body
@@ -337,9 +337,9 @@ async def update_content_status(
     current_user: User = Depends(get_current_user)
 ):
     """Update only the status of a content item"""
-    content = await Content.get(id)
+    content = await Content.find_one(Content.id == id, Content.organization_id == current_user.organization_id)
     if not content:
-        raise HTTPException(status_code=404, detail="Content not found")
+        raise HTTPException(status_code=404, detail="Content not found or access denied")
         
     content.status = status
     content.updated_at = get_ist_now()
@@ -422,9 +422,14 @@ async def create_comment(req: CreateCommentRequest):
     return comment
 
 @router.get("/content/{id}/comments", response_model=List[CommentSchema])
-async def get_content_comments(id: PydanticObjectId):
-    """Fetch comments for content with reliable filtering"""
+async def get_content_comments(id: PydanticObjectId, current_user: User = Depends(get_current_user)):
+    """Fetch comments for content with reliable filtering and org isolation"""
     try:
+        # Verify content ownership first
+        content = await Content.find_one(Content.id == id, Content.organization_id == current_user.organization_id)
+        if not content:
+            raise HTTPException(status_code=404, detail="Content not found or access denied")
+            
         # Use Beanie's native filtering which is optimized for Link fields
         comments = await Comment.find(Comment.content_id.id == id).to_list()
         
@@ -460,18 +465,27 @@ async def toggle_comment_resolution(
     resolved: bool,
     current_user: User = Depends(get_current_user)
 ):
-    """Toggle comment resolution status"""
+    """Toggle comment resolution status with org isolation"""
     comment = await Comment.get(id)
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
+        
+    # Verify content ownership through the link
+    content = await Content.find_one(Content.id == comment.content_id.ref.id, Content.organization_id == current_user.organization_id)
+    if not content:
+        raise HTTPException(status_code=404, detail="Access denied")
     
     comment.resolved = resolved
     await comment.save()
     return comment
 
 @router.get("/content/{id}/comments/stats")
-async def get_comment_stats(id: PydanticObjectId):
-    """Get comment statistics for content"""
+async def get_comment_stats(id: PydanticObjectId, current_user: User = Depends(get_current_user)):
+    """Get comment statistics for content with org isolation"""
+    content = await Content.find_one(Content.id == id, Content.organization_id == current_user.organization_id)
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found or access denied")
+        
     comments = await Comment.find(Comment.content_id.id == id).to_list()
     total = len(comments)
     unresolved = len([c for c in comments if not c.resolved])
@@ -484,13 +498,13 @@ async def get_comment_stats(id: PydanticObjectId):
     }
 
 @router.get("/tasks/{id}/comment-stats")
-async def get_task_comment_stats(id: PydanticObjectId):
-    """Get comment statistics for task's linked content"""
-    task = await Task.get(id)
+async def get_task_comment_stats(id: PydanticObjectId, current_user: User = Depends(get_current_user)):
+    """Get comment statistics for task's linked content with org isolation"""
+    task = await Task.find_one(Task.id == id, Task.organization_id == current_user.organization_id)
     if not task or not task.content_id:
         return {"unresolved_count": 0, "can_auto_complete": True}
     
-    stats = await get_comment_stats(str(task.content_id.ref.id))
+    stats = await get_comment_stats(str(task.content_id.ref.id), current_user)
     can_auto_complete = stats["unresolved"] == 0
     
     return {
@@ -1094,9 +1108,9 @@ async def create_task_comment(
     comment_in: TaskCommentCreate,
     current_user: User = Depends(get_current_user)
 ):
-    task = await Task.get(id)
+    task = await Task.find_one(Task.id == id, Task.organization_id == current_user.organization_id)
     if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise HTTPException(status_code=404, detail="Task not found or access denied")
     
     comment = TaskComment(
         task_id=Link(ref=DBRef(collection="tasks", id=ObjectId(id)), document_class=Task),
@@ -1243,9 +1257,12 @@ async def get_notifications(current_user: User = Depends(get_current_user)):
 
 @router.patch("/notifications/{id}/read")
 async def mark_notification_read(id: PydanticObjectId, current_user: User = Depends(get_current_user)):
-    from bson import ObjectId
-    notification = await Notification.get(id)
-    if not notification or get_link_id(notification.user_id) != str(current_user.id):
+    notification = await Notification.find_one(
+        Notification.id == id, 
+        Notification.user_id.id == current_user.id,
+        Notification.organization_id == current_user.organization_id
+    )
+    if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
     notification.read = True
     await notification.save()
@@ -1265,13 +1282,13 @@ async def task_websocket(websocket: WebSocket, task_id: str):
 
 
 @router.get("/export_content/{id}")
-async def export_content(id: PydanticObjectId, format: str = "docx"):
+async def export_content(id: PydanticObjectId, format: str = "docx", current_user: User = Depends(get_current_user)):
     from fastapi.responses import Response
     from app.modules.generic.publishing import publishing_service
     
-    content = await Content.get(id)
+    content = await Content.find_one(Content.id == id, Content.organization_id == current_user.organization_id)
     if not content:
-        raise HTTPException(status_code=404, detail="Content not found")
+        raise HTTPException(status_code=404, detail="Content not found or access denied")
         
     if format == "docx":
         data = await publishing_service.export_docx(content)

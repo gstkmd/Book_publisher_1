@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { ChevronLeft, FileText, History, Edit3, Eye, Trash2, Share2, Download } from 'lucide-react';
 import Link from 'next/link';
+import DOMPurify from 'dompurify';
 
 export default function ContentDetailPage() {
     const params = useParams();
@@ -108,8 +109,11 @@ export default function ContentDetailPage() {
                         <div className="max-w-4xl mx-auto bg-white p-8 md:p-12 rounded-2xl shadow-sm border border-gray-100 min-h-[400px]">
                             <h2 className="text-sm font-black text-gray-600 uppercase tracking-widest mb-8 pb-4 border-b border-gray-50">Document Content</h2>
                             <div
+                                id="document-content-rendered"
                                 className="prose prose-indigo max-w-none text-gray-800"
-                                dangerouslySetInnerHTML={{ __html: typeof content.body === 'string' ? content.body : (content.body?.text || '') }}
+                                dangerouslySetInnerHTML={{ 
+                                    __html: DOMPurify.sanitize(typeof content.body === 'string' ? content.body : (content.body?.text || '')) 
+                                }}
                             />
                         </div>
                     </div>

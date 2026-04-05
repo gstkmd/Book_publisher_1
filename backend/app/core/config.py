@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Educational Publishing Platform"
     API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = "changethis" # TODO: Change in production
+    SECRET_KEY: str = Field(..., alias="SECRET_KEY")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8 # 8 days
     
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
@@ -17,10 +17,10 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: str = ""
 
     MONGO_URL: str = Field(
-	    "mongodb://admin:StrongPassword123@mongo:27017/admin?authSource=admin&tls=false",
-	    validation_alias="MONGO_URI",
-	    description="MongoDB connection string. Supports MONGO_URI as alias."
-	)
+        ...,
+        validation_alias="MONGO_URI",
+        description="MongoDB connection string. Required."
+    )
     DB_NAME: str = "book_publisher"
 
 
@@ -29,8 +29,8 @@ class Settings(BaseSettings):
     # Storage (Wasabi/S3)
     S3_ENDPOINT_URL: str = "https://s3.wasabisys.com"
     S3_BUCKET: str = "edu-publishing-bucket"
-    AWS_ACCESS_KEY_ID: str = "change_me"
-    AWS_SECRET_ACCESS_KEY: str = "change_me"
+    AWS_ACCESS_KEY_ID: str = Field(..., alias="AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY: str = Field(..., alias="AWS_SECRET_ACCESS_KEY")
     AWS_REGION: str = "us-east-1"
 
     class Config:
