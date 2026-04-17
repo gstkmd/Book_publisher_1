@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Educational Publishing Platform"
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = Field(..., alias="SECRET_KEY")
+    ENCRYPTION_KEY: str = Field(..., alias="ENCRYPTION_KEY") # 32-byte url-safe base64 encoded Fernet key
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8 # 8 days
     
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins

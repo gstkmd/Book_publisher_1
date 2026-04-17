@@ -61,6 +61,10 @@ class Organization(Document):
     sync_interval_seconds: int = 300 # Default 5 mins
     hide_disabled_features: bool = False # Option to hide instead of lock
     content_settings: Dict[str, Any] = {} # Custom labels and custom fields setup
+    
+    # Integrations
+    copyleaks_email: Optional[str] = None
+    copyleaks_api_key_encrypted: Optional[str] = None
 
     class Settings:
         name = "organizations"

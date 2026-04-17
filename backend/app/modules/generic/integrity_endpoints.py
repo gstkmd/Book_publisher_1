@@ -45,6 +45,7 @@ async def verify_full_content(
     
     report = await integrity_provider.generate_report(
         text=text_to_check,
+        organization_id=current_user.organization_id,
         check_ai=req.check_ai,
         check_copyright=req.check_copyright
     )
@@ -68,8 +69,23 @@ async def verify_partial_content(
         
     report = await integrity_provider.generate_report(
         text=req.snippet,
+        organization_id=current_user.organization_id,
         check_ai=req.check_ai,
         check_copyright=req.check_copyright
     )
     
     return report
+
+@router.get("/verify/credits")
+async def get_copyleaks_credits(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get the remaining Copyleaks credit balance for the organization.
+    Only allows users in an organization to check their own organization's balance.
+    """
+    if not current_user.organization_id:
+        raise HTTPException(status_code=400, detail="User is not part of an organization")
+        
+    balance = await integrity_provider.get_credits_balance(current_user.organization_id)
+    return balance
