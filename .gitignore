@@ -8,8 +8,9 @@ frontend/node_modules/
 frontend/.next/
 out/
 
-# Environment Files
+# Environment Files (CRITICAL: DO NOT COMMIT REAL SECRETS)
 .env
+.env.save
 .env.local
 .env.development.local
 .env.test.local
@@ -18,6 +19,16 @@ backend/.env
 backend/.env.local
 frontend/.env
 frontend/.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
 
 # OS Files
 .DS_Store
@@ -36,3 +47,8 @@ backend/*.db
 
 # Vercel
 .vercel
+
+# Project Specific
+storage/
+scripts/*.log
+nginx/*.log
