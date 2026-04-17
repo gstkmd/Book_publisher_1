@@ -1,10 +1,15 @@
+import base64
+import hashlib
 from cryptography.fernet import Fernet
 from app.core.config import settings
 
 def get_cipher() -> Fernet:
-    # Important: ENCRYPTION_KEY must be a valid 32-byte url-safe base64 string
-    # If it is not configured properly, this will raise an exception during startup
-    return Fernet(settings.ENCRYPTION_KEY.encode('utf-8'))
+    # Derive a valid 32-byte url-safe base64 key from any string provided in ENCRYPTION_KEY
+    # This ensures consistency even if the user provides a simple password
+    key_material = settings.ENCRYPTION_KEY.encode('utf-8')
+    hashed = hashlib.sha256(key_material).digest()
+    fernet_key = base64.urlsafe_b64encode(hashed)
+    return Fernet(fernet_key)
 
 def encrypt_value(value: str) -> str:
     if not value:

@@ -7,6 +7,7 @@ from pydantic import BaseModel, EmailStr
 from app.core.security import get_password_hash
 import uuid
 from datetime import datetime, timezone, timedelta
+from app.modules.core.crypto import encrypt_value
 
 router = APIRouter()
 
@@ -102,6 +103,13 @@ async def update_organization(
         org.slug = new_slug
     if "content_settings" in update_data:
         org.content_settings = update_data["content_settings"]
+    
+    # Update Copyleaks Credentials
+    if "copyleaks_email" in update_data:
+        org.copyleaks_email = update_data["copyleaks_email"]
+    if "copyleaks_api_key" in update_data and update_data["copyleaks_api_key"]:
+        # Encrypt the plain text key before saving
+        org.copyleaks_api_key_encrypted = encrypt_value(update_data["copyleaks_api_key"])
     
     await org.save()
     return org

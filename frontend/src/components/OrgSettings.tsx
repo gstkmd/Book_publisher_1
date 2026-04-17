@@ -23,6 +23,12 @@ export const OrgSettings = () => {
     const [createSlug, setCreateSlug] = useState('');
     const [creating, setCreating] = useState(false);
 
+    // Integrations: Copyleaks
+    const [clEmail, setClEmail] = useState('');
+    const [clApiKey, setClApiKey] = useState('');
+    const [credits, setCredits] = useState<any>(null);
+    const [checkingCredits, setCheckingCredits] = useState(false);
+
     useEffect(() => {
         if (token) fetchOrg();
     }, [token]);
@@ -42,6 +48,7 @@ export const OrgSettings = () => {
                         customFields: data.content_settings.customFields || []
                     });
                 }
+                if (data.copyleaks_email) setClEmail(data.copyleaks_email);
             } else {
                 setOrg(null);
             }
@@ -66,13 +73,29 @@ export const OrgSettings = () => {
             await api.put('/organizations/me', {
                 name,
                 slug,
-                content_settings: contentSettings
+                content_settings: contentSettings,
+                copyleaks_email: clEmail,
+                copyleaks_api_key: clApiKey
             }, token!);
             alert('Organization updated!');
+            setClApiKey(''); // Clear the password field after saving
         } catch (err) {
             alert('Failed to update.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchCredits = async () => {
+        setCheckingCredits(true);
+        try {
+            const data = await api.get('/integrity/verify/credits', token!);
+            setCredits(data);
+        } catch (err: any) {
+            alert('Failed to fetch credits. Ensure your Copyleaks keys are valid.');
+            setCredits(null);
+        } finally {
+            setCheckingCredits(false);
         }
     };
 
@@ -302,7 +325,7 @@ export const OrgSettings = () => {
                                 className="text-red-500 hover:text-red-700 p-2"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1-1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                                 </svg>
                             </button>
                         </div>
@@ -310,6 +333,89 @@ export const OrgSettings = () => {
                     {contentSettings.customFields.length === 0 && (
                         <p className="text-sm text-center text-gray-600 py-4 italic border-2 border-dashed rounded">No custom fields defined yet.</p>
                     )}
+                </div>
+            </div>
+
+            </div>
+
+            {/* Integrations Section */}
+            <div className="bg-white p-6 rounded-lg shadow border border-purple-100 overflow-hidden relative">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                </div>
+                
+                <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
+                    <span className="bg-purple-100 p-1.5 rounded-lg text-purple-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.335 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zM9 11V1h2v10h5l-6 6-6-6h5z" />
+                        </svg>
+                    </span>
+                    Copyleaks Integration
+                </h2>
+                <p className="text-sm text-gray-500 mb-6">Manage your unique plagiarism and AI detection credentials. Fees will be billed directly to your Copyleaks account.</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Copyleaks Email</label>
+                        <input
+                            type="email"
+                            value={clEmail}
+                            onChange={e => setClEmail(e.target.value)}
+                            placeholder="admin@your-org.com"
+                            className="w-full p-3 border-2 border-gray-100 rounded-xl focus:border-purple-400 focus:outline-none transition-all"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">API Key / Secret</label>
+                        <input
+                            type="password"
+                            value={clApiKey}
+                            onChange={e => setClApiKey(e.target.value)}
+                            placeholder="••••••••••••••••"
+                            className="w-full p-3 border-2 border-gray-100 rounded-xl focus:border-purple-400 focus:outline-none transition-all font-mono"
+                        />
+                    </div>
+                </div>
+
+                <div className="bg-purple-50 rounded-2xl p-6 border border-purple-100">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h3 className="font-bold text-purple-900 mb-1">Credit Balance</h3>
+                            {!credits ? (
+                                <p className="text-sm text-purple-600">Click the button to check your remaining scans.</p>
+                            ) : (
+                                <div className="space-y-1">
+                                    <div className="flex gap-4">
+                                        <div className="bg-white px-4 py-2 rounded-lg shadow-sm">
+                                            <span className="text-xs text-gray-400 block uppercase font-bold">Credits</span>
+                                            <span className="text-xl font-black text-purple-700">{credits.credits || 0}</span>
+                                        </div>
+                                        {/* Optional extra info if Copyleaks returns it */}
+                                    </div>
+                                    <p className="text-xs text-purple-400 mt-2 italic">Balance fetched in real-time from Copyleaks.</p>
+                                </div>
+                            )}
+                        </div>
+                        <button
+                            onClick={fetchCredits}
+                            disabled={checkingCredits}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-md ${
+                                checkingCredits 
+                                ? 'bg-purple-200 text-purple-400 cursor-not-allowed' 
+                                : 'bg-white text-purple-600 hover:shadow-lg hover:-translate-y-0.5 border-2 border-purple-100'
+                            }`}
+                        >
+                            {checkingCredits && (
+                                <svg className="animate-spin h-4 w-4 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            )}
+                            Check Live Balance
+                        </button>
+                    </div>
                 </div>
             </div>
 
