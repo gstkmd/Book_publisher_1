@@ -336,8 +336,6 @@ export const OrgSettings = () => {
                 </div>
             </div>
 
-            </div>
-
             {/* Integrations Section */}
             <div className="bg-white p-6 rounded-lg shadow border border-purple-100 overflow-hidden relative">
                 <div className="absolute top-0 right-0 p-4 opacity-10">
