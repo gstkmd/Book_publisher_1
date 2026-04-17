@@ -11,6 +11,7 @@ services:
     environment:
       - MONGO_URI=${MONGO_URI}
       - DB_NAME=${DB_NAME:-book_publisher}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - SECRET_KEY=${SECRET_KEY}
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
@@ -36,6 +37,7 @@ services:
       - MONGO_URI=${MONGO_URI}
       - DB_NAME=${DB_NAME:-book_publisher}
       - SECRET_KEY=${SECRET_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
