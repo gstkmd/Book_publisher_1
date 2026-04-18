@@ -104,28 +104,27 @@ async def upload_screenshot(
     print(f"DEBUG: [Screenshot] AgentID: {target_agent_id}")
     print(f"DEBUG: [Screenshot] App: {app_name}, Title: {window_title}")
     
-    # Ensure directory exists
-    os.makedirs("storage/screenshots", exist_ok=True)
-    abs_dir = os.path.abspath("storage/screenshots")
-    print(f"DEBUG: [Screenshot] Absolute storage dir: {abs_dir}")
+    # Find correct storage directory (check if it's one level up)
+    base_dir = "storage/screenshots"
+    if not os.path.exists("storage") and os.path.exists("../storage"):
+        base_dir = "../storage/screenshots"
+    
+    os.makedirs(base_dir, exist_ok=True)
     
     # Generate unique filename
     extension = file.filename.split(".")[-1] if "." in file.filename else "png"
-    # Use descriptive filename from agent with a short unique suffix
     base_name = file.filename.split(".")[0]
     filename = f"{base_name}_{uuid.uuid4().hex[:6]}.{extension}"
-    filepath = f"storage/screenshots/{filename}"
+    filepath = os.path.join(base_dir, filename)
     abs_file = os.path.abspath(filepath)
     print(f"DEBUG: [Screenshot] Saving file to: {abs_file}")
-    
-    # Ensure storage directory exists at project root if not found locally
-    os.makedirs("storage/screenshots", exist_ok=True)
     
     # Save file to disk
     with open(filepath, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
         
-    file_url = filepath # Store local path for internal use
+    # Store relative to PROJECT focus (always "storage/screenshots/...")
+    file_url = f"storage/screenshots/{filename}"
 
     # Robust timestamp parsing to handle JS ISO strings (e.g., .000Z)
     try:

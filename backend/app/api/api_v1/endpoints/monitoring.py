@@ -897,9 +897,9 @@ async def get_screenshot(screenshot_id: str):
             possible_paths = [
                 path,
                 os.path.join(os.getcwd(), path),
-                os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), path),
-                os.path.join("..", path), # Project root if running from backend/
-                os.path.abspath(path)
+                os.path.join(os.getcwd(), "..", path), # Go up to project root Book_publisher_1/
+                os.path.abspath(path),
+                os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), path)
             ]
             
             for p in possible_paths:
