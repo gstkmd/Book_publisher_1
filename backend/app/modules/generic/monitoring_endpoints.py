@@ -33,6 +33,7 @@ class ActivityLog(BaseModel):
 
 class ActivitySubmitRequest(BaseModel):
     logs: List[ActivityLog]
+    agent_id: Optional[str] = None
 
 @router.post("/activity")
 async def submit_activity(
@@ -43,7 +44,10 @@ async def submit_activity(
         raise HTTPException(status_code=400, detail="User not part of an organization")
 
     activities = []
-    print(f"DEBUG: [Activity] User: {current_user.email}, Org: {current_user.organization_id}, Role: {current_user.role}, Logs: {len(req.logs)}")
+    print(f"DEBUG: [Activity] User: {current_user.email}, UserId: {current_user.id}, OrgId: {current_user.organization_id}, Role: {current_user.role}, Logs: {len(req.logs)}, Root AgentId: {req.agent_id}")
+    
+    if len(req.logs) > 0:
+        print(f"DEBUG: [Activity] First log sample: App: {req.logs[0].app_name}, Time: {req.logs[0].timestamp}")
     
     for log in req.logs:
         ts = log.timestamp

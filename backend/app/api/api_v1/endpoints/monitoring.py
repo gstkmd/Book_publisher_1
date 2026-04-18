@@ -328,13 +328,22 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
     # Start of day UTC (Ensure 'today' is UTC aware for consistent comparison)
     today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     # 1. Total active agents today (unique users with activity)
-    # Use aggregation to get unique user IDs efficiently
     active_agents_pipeline = [
         {
             "$match": {
-                "organization_id": current_user.organization_id,
                 "timestamp": {"$gte": today},
                 "activity_type": "active"
+            }
+        },
+        # Add a field to ensure organization_id is a string for comparison
+        {
+            "$addFields": {
+                "org_id_str": {"$toString": "$organization_id"}
+            }
+        },
+        {
+            "$match": {
+                "org_id_str": str(current_user.organization_id)
             }
         },
         {
@@ -351,8 +360,17 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
     sc_today_pipeline = [
         {
             "$match": {
-                "organization_id": current_user.organization_id,
                 "timestamp": {"$gte": today}
+            }
+        },
+        {
+            "$addFields": {
+                "org_id_str": {"$toString": "$organization_id"}
+            }
+        },
+        {
+            "$match": {
+                "org_id_str": str(current_user.organization_id)
             }
         },
         {"$count": "count"}
@@ -364,9 +382,18 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
     pipeline = [
         {
             "$match": {
-                "organization_id": current_user.organization_id,
                 "timestamp": {"$gte": today},
                 "activity_type": "active"
+            }
+        },
+        {
+            "$addFields": {
+                "org_id_str": {"$toString": "$organization_id"}
+            }
+        },
+        {
+            "$match": {
+                "org_id_str": str(current_user.organization_id)
             }
         },
         {
@@ -393,14 +420,18 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
     idle_pipeline = [
         {
             "$match": {
-                "organization_id": current_user.organization_id,
                 "timestamp": {"$gte": today},
-                "activity_type": "idle",
-                "$or": [
-                    {"user": {"$type": "objectId"}},
-                    {"user.$id": {"$exists": True}},
-                    {"user": {"$type": "string"}}
-                ]
+                "activity_type": "idle"
+            }
+        },
+        {
+            "$addFields": {
+                "org_id_str": {"$toString": "$organization_id"}
+            }
+        },
+        {
+            "$match": {
+                "org_id_str": str(current_user.organization_id)
             }
         },
         {
@@ -455,10 +486,19 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
             MonitoringAgent.organization_id == current_user.organization_id
         ).sort(-MonitoringAgent.created_at).first_or_none()
 
-        # Find latest activity for this member
+        # Find latest activity for this member - Use more robust matching
+        # Beanie's Link match can be tricky with different ID types
+        member_id_str = str(member.id)
         latest_activity = await MonitoringActivity.find(
-            MonitoringActivity.user.id == member.id,
-            MonitoringActivity.organization_id == current_user.organization_id
+            {
+                "organization_id": str(current_user.organization_id),
+                "$or": [
+                    {"user": member.id},
+                    {"user.$id": member.id},
+                    {"user": member_id_str},
+                    {"user.$id": member_id_str}
+                ]
+            }
         ).sort(-MonitoringActivity.timestamp).first_or_none()
         
         # Find screenshot count for TODAY using aggregation for consistency
@@ -505,7 +545,9 @@ async def get_screenshots(
     """Get recent screenshots from MongoDB for current organization"""
     from bson import ObjectId
     
-    query = {"organization_id": current_user.organization_id}
+    # Note: organization_id string is usually sufficient here for Beanie's query builder
+    # but we will ensure it's matched carefully.
+    query = {"organization_id": str(current_user.organization_id)}
     
     if date:
         try:
@@ -596,10 +638,19 @@ async def get_agent_activity(
         active_pipeline = [
             {
                 "$match": {
-                    "organization_id": current_user.organization_id,
-                    "$or": user_match_or,
                     "timestamp": {"$gte": start_date, "$lte": end_date},
                     "activity_type": "active"
+                }
+            },
+            {
+                "$addFields": {
+                    "org_id_str": {"$toString": "$organization_id"}
+                }
+            },
+            {
+                "$match": {
+                    "org_id_str": str(current_user.organization_id),
+                    "$or": user_match_or
                 }
             },
             {
@@ -619,10 +670,19 @@ async def get_agent_activity(
         idle_pipeline = [
             {
                 "$match": {
-                    "organization_id": current_user.organization_id,
-                    "$or": user_match_or,
                     "timestamp": {"$gte": start_date, "$lte": end_date},
                     "activity_type": "idle"
+                }
+            },
+            {
+                "$addFields": {
+                    "org_id_str": {"$toString": "$organization_id"}
+                }
+            },
+            {
+                "$match": {
+                    "org_id_str": str(current_user.organization_id),
+                    "$or": user_match_or
                 }
             },
             {
@@ -650,9 +710,18 @@ async def get_agent_activity(
         screenshot_pipeline = [
             {
                 "$match": {
-                    "organization_id": current_user.organization_id,
-                    "$or": user_match_or,
                     "timestamp": {"$gte": start_date, "$lte": end_date}
+                }
+            },
+            {
+                "$addFields": {
+                    "org_id_str": {"$toString": "$organization_id"}
+                }
+            },
+            {
+                "$match": {
+                    "org_id_str": str(current_user.organization_id),
+                    "$or": user_match_or
                 }
             },
             {"$count": "total_count"}
@@ -698,9 +767,18 @@ async def get_agent_activity(
         app_pipeline = [
             {
                 "$match": {
-                    "organization_id": current_user.organization_id,
-                    "$or": user_match_or,
                     "timestamp": {"$gte": start_date, "$lte": end_date}
+                }
+            },
+            {
+                "$addFields": {
+                    "org_id_str": {"$toString": "$organization_id"}
+                }
+            },
+            {
+                "$match": {
+                    "org_id_str": str(current_user.organization_id),
+                    "$or": user_match_or
                 }
             },
             {
@@ -730,9 +808,18 @@ async def get_agent_activity(
         hourly_pipeline = [
             {
                 "$match": {
-                    "organization_id": current_user.organization_id,
-                    "$or": user_match_or,
                     "timestamp": {"$gte": start_date, "$lte": end_date}
+                }
+            },
+            {
+                "$addFields": {
+                    "org_id_str": {"$toString": "$organization_id"}
+                }
+            },
+            {
+                "$match": {
+                    "org_id_str": str(current_user.organization_id),
+                    "$or": user_match_or
                 }
             },
             {
