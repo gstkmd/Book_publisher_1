@@ -327,7 +327,6 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
     """Get summary data for dashboard from MongoDB"""
     # Start of day UTC (Ensure 'today' is UTC aware for consistent comparison)
     today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-    
     # 1. Total active agents today (unique users with activity)
     # Use aggregation to get unique user IDs efficiently
     active_agents_pipeline = [
@@ -335,11 +334,7 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
             "$match": {
                 "organization_id": current_user.organization_id,
                 "timestamp": {"$gte": today},
-                "$or": [
-                    {"user": {"$type": "objectId"}}, # Direct ObjectId
-                    {"user.$id": {"$exists": True}},  # DBRef Link
-                    {"user": {"$type": "string"}}    # String fallbacks
-                ]
+                "activity_type": "active"
             }
         },
         {
@@ -352,17 +347,12 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
     agents_result = await MonitoringActivity.aggregate(active_agents_pipeline).to_list()
     active_agents = agents_result[0]["count"] if agents_result else 0
     
-    # 2. Total screenshots today (using robust aggregation for organization)
+    # 2. Total screenshots today
     sc_today_pipeline = [
         {
             "$match": {
                 "organization_id": current_user.organization_id,
-                "timestamp": {"$gte": today},
-                "$or": [
-                    {"user": {"$type": "objectId"}},
-                    {"user.$id": {"$exists": True}},
-                    {"user": {"$type": "string"}}
-                ]
+                "timestamp": {"$gte": today}
             }
         },
         {"$count": "count"}
@@ -376,12 +366,7 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
             "$match": {
                 "organization_id": current_user.organization_id,
                 "timestamp": {"$gte": today},
-                "activity_type": "active",
-                "$or": [
-                    {"user": {"$type": "objectId"}},
-                    {"user.$id": {"$exists": True}},
-                    {"user": {"$type": "string"}}
-                ]
+                "activity_type": "active"
             }
         },
         {
@@ -466,12 +451,14 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
 
         # Find latest agent registration
         agent_doc = await MonitoringAgent.find(
-            {"$or": user_match_or}
+            MonitoringAgent.user.id == member.id,
+            MonitoringAgent.organization_id == current_user.organization_id
         ).sort(-MonitoringAgent.created_at).first_or_none()
 
         # Find latest activity for this member
         latest_activity = await MonitoringActivity.find(
-            {"$or": user_match_or}
+            MonitoringActivity.user.id == member.id,
+            MonitoringActivity.organization_id == current_user.organization_id
         ).sort(-MonitoringActivity.timestamp).first_or_none()
         
         # Find screenshot count for TODAY using aggregation for consistency
@@ -479,8 +466,16 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
             {
                 "$match": {
                     "organization_id": current_user.organization_id,
-                    "$or": user_match_or,
                     "timestamp": {"$gte": today}
+                }
+            },
+            # Map the member ID to the user field carefully
+            {
+                "$match": {
+                    "$or": [
+                        {"user": member.id},
+                        {"user.$id": member.id}
+                    ]
                 }
             },
             {"$count": "count"}
