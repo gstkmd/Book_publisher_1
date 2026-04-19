@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from app.modules.core.models import User
+from app.modules.core.models import User, Organization
+from beanie import PydanticObjectId
 from app.api.deps import get_current_user
 from app.modules.generic.monitoring_models import MonitoringActivity, MonitoringScreenshot
 from typing import List, Optional
