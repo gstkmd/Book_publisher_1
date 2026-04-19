@@ -201,6 +201,15 @@ async def impersonate_organization(
     
     return {"message": f"Successfully switched context to {org.name}", "org_id": org_id, "org_name": org.name}
 
+@router.post("/exit-context")
+async def exit_organization_context(
+    current_user: User = Depends(get_current_super_admin)
+):
+    """Clear the Super Admin's current organization context."""
+    current_user.organization_id = None
+    await current_user.save()
+    return {"message": "Organization context cleared"}
+
 @router.delete("/organizations/{org_id}")
 async def delete_organization(
     org_id: str,

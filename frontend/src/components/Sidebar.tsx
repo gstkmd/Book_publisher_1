@@ -34,7 +34,7 @@ export const Sidebar = () => {
     const [adminOpen, setAdminOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const pathname = usePathname();
-    const { user, org, logout, token } = useAuth();
+    const { user, org, logout, token, exitOrganizationContext } = useAuth();
 
     const displayName = org?.name || user?.full_name?.split(' ')[0] || 'My Org';
 
@@ -63,9 +63,20 @@ export const Sidebar = () => {
             <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 z-50 px-4 flex items-center justify-between">
                 <div className="flex flex-col min-w-0 pr-4">
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Workspace</span>
-                    <span className="text-lg font-black bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate leading-none block pb-1">
-                        {displayName}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-lg font-black bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate leading-none block pb-1">
+                            {displayName}
+                        </span>
+                        {user?.role === 'super_admin' && org && (
+                            <button
+                                onClick={exitOrganizationContext}
+                                className="p-1 text-slate-400 hover:text-rose-500 transition-all"
+                                title="Exit Workspace context"
+                            >
+                                <XCircle className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
                 </div>
                 <button
                     onClick={toggleSidebar}
@@ -95,9 +106,20 @@ export const Sidebar = () => {
                     {!isCollapsed && (
                         <div className="flex flex-col justify-center min-w-0 pr-4">
                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Workspace</span>
-                            <span className="text-xl font-black bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate leading-none pb-1 block">
-                                {displayName}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xl font-black bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent truncate leading-none pb-1 block">
+                                    {displayName}
+                                </span>
+                                {user?.role === 'super_admin' && org && (
+                                    <button
+                                        onClick={exitOrganizationContext}
+                                        className="p-1 text-slate-400 hover:text-rose-500 transition-all hover:bg-slate-50 rounded-md"
+                                        title="Exit Workspace context"
+                                    >
+                                        <XCircle className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     )}
                     <button

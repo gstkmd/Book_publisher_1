@@ -32,6 +32,7 @@ interface AuthContextType {
     isLoading: boolean;
     refreshActiveStatus: () => Promise<void>;
     impersonateOrganization: (orgId: string) => Promise<void>;
+    exitOrganizationContext: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -232,8 +233,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    const exitOrganizationContext = async () => {
+        if (!token) return;
+        try {
+            await api.post('/superadmin/exit-context', {}, token);
+            // Re-fetch user to update organization_id and clear org state
+            const userData = await api.get('/users/me', token);
+            setUser(userData);
+            setOrg(null);
+            toast.success("Exited organization context");
+            router.push('/dashboard');
+        } catch (err) {
+            console.error("Failed to exit context:", err);
+            toast.error("Failed to exit context");
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, org, token, login, logout, isLoading, refreshActiveStatus, impersonateOrganization }}>
+        <AuthContext.Provider value={{ user, org, token, login, logout, isLoading, refreshActiveStatus, impersonateOrganization, exitOrganizationContext }}>
             {children}
 
             {/* 2-Hour Continuous Work Confirmation Modal */}
