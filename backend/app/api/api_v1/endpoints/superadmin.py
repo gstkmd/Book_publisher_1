@@ -80,7 +80,7 @@ async def get_platform_stats(
 async def list_organizations(
     current_user: User = Depends(get_current_super_admin)
 ):
-    """List all organizations with basic stats."""
+    """List all organizations with basic stats from cache."""
     orgs = await Organization.find_all().to_list()
     results = []
     for org in orgs:
@@ -89,8 +89,26 @@ async def list_organizations(
         org_dict = org.model_dump()
         org_dict["id"] = str(org.id)
         org_dict["member_count"] = member_count
+        
+        # Ensure we return human readable sizes
+        org_dict["db_storage_formatted"] = format_size(org.db_storage_bytes)
+        org_dict["file_storage_formatted"] = format_size(org.file_storage_bytes)
+        org_dict["total_storage_formatted"] = format_size(org.total_storage_bytes)
+        
         results.append(org_dict)
     return results
+
+@router.post("/usage/sync")
+async def sync_usage_stats(
+    current_user: User = Depends(get_current_super_admin)
+):
+    """Trigger a manual recalculation of all organization usage stats."""
+    from app.core.scheduler import calculate_platform_usage
+    # We run this in the background to avoid timeout
+    from fastapi import BackgroundTasks
+    bg_tasks = BackgroundTasks()
+    bg_tasks.add_task(calculate_platform_usage)
+    return {"message": "Usage calculation started in background."}
 
 @router.patch("/organizations/{org_id}")
 async def update_organization(

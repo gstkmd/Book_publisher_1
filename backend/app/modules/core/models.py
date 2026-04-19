@@ -70,6 +70,12 @@ class Organization(Document):
     copyleaks_email: Optional[str] = None
     copyleaks_api_key_encrypted: Optional[str] = None
 
+    # Usage Statistics (Cached weekly)
+    db_storage_bytes: int = 0
+    file_storage_bytes: int = 0
+    total_storage_bytes: int = 0
+    usage_updated_at: Optional[datetime] = None
+
     class Settings:
         name = "organizations"
         indexes = [

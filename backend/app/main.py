@@ -5,10 +5,12 @@ from starlette.middleware.cors import CORSMiddleware
 
 from contextlib import asynccontextmanager
 from app.core.database import init_db
+from app.core.scheduler import start_scheduler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    start_scheduler()
     yield
 
 app = FastAPI(
