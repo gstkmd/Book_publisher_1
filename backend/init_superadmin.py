@@ -6,12 +6,19 @@ from app.core.security import get_password_hash
 from app.core.config import settings
 
 async def init_superadmin():
+    # Use environment variables or fall back to provided defaults
+    import os
+    email = os.environ.get("SUPERADMIN_EMAIL", "ajaykumar.msn@gmail.com")
+    password = os.environ.get("SUPERADMIN_PASSWORD")
+    name = os.environ.get("SUPERADMIN_NAME", "Ajay Gill")
+
+    if not password:
+        print("❌ Error: SUPERADMIN_PASSWORD environment variable is not set.")
+        print("Usage: SUPERADMIN_PASSWORD=your_password python init_superadmin.py")
+        return
+
     client = AsyncIOMotorClient(settings.MONGODB_URL)
     await init_beanie(database=client[settings.MONGODB_DB_NAME], document_models=[User, Organization])
-    
-    email = "ajaykumar.msn@gmail.com"
-    password = "Radam@13579"
-    name = "Ajay Gill"
     
     # Check if user already exists
     user = await User.find_one(User.email == email)

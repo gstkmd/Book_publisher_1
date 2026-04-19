@@ -104,6 +104,12 @@ async def update_organization(
     if "content_settings" in update_data:
         org.content_settings = update_data["content_settings"]
     
+    # Website Categorization
+    if "threat_domains" in update_data:
+        org.threat_domains = update_data["threat_domains"]
+    if "productive_domains" in update_data:
+        org.productive_domains = update_data["productive_domains"]
+    
     # Update Copyleaks Credentials
     if "copyleaks_email" in update_data:
         org.copyleaks_email = update_data["copyleaks_email"]

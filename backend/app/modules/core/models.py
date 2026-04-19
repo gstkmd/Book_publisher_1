@@ -62,6 +62,10 @@ class Organization(Document):
     hide_disabled_features: bool = False # Option to hide instead of lock
     content_settings: Dict[str, Any] = {} # Custom labels and custom fields setup
     
+    # Website Categorization
+    threat_domains: List[str] = []
+    productive_domains: List[str] = []
+    
     # Integrations
     copyleaks_email: Optional[str] = None
     copyleaks_api_key_encrypted: Optional[str] = None

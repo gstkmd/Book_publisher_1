@@ -28,6 +28,12 @@ export const OrgSettings = () => {
     const [clApiKey, setClApiKey] = useState('');
     const [credits, setCredits] = useState<any>(null);
     const [checkingCredits, setCheckingCredits] = useState(false);
+    
+    // Website Categorization
+    const [threatDomains, setThreatDomains] = useState<string[]>([]);
+    const [productiveDomains, setProductiveDomains] = useState<string[]>([]);
+    const [newThreat, setNewThreat] = useState('');
+    const [newProductive, setNewProductive] = useState('');
 
     useEffect(() => {
         if (token) fetchOrg();
@@ -49,6 +55,8 @@ export const OrgSettings = () => {
                     });
                 }
                 if (data.copyleaks_email) setClEmail(data.copyleaks_email);
+                setThreatDomains(data.threat_domains || []);
+                setProductiveDomains(data.productive_domains || []);
             } else {
                 setOrg(null);
             }
@@ -75,7 +83,9 @@ export const OrgSettings = () => {
                 slug,
                 content_settings: contentSettings,
                 copyleaks_email: clEmail,
-                copyleaks_api_key: clApiKey
+                copyleaks_api_key: clApiKey,
+                threat_domains: threatDomains,
+                productive_domains: productiveDomains
             }, token!);
             alert('Organization updated!');
             setClApiKey(''); // Clear the password field after saving
@@ -333,6 +343,81 @@ export const OrgSettings = () => {
                     {contentSettings.customFields.length === 0 && (
                         <p className="text-sm text-center text-gray-600 py-4 italic border-2 border-dashed rounded">No custom fields defined yet.</p>
                     )}
+                </div>
+            </div>
+
+            {/* Website Categorization Section */}
+            <div className="bg-white p-6 rounded-lg shadow border border-blue-100">
+                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                    <span className="bg-blue-100 p-1.5 rounded-lg text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" />
+                        </svg>
+                    </span>
+                    Website Categorization
+                </h2>
+                <p className="text-sm text-gray-500 mb-6">Manage which domains are tracked as Useful (Work-related) or Threats (Distractions) for your organization.</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Threat Domains */}
+                    <div className="space-y-4">
+                        <label className="block text-sm font-bold text-red-700 uppercase tracking-tight">🚫 Distraction / Threat Domains</label>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={newThreat}
+                                onChange={e => setNewThreat(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (newThreat) { setThreatDomains([...threatDomains, newThreat]); setNewThreat(''); } } }}
+                                placeholder="e.g. facebook.com"
+                                className="flex-1 p-2 border rounded text-sm focus:border-red-400 focus:outline-none"
+                            />
+                            <button
+                                onClick={() => { if (newThreat) { setThreatDomains([...threatDomains, newThreat]); setNewThreat(''); } }}
+                                className="bg-red-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-red-700 transition-colors"
+                            >
+                                Add
+                            </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-red-50/30 rounded-lg">
+                            {threatDomains.length === 0 && <span className="text-xs text-gray-400 italic">No threat domains added.</span>}
+                            {threatDomains.map((domain, i) => (
+                                <span key={i} className="bg-red-50 text-red-700 px-3 py-1 rounded-full text-xs font-semibold border border-red-100 flex items-center gap-2">
+                                    {domain}
+                                    <button onClick={() => setThreatDomains(threatDomains.filter((_, idx) => idx !== i))} className="hover:text-red-900 font-bold">×</button>
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Productive Domains */}
+                    <div className="space-y-4">
+                        <label className="block text-sm font-bold text-green-700 uppercase tracking-tight">✅ Work-Essential / Useful Domains</label>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={newProductive}
+                                onChange={e => setNewProductive(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (newProductive) { setProductiveDomains([...productiveDomains, newProductive]); setNewProductive(''); } } }}
+                                placeholder="e.g. github.com"
+                                className="flex-1 p-2 border rounded text-sm focus:border-green-400 focus:outline-none"
+                            />
+                            <button
+                                onClick={() => { if (newProductive) { setProductiveDomains([...productiveDomains, newProductive]); setNewProductive(''); } }}
+                                className="bg-green-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-green-700 transition-colors"
+                            >
+                                Add
+                            </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-green-50/30 rounded-lg">
+                            {productiveDomains.length === 0 && <span className="text-xs text-gray-400 italic">No useful domains added.</span>}
+                            {productiveDomains.map((domain, i) => (
+                                <span key={i} className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-semibold border border-green-100 flex items-center gap-2">
+                                    {domain}
+                                    <button onClick={() => setProductiveDomains(productiveDomains.filter((_, idx) => idx !== i))} className="hover:text-green-900 font-bold">×</button>
+                                </span>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
 

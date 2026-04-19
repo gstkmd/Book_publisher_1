@@ -167,5 +167,7 @@ async def get_agent_config(current_user: User = Depends(get_current_user)):
         "sync_interval_seconds": org.sync_interval_seconds or 300,
         "enabled_modules": org.enabled_modules or [],
         "monitoring_retention_days": org.monitoring_retention_days or 30,
-        "screenshot_retention_days": org.screenshot_retention_days or 7
+        "screenshot_retention_days": org.screenshot_retention_days or 7,
+        "threat_domains": org.threat_domains or [],
+        "productive_domains": org.productive_domains or []
     }
