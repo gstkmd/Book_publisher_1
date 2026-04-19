@@ -143,6 +143,15 @@ export default function AgentDetailPage() {
                         className="border-0 focus:ring-0 text-sm font-bold text-indigo-600 cursor-pointer"
                     />
                 </div>
+
+                <button
+                    onClick={() => fetchAgentData()}
+                    className="p-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 transition-all hover:shadow-md flex items-center justify-center"
+                    title="Refresh Activity"
+                    disabled={isLoading}
+                >
+                    <span className={`${isLoading ? 'animate-spin' : ''}`}>🔄</span>
+                </button>
             </div>
 
             {/* Metrics Row */}
@@ -238,7 +247,7 @@ export default function AgentDetailPage() {
 
                         {/* Hourly Activity */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                            <h2 className="font-bold text-gray-900 mb-4">Hourly Activity (Seconds)</h2>
+                            <h2 className="font-bold text-gray-900 mb-4">Hourly Activity (Minutes)</h2>
                             <div className="space-y-2 max-h-[400px] overflow-y-auto">
                                 {activity?.hourly_activity?.map((h: any, idx: number) => (
                                     <div key={idx} className="flex items-center gap-4">
@@ -271,6 +280,7 @@ export default function AgentDetailPage() {
                                         <th className="px-6 py-4">Time</th>
                                         <th className="px-6 py-4">App / Window</th>
                                         <th className="px-6 py-4">URL / Path</th>
+                                        <th className="px-6 py-4">Impact</th>
                                         <th className="px-6 py-4">Status</th>
                                     </tr>
                                 </thead>

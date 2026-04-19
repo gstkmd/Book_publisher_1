@@ -291,6 +291,7 @@ export default function MonitoringDashboardPage() {
                                         <th className="px-6 py-4">User</th>
                                         <th className="px-6 py-4">App / Window</th>
                                         <th className="px-6 py-4">URL / Path</th>
+                                        <th className="px-6 py-4">Impact</th>
                                         <th className="px-6 py-4">Status</th>
                                     </tr>
                                 </thead>
@@ -324,6 +325,19 @@ export default function MonitoringDashboardPage() {
                                                     <span className="truncate max-w-[150px] inline-block" title={activity.web_url || activity.file_path}>
                                                         {activity.web_url || activity.file_path || '-'}
                                                     </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {activity.web_category === 'threat' ? (
+                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                                                            🚫 Threat
+                                                        </span>
+                                                    ) : activity.web_category === 'productive' ? (
+                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                                                            ✅ Useful
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400 font-medium">Neutral</span>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${activity.activity_type === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
