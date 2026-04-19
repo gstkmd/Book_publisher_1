@@ -403,14 +403,14 @@ export default function SuperAdminDashboard() {
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Feature Control (Granular)</label>
                                 <div className="grid grid-cols-3 gap-3 font-bold">
                                     {[
-                                        { id: 'monitoring', label: 'Monitoring' },
+                                        { id: 'library', label: 'Library' },
                                         { id: 'tasks', label: 'Tasks' },
                                         { id: 'workflow', label: 'Workflow' },
-                                        { id: 'library', label: 'Library' },
+                                        { id: 'monitoring', label: 'Monitoring' },
                                         { id: 'standards', label: 'Standards' },
                                         { id: 'lesson_plans', label: 'Lesson Plans' },
                                         { id: 'assessments', label: 'Assessments' },
-                                        { id: 'rights', label: 'Rights & Integrity' },
+                                        { id: 'rights', label: 'Rights' },
                                     ].map(feat => (
                                         <button 
                                             key={feat.id}

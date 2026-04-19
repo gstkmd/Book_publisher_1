@@ -55,7 +55,7 @@ class Organization(Document):
     stripe_customer_id: Optional[str] = None
     created_at: datetime = datetime.now(timezone.utc)
     is_active: bool = True
-    enabled_modules: List[str] = ["monitoring", "tasks"] # Feature toggles
+    enabled_modules: List[str] = ["monitoring", "tasks", "workflow", "library"] # Feature toggles
     monitoring_retention_days: int = 30
     screenshot_retention_days: int = 7
     sync_interval_seconds: int = 300 # Default 5 mins
