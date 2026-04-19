@@ -300,6 +300,19 @@ export default function AgentDetailPage() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
+                                                {log.web_category === 'threat' ? (
+                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                                                        🚫 Threat
+                                                    </span>
+                                                ) : log.web_category === 'productive' ? (
+                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                                                        ✅ Useful
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-xs text-gray-400 font-medium">Neutral</span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${log.activity_type === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                                                     }`}>
                                                     {log.activity_type}
