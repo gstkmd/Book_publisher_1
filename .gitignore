@@ -52,3 +52,7 @@ backend/*.db
 storage/
 scripts/*.log
 nginx/*.log
+
+__pycache__/
+*.pyc
+.env

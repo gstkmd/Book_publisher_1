@@ -22,6 +22,18 @@ app = FastAPI(
     redirect_slashes=True,
 )
 
+# 👇 ADD THIS BLOCK
+from fastapi.staticfiles import StaticFiles
+import os
+
+storage_path = "/app/storage"
+if os.path.isdir(storage_path):
+    app.mount("/storage", StaticFiles(directory=storage_path), name="storage")
+
+
+
+
+
 # Set all CORS enabled origins
 if settings.BACKEND_CORS_ORIGINS:
     # Parse comma-separated origins from environment variable
