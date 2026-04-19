@@ -24,7 +24,8 @@ import {
     Scale,
     ChevronDown,
     Globe,
-    Lock
+    Lock,
+    XCircle
 } from 'lucide-react';
 import { UserAvatar } from './UserAvatar';
 
