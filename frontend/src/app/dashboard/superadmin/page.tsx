@@ -191,7 +191,7 @@ export default function SuperAdminDashboard() {
 
     const handleSyncUsage = async () => {
         try {
-            await api.post('/superadmin/usage/sync', {}, token);
+            await api.post('/superadmin/usage/sync', {}, token || undefined);
             toast.success("Usage recalculation started in the background!");
         } catch (err) {
             toast.error("Failed to start usage sync");
