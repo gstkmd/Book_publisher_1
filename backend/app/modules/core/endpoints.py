@@ -81,7 +81,7 @@ async def update_organization(
     update_data: dict, 
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != "admin": # Simple RBAC check
+    if current_user.role not in ["admin", "super_admin"]: # Simple RBAC check
         raise HTTPException(status_code=403, detail="Only admins can update organization settings")
 
     if not current_user.organization_id:
@@ -133,7 +133,7 @@ async def invite_member(
     """Admin invites a user by email, returns an invite link."""
     if current_user.organization_id != organization_id:
         raise HTTPException(status_code=403, detail="Not authorized for this organization")
-    if current_user.role not in ["admin", "owner"]:
+    if current_user.role not in ["admin", "owner", "super_admin"]:
         raise HTTPException(status_code=403, detail="Only admins can invite members")
 
     email_lower = req.email.lower()
@@ -302,7 +302,7 @@ async def get_organization_invitations(
 ):
     if current_user.organization_id != organization_id:
         raise HTTPException(status_code=403, detail="Not authorized")
-    if current_user.role not in ["admin", "owner"]:
+    if current_user.role not in ["admin", "owner", "super_admin"]:
         raise HTTPException(status_code=403, detail="Only admins can view invitations")
 
     invites = await InviteToken.find(InviteToken.organization_id == organization_id).to_list()
@@ -317,7 +317,7 @@ async def revoke_invitation(
     if not invite:
         raise HTTPException(status_code=404, detail="Invitation not found")
         
-    if current_user.organization_id != invite.organization_id or current_user.role not in ["admin", "owner"]:
+    if current_user.organization_id != invite.organization_id or current_user.role not in ["admin", "owner", "super_admin"]:
         raise HTTPException(status_code=403, detail="Not authorized to revoke this invitation")
 
     if invite.status != "pending":
@@ -363,7 +363,7 @@ async def update_member_status(
     is_active: bool,
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != "admin":
+    if current_user.role not in ["admin", "super_admin"]:
         raise HTTPException(status_code=403, detail="Only admins can manage members")
 
     user = await User.get(user_id)
@@ -380,7 +380,7 @@ async def update_member_role(
     role: str,
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != "admin":
+    if current_user.role not in ["admin", "super_admin"]:
         raise HTTPException(status_code=403, detail="Only admins can manage members")
 
     user = await User.get(user_id)

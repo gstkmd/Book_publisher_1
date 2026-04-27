@@ -74,7 +74,7 @@ async def submit_activity(
 async def get_team_activity(
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != "admin": # Only admins/managers see others
+    if current_user.role not in ["admin", "super_admin"]: # Only admins/managers see others
         raise HTTPException(status_code=403, detail="Not authorized to view team activity")
 
     activities = await MonitoringActivity.find(
