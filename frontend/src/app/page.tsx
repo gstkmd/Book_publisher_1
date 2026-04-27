@@ -7,11 +7,11 @@ export default function Home() {
       <nav className="fixed w-full z-50 top-0 start-0 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
         <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
           <span className="self-center text-2xl font-bold whitespace-nowrap bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
-            Trojan Horse
+            Connect Publisher
           </span>
           <div className="flex space-x-3 md:order-2 space-x-reverse">
             <Link href="/login" className="text-white bg-indigo-700 hover:bg-indigo-800 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium rounded-lg text-sm px-4 py-2 text-center dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800 transition-colors">
-              Get started
+              Customer Login
             </Link>
           </div>
         </div>
@@ -32,11 +32,11 @@ export default function Home() {
           </p>
           <div className="flex flex-col mb-8 lg:mb-16 space-y-4 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-4">
             <Link href="/signup" className="inline-flex justify-center items-center py-3 px-5 text-base font-medium text-center text-white rounded-lg bg-indigo-700 hover:bg-indigo-800 focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-900 transition-all shadow-lg hover:shadow-indigo-500/30">
-              Start Creating
+              New User? Start Creating
               <svg className="ml-2 -mr-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd"></path></svg>
             </Link>
-            <Link href="#" className="inline-flex justify-center items-center py-3 px-5 text-base font-medium text-center text-gray-900 rounded-lg border border-gray-300 hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 dark:text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:focus:ring-gray-800 transition-all">
-              Watch Demo
+            <Link href="/dashboard/help" className="inline-flex justify-center items-center py-3 px-5 text-base font-medium text-center text-gray-900 rounded-lg border border-gray-300 hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 dark:text-white dark:border-gray-700 dark:hover:bg-gray-700 dark:focus:ring-gray-800 transition-all">
+              Explore FAQs & Benefits
             </Link>
           </div>
         </div>
@@ -83,11 +83,38 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Ecosystem Section */}
+      <section className="py-20 bg-white dark:bg-slate-900">
+        <div className="max-w-screen-xl mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-4">Our Ecosystem</h2>
+            <p className="text-slate-500 dark:text-slate-400">Discover our suite of integrated enterprise applications.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="p-6 rounded-2xl bg-indigo-50/50 border border-indigo-100 hover:shadow-lg transition-all text-center">
+              <div className="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center mx-auto mb-4 font-bold">CS</div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Compliance Sarthi</h3>
+              <p className="text-sm text-slate-500">Intelligent document creation and regulatory compliance management.</p>
+            </div>
+            <div className="p-6 rounded-2xl bg-emerald-50/50 border border-emerald-100 hover:shadow-lg transition-all text-center">
+              <div className="w-12 h-12 bg-emerald-600 text-white rounded-xl flex items-center justify-center mx-auto mb-4 font-bold">SM</div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Stock Manager</h3>
+              <p className="text-sm text-slate-500">Real-time inventory tracking and supply chain optimization.</p>
+            </div>
+            <div className="p-6 rounded-2xl bg-amber-50/50 border border-amber-100 hover:shadow-lg transition-all text-center">
+              <div className="w-12 h-12 bg-amber-600 text-white rounded-xl flex items-center justify-center mx-auto mb-4 font-bold">AC</div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">AccountCloud</h3>
+              <p className="text-sm text-slate-500">Next-generation cloud ERP for comprehensive financial management.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <footer className="p-4 bg-white md:p-8 lg:p-10 dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800">
         <div className="mx-auto max-w-screen-xl text-center">
-          <span className="text-2xl font-semibold text-gray-900 dark:text-white">Trojan Horse</span>
-          <p className="my-6 text-gray-500 dark:text-gray-600">Open-source educational publishing infrastructure.</p>
-          <span className="text-sm text-gray-500 sm:text-center dark:text-gray-600">© 2024 <a href="#" className="hover:underline">Education Architecture™</a>. All Rights Reserved.</span>
+          <span className="text-2xl font-semibold text-gray-900 dark:text-white">Connect Publisher</span>
+          <p className="my-6 text-gray-500 dark:text-gray-600">Enterprise publishing infrastructure by Connect ERP.</p>
+          <span className="text-sm text-gray-500 sm:text-center dark:text-gray-600">© 2024 <a href="#" className="hover:underline">Connect ERP Architecture™</a>. All Rights Reserved.</span>
         </div>
       </footer>
     </main>
