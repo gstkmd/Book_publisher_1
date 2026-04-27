@@ -847,7 +847,7 @@ async def get_agent_activity(
             MonitoringActivity.timestamp >= start_date,
             MonitoringActivity.timestamp <= end_date,
             fetch_links=True # Fetch link to ensure serialization is easier
-        ).sort(-MonitoringActivity.timestamp).limit(200).to_list()
+        ).sort(-MonitoringActivity.timestamp).limit(1000).to_list()
         
         serialized_logs = []
         for log in raw_logs:
