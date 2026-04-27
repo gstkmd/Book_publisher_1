@@ -116,20 +116,7 @@ export default function MonitoringDashboardPage() {
         }
     };
 
-    useEffect(() => {
-        if (!token) return;
-
-        console.log(`[${globalInstanceId}] ⏱️ Setting up monitoring polling (30s)`);
-        const intervalId = setInterval(() => {
-            console.log(`[${globalInstanceId}] 🔔 Polling trigger...`);
-            fetchData();
-        }, 30000); // Poll every 30 seconds
-
-        return () => {
-            console.log(`[${globalInstanceId}] 🛑 Clearing monitoring polling`);
-            clearInterval(intervalId);
-        };
-    }, [token]);
+    // Auto-refresh (polling) removed as per user request. Manual refresh remains available.
 
     const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>) => {
         ref.current?.scrollIntoView({ behavior: 'smooth' });
