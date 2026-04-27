@@ -89,7 +89,8 @@ export const ReviewDisplay: React.FC<ReviewDisplayProps> = ({ contentId, onClose
                 const parsed = JSON.parse(body);
                 return extractTextFromRichText(parsed);
             } catch {
-                return body;
+                // Strip HTML tags to ensure clean text for review highlights
+                return body.replace(/<\/?[^>]+(>|$)/g, "");
             }
         }
         if (body.text && typeof body.text === 'string') return body.text;

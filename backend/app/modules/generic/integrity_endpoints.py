@@ -35,13 +35,28 @@ async def verify_full_content(
     if content.organization_id != current_user.organization_id:
         raise HTTPException(status_code=403, detail="Not authorized to access this content")
     
-    # Extract plain text from the content body (assuming Prosemirror-like JSON structure or raw text)
-    # For now, we'll use a simplified extraction logic
-    text_to_check = content.body
-    if isinstance(text_to_check, dict):
-        # Very simple JSON to text conversion - should be expanded based on actual schema
-        import json
-        text_to_check = json.dumps(text_to_check)
+    # Extract plain text from the content body
+    text_to_check = ""
+    body = content.body
+    
+    if isinstance(body, str):
+        # Strip HTML tags
+        import re
+        text_to_check = re.sub('<[^<]+?>', '', body)
+    elif isinstance(body, dict):
+        # Try to extract text from common rich-text structures (Tiptap/Prosemirror)
+        def extract_recursive(node):
+            if not node: return ""
+            if isinstance(node, str): return node
+            if isinstance(node, dict):
+                if node.get("type") == "text": return node.get("text", "")
+                content_list = node.get("content", [])
+                if isinstance(content_list, list):
+                    return " ".join([extract_recursive(child) for child in content_list])
+            return ""
+        text_to_check = extract_recursive(body)
+    else:
+        text_to_check = str(body)
     
     report = await integrity_provider.generate_report(
         text=text_to_check,

@@ -412,8 +412,18 @@ export default function ContentReview({
                                 </button>
 
                                 {auditReport && (
-                                    <div className="mt-4 space-y-3">
-                                        {auditReport.ai_score !== null && (
+                                    <div className="mt-4 space-y-3 animate-fade-in">
+                                        <div className="pb-2 border-b border-indigo-100 flex justify-between items-center">
+                                            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Audit Results</span>
+                                            <span className="text-[9px] text-indigo-300 font-bold">Latest Scan</span>
+                                        </div>
+
+                                        {/* Summary Always Visible */}
+                                        <div className="text-[10px] text-indigo-700 bg-white p-2 rounded border border-indigo-100 shadow-sm leading-relaxed">
+                                            <span className="font-bold">Summary:</span> {auditReport.summary || "Analysis complete."}
+                                        </div>
+
+                                        {auditReport.ai_score !== null && auditReport.ai_score !== undefined && (
                                             <div className="bg-white p-3 rounded border border-indigo-200 shadow-sm">
                                                 <div className="flex justify-between items-center mb-1">
                                                     <span className="text-[10px] uppercase font-bold text-gray-600">AI Probability</span>
@@ -430,7 +440,7 @@ export default function ContentReview({
                                             </div>
                                         )}
 
-                                        {auditReport.plagiarism_matches !== null && (
+                                        {auditReport.plagiarism_matches !== null && auditReport.plagiarism_matches !== undefined && (
                                             <div className="bg-white p-3 rounded border border-indigo-200 shadow-sm">
                                                 <div className="flex justify-between items-center mb-2">
                                                     <span className="text-[10px] uppercase font-bold text-gray-600">Copyright Signal</span>
@@ -443,10 +453,10 @@ export default function ContentReview({
                                                 {auditReport.plagiarism_matches.length > 0 ? (
                                                     <div className="space-y-2">
                                                         {auditReport.plagiarism_matches.map((match, i) => (
-                                                            <div key={i} className="text-[10px] border-l-2 border-red-200 pl-2">
+                                                            <div key={i} className="text-[10px] border-l-2 border-red-200 pl-2 py-1">
                                                                 <div className="font-bold text-gray-800 line-clamp-1">{match.title}</div>
-                                                                <a href={match.url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline line-clamp-1">{match.url}</a>
-                                                                <div className="text-gray-500 italic mt-1 line-clamp-2">Matches: "{match.matched_text}"</div>
+                                                                <a href={match.url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline line-clamp-1 truncate block">{match.url}</a>
+                                                                <div className="text-gray-500 italic mt-0.5 line-clamp-2">Matches: "{match.matched_text}"</div>
                                                             </div>
                                                         ))}
                                                     </div>
