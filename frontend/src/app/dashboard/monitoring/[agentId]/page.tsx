@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ScreenshotGallery } from '@/components/monitoring/ScreenshotGallery';
 import { MetricCard } from '@/components/monitoring/MetricCard';
 import { Modal } from '@/components/ui/Modal';
+import { ScreenshotPreview } from '@/components/monitoring/ScreenshotPreview';
 import Link from 'next/link';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -343,24 +344,13 @@ export default function AgentDetailPage() {
             )}
 
             {/* Image Preview Modal */}
-            <Modal 
-                isOpen={!!selectedScreenshot} 
+            <ScreenshotPreview
+                screenshot={selectedScreenshot}
+                screenshots={screenshots}
                 onClose={() => setSelectedScreenshot(null)}
-                title={`Screenshot Preview - ${selectedScreenshot?.computer_name}`}
-            >
-                {selectedScreenshot && (
-                    <div className="flex flex-col items-center gap-4">
-                        <img 
-                            src={`${API_BASE}/monitoring/dashboard/screenshot/${selectedScreenshot.id}`} 
-                            alt="Full Size Screenshot"
-                            className="max-w-full h-auto rounded-lg shadow-lg border border-gray-200"
-                        />
-                        <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full border border-gray-100 shadow-sm">
-                            Captured at: {formatDateTimeIST(selectedScreenshot.timestamp)}
-                        </div>
-                    </div>
-                )}
-            </Modal>
+                onNavigate={(shot) => setSelectedScreenshot(shot)}
+                apiUrl={API_BASE}
+            />
         </div>
     );
 }
