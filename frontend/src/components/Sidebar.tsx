@@ -25,7 +25,8 @@ import {
     ChevronDown,
     Globe,
     Lock,
-    XCircle
+    XCircle,
+    HelpCircle
 } from 'lucide-react';
 import { UserAvatar } from './UserAvatar';
 
@@ -49,6 +50,7 @@ export const Sidebar = () => {
         { name: 'Assessments', href: '/dashboard/assessments', icon: CheckSquare, featureId: 'assessments' },
         { name: 'Rights', href: '/dashboard/rights', icon: Scale, featureId: 'rights' },
         { name: 'Monitoring', href: '/dashboard/monitoring', icon: Activity, featureId: 'monitoring' },
+        { name: 'Help & FAQ', href: '/dashboard/help', icon: HelpCircle },
     ];
 
     const systemItems = [
