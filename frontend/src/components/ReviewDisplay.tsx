@@ -93,7 +93,9 @@ export const ReviewDisplay: React.FC<ReviewDisplayProps> = ({ contentId, onClose
                 return body.replace(/<\/?[^>]+(>|$)/g, "");
             }
         }
-        if (body.text && typeof body.text === 'string') return body.text;
+        if (body.text && typeof body.text === 'string') {
+            return body.text.replace(/<\/?[^>]+(>|$)/g, "");
+        }
         if (body.content && Array.isArray(body.content)) {
             return body.content.map((node: any) => {
                 if (node.type === 'text') return node.text || '';

@@ -64,5 +64,29 @@ export const faqData: FAQItem[] = [
         question: 'Who can approve content for publishing?',
         answer: 'Typically, users with "Admin" or "Editor" roles have the authority to move content to the "Approved" or "Published" stages. This ensures quality control across all publications.',
         tags: ['approve', 'publish', 'roles', 'permissions']
+    },
+    {
+        category: 'Workflow',
+        question: 'How do I review content and leave comments?',
+        answer: 'Open any document in "Review Mode". Highlight any text you want to discuss, and a floating comment button will appear. Type your feedback and hit "Post". Your comments will appear in the "Collaboration Feed" for the team to see.',
+        tags: ['review', 'comment', 'feedback', 'highlight']
+    },
+    {
+        category: 'Workflow',
+        question: 'What is the difference between pending and resolved comments?',
+        answer: 'A "Pending" (Unresolved) comment indicates that an issue still needs attention. Once the feedback has been addressed, any team member or the reviewer can click "Resolve". Resolved comments are hidden by default to keep the workspace clean but can be viewed at any time using the filter.',
+        tags: ['resolved', 'pending', 'unresolved', 'comments']
+    },
+    {
+        category: 'Library',
+        question: 'How can I see past versions of a document?',
+        answer: 'Every time you save significant changes, the system creates a "Version History" entry. You can access this from the document details page to see who made changes and when, or even revert to a previous state if needed.',
+        tags: ['version', 'history', 'revert', 'changes', 'past']
+    },
+    {
+        category: 'Library',
+        question: 'What is the Manuscript Auditor and how do I use it?',
+        answer: 'The Manuscript Auditor (Integrity Scan) is an AI-powered tool that checks your content for AI-generated text and potential copyright issues. You can find it in the "Review Panel" by clicking "Integrity Scan". Choose your options and click "Run Full Manuscript Audit" to see a detailed report.',
+        tags: ['audit', 'integrity', 'ai check', 'copyright', 'plagiarism']
     }
 ];
