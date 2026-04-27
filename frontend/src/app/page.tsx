@@ -48,7 +48,7 @@ export default function Home() {
             <h1 className="text-5xl lg:text-7xl font-black tracking-tighter leading-[1.1] mb-6 text-slate-900 dark:text-white">
               The Future of <br/>
               <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 bg-clip-text text-transparent animate-gradient-x">
-                Educational Publishing
+                Publishing
               </span>
             </h1>
             

@@ -112,46 +112,43 @@ export default function SignupPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-violet-50/30 flex flex-col items-center justify-center p-6">
-            {/* Back link */}
-            <Link href="/" className="mb-8 flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors text-sm font-medium">
-                <ArrowLeft className="w-4 h-4" />
-                Back to Home
-            </Link>
+        <div className="min-h-screen bg-white dark:bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+            {/* Dynamic Background */}
+            <div className="absolute inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-indigo-500/10 rounded-full blur-[100px] animate-pulse"></div>
+                <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-violet-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+            </div>
 
-            <div className="w-full max-w-md">
+            <div className="relative z-10 w-full max-w-md animate-fade-in-up">
+                {/* Brand */}
+                <Link href="/" className="mb-10 flex items-center justify-center gap-2 group">
+                    <div className="w-8 h-8 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-lg flex items-center justify-center text-white font-black shadow-lg shadow-indigo-500/20 group-hover:rotate-12 transition-transform duration-300">
+                        CP
+                    </div>
+                    <span className="text-xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">Connect Publisher</span>
+                </Link>
+
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <span className="text-3xl font-black bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
-                        Get Started Free
-                    </span>
-                    <p className="text-slate-500 text-sm mt-2">Create your organization workspace in 2 steps</p>
+                    <h1 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-2">
+                      Get Started Free
+                    </h1>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Build your publishing empire</p>
                 </div>
 
                 {/* Step Indicator */}
-                <div className="flex items-center gap-3 mb-8">
-                    <div className={`flex-1 flex items-center gap-2 p-3 rounded-xl transition-all ${step >= 1 ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400 border border-slate-200'}`}>
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${step > 1 ? 'bg-white text-indigo-600' : 'bg-white/20'}`}>
-                            {step > 1 ? <Check className="w-3.5 h-3.5" /> : <User className="w-3.5 h-3.5" />}
-                        </div>
-                        <span className="text-xs font-black uppercase tracking-wider">Your Details</span>
-                    </div>
-                    <div className="w-4 h-0.5 bg-slate-200 shrink-0" />
-                    <div className={`flex-1 flex items-center gap-2 p-3 rounded-xl transition-all ${step === 2 ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400 border border-slate-200'}`}>
-                        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-                            <Building2 className="w-3.5 h-3.5" />
-                        </div>
-                        <span className="text-xs font-black uppercase tracking-wider">Your Org</span>
-                    </div>
+                <div className="flex items-center gap-4 mb-8">
+                    <div className={`flex-1 h-1.5 rounded-full transition-all duration-500 ${step >= 1 ? 'bg-indigo-600 shadow-sm shadow-indigo-500/40' : 'bg-slate-200 dark:bg-slate-800'}`} />
+                    <div className={`flex-1 h-1.5 rounded-full transition-all duration-500 ${step >= 2 ? 'bg-indigo-600 shadow-sm shadow-indigo-500/40' : 'bg-slate-200 dark:bg-slate-800'}`} />
                 </div>
 
-                <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8">
+                <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 p-10">
                     {error && (
-                        <div className="bg-red-50 text-red-600 border border-red-100 p-4 rounded-xl mb-6 text-sm font-medium flex flex-col gap-3">
-                            <div>{error}</div>
+                        <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-2xl mb-6 text-xs font-black uppercase tracking-widest text-center animate-shake">
+                            {error}
                             {accountExistsError && (
-                                <Link href="/login" className="inline-flex items-center justify-center gap-2 py-2 px-4 bg-red-600 text-white rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-red-700 transition-colors w-fit shadow-sm">
-                                    Go to Login <ArrowRight className="w-4 h-4" />
+                                <Link href="/login" className="block mt-2 text-indigo-600 hover:underline">
+                                    Login instead →
                                 </Link>
                             )}
                         </div>
@@ -159,97 +156,127 @@ export default function SignupPage() {
 
                     {/* ── Step 1: Personal Details ── */}
                     {step === 1 && (
-                        <form onSubmit={handleStep1} className="space-y-5">
+                        <form onSubmit={handleStep1} className="space-y-6">
                             <div>
-                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">Full Name</label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Full Name</label>
                                 <input
                                     type="text" required autoFocus
                                     value={fullName} onChange={e => setFullName(e.target.value)}
                                     placeholder="Jane Smith"
-                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                    className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none transition-all text-sm font-bold"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">Work Email</label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Work Email</label>
                                 <input
                                     type="email" required
                                     value={email} onChange={e => setEmail(e.target.value)}
                                     placeholder="jane@company.com"
-                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                    className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none transition-all text-sm font-bold"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">Password</label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Password</label>
                                 <div className="relative">
                                     <input
                                         type={showPassword ? 'text' : 'password'} required minLength={6}
                                         value={password} onChange={e => setPassword(e.target.value)}
                                         placeholder="Min. 6 characters"
-                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all pr-12"
+                                        className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none transition-all text-sm font-bold pr-12"
                                     />
                                     <button type="button" onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1">
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors p-1">
                                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                     </button>
                                 </div>
                             </div>
                             <button type="submit"
-                                className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-black text-sm uppercase tracking-wider hover:from-indigo-700 hover:to-violet-700 transition-all shadow-lg shadow-indigo-200 hover:-translate-y-0.5 active:translate-y-0">
-                                Continue <ArrowRight className="w-4 h-4" />
+                                className="w-full flex items-center justify-center gap-3 py-5 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-[0.3em] shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 hover:-translate-y-1 transition-all active:scale-95">
+                                Next Step <ArrowRight className="w-4 h-4" />
                             </button>
                         </form>
                     )}
 
                     {/* ── Step 2: Organization Setup ── */}
                     {step === 2 && (
-                        <form onSubmit={handleSubmit} className="space-y-5">
-                            <div className="bg-indigo-50 rounded-2xl p-4 text-sm text-indigo-700 font-medium border border-indigo-100">
-                                🏢 You'll be the <strong>Admin</strong> of your organization and can invite team members from Settings.
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="bg-indigo-50/50 dark:bg-indigo-900/20 rounded-2xl p-5 text-[10px] text-indigo-600 dark:text-indigo-400 font-black uppercase tracking-widest border border-indigo-100/50 dark:border-indigo-800/50">
+                                🏢 You will be the account administrator.
                             </div>
                             <div>
-                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">Organization Name</label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Organization Name</label>
                                 <input
                                     type="text" required autoFocus
                                     value={orgName} onChange={e => handleOrgNameChange(e.target.value)}
                                     placeholder="Book Magic Publishing"
-                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                    className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none transition-all text-sm font-bold"
                                 />
-                                {orgSlug && (
-                                    <p className="text-xs text-slate-400 mt-1.5 font-mono">
-                                        URL: <span className="text-indigo-500 font-bold">{orgSlug}</span>
-                                    </p>
-                                )}
                             </div>
                             <div>
-                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">Slug (customizable)</label>
-                                <input
-                                    type="text" required
-                                    value={orgSlug} onChange={e => setOrgSlug(toSlug(e.target.value))}
-                                    placeholder="book-magic"
-                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                                />
+                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Workspace URL</label>
+                                <div className="flex items-center gap-2 group">
+                                    <input
+                                        type="text" required
+                                        value={orgSlug} onChange={e => setOrgSlug(toSlug(e.target.value))}
+                                        placeholder="book-magic"
+                                        className="flex-1 px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none transition-all text-sm font-mono font-bold"
+                                    />
+                                </div>
                             </div>
-                            <div className="flex gap-3">
+                            <div className="flex gap-4 pt-2">
                                 <button type="button" onClick={() => setStep(1)}
-                                    className="flex items-center gap-2 px-5 py-3.5 border border-slate-200 text-slate-600 rounded-xl font-black text-sm uppercase tracking-wider hover:bg-slate-50 transition-all">
-                                    <ArrowLeft className="w-4 h-4" /> Back
+                                    className="px-6 py-5 border-2 border-slate-100 dark:border-slate-800 text-slate-400 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-900 transition-all">
+                                    <ArrowLeft className="w-5 h-5 mx-auto" />
                                 </button>
                                 <button type="submit" disabled={loading}
-                                    className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-black text-sm uppercase tracking-wider hover:from-indigo-700 hover:to-violet-700 transition-all shadow-lg shadow-indigo-200 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0">
-                                    {loading ? 'Creating workspace...' : <>Launch Workspace <ArrowRight className="w-4 h-4" /></>}
+                                    className="flex-1 flex items-center justify-center gap-3 py-5 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-[0.3em] shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-50">
+                                    {loading ? 'Creating...' : <>Launch Workspace <ArrowRight className="w-4 h-4" /></>}
                                 </button>
                             </div>
                         </form>
                     )}
 
-                    <p className="mt-6 text-center text-sm text-slate-500">
-                        Already have an account? <Link href="/login" className="text-indigo-600 font-bold hover:underline">Log in</Link>
-                    </p>
-                    <p className="mt-2 text-center text-sm text-slate-500">
-                        Joining via invite? <Link href="/join" className="text-indigo-600 font-bold hover:underline">Use your link</Link>
-                    </p>
+                    <div className="mt-8 text-center space-y-3">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                            Already have an account? <Link href="/login" className="text-indigo-600 hover:scale-105 transition-transform inline-block">Login</Link>
+                        </p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+                            Joining via invite? <Link href="/join" className="text-indigo-600/50 hover:text-indigo-600 transition-colors">Use your link</Link>
+                        </p>
+                    </div>
+                </div>
+
+                <div className="mt-8 text-center animate-pulse">
+                    <Link href="/" className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-slate-600 transition-colors">
+                      ← Back to home
+                    </Link>
                 </div>
             </div>
+
+            <style jsx global>{`
+                @keyframes fade-in-up {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fade-in-up {
+                    animation: fade-in-up 0.8s ease-out forwards;
+                }
+                @keyframes pulse {
+                    0%, 100% { opacity: 0.1; transform: scale(1); }
+                    50% { opacity: 0.2; transform: scale(1.1); }
+                }
+                .animate-pulse {
+                    animation: pulse 4s ease-in-out infinite;
+                }
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-4px); }
+                    75% { transform: translateX(4px); }
+                }
+                .animate-shake {
+                    animation: shake 0.3s ease-in-out;
+                }
+            `}</style>
         </div>
     );
 }

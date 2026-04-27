@@ -44,46 +44,103 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center p-24 bg-gray-50">
-            <Link href="/" className="mb-6 flex items-center gap-2 text-indigo-600 font-bold hover:text-indigo-700 transition-colors">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Back to Home
-            </Link>
-            <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
-                <h2 className="text-2xl font-semibold mb-6 text-center text-gray-900">Login to Platform</h2>
-                {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm font-medium">{error}</div>}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <Label>Email</Label>
-                        <Input
-                            type="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                        />
-                    </div>
-                    <div>
-                        <Label>Password</Label>
-                        <Input
-                            type="password"
-                            required
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                        Sign in
-                    </button>
-                </form>
-                <p className="mt-4 text-center text-sm text-gray-600">
-                    Don't have an account? <Link href="/signup" className="text-blue-600 hover:underline">Sign up</Link>
-                </p>
+        <div className="flex min-h-screen flex-col items-center justify-center p-6 bg-white dark:bg-slate-950 overflow-hidden relative">
+            {/* Dynamic Background */}
+            <div className="absolute inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-indigo-500/10 rounded-full blur-[100px] animate-pulse"></div>
+                <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-violet-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }}></div>
             </div>
+
+            <div className="relative z-10 w-full max-w-md animate-fade-in-up">
+                <Link href="/" className="mb-12 flex items-center justify-center gap-2 group">
+                    <div className="w-8 h-8 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-lg flex items-center justify-center text-white font-black shadow-lg shadow-indigo-500/20 group-hover:rotate-12 transition-transform duration-300">
+                        CP
+                    </div>
+                    <span className="text-xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">Connect Publisher</span>
+                </Link>
+
+                <div className="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800">
+                    <div className="text-center mb-10">
+                        <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-2">Welcome Back</h2>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Enter your credentials to enter workspace</p>
+                    </div>
+
+                    {error && (
+                        <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-2xl mb-6 text-xs font-black uppercase tracking-widest text-center animate-shake">
+                            {error}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Email Address</label>
+                            <input
+                                type="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none transition-all text-sm font-bold placeholder:text-slate-300"
+                                placeholder="jane@company.com"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Password</label>
+                            <input
+                                type="password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none transition-all text-sm font-bold placeholder:text-slate-300"
+                                placeholder="••••••••"
+                            />
+                        </div>
+                        
+                        <button
+                            type="submit"
+                            className="w-full py-5 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-[0.3em] shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 hover:-translate-y-1 transition-all active:scale-95"
+                        >
+                            Sign In to Platform
+                        </button>
+                    </form>
+
+                    <div className="mt-8 text-center">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                            New here? <Link href="/signup" className="text-indigo-600 hover:scale-105 transition-transform inline-block">Create an account</Link>
+                        </p>
+                    </div>
+                </div>
+
+                <div className="mt-8 text-center animate-pulse">
+                    <Link href="/" className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-slate-600 transition-colors">
+                      ← Back to home
+                    </Link>
+                </div>
+            </div>
+
+            <style jsx global>{`
+                @keyframes fade-in-up {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fade-in-up {
+                    animation: fade-in-up 0.8s ease-out forwards;
+                }
+                @keyframes pulse {
+                    0%, 100% { opacity: 0.1; transform: scale(1); }
+                    50% { opacity: 0.2; transform: scale(1.1); }
+                }
+                .animate-pulse {
+                    animation: pulse 4s ease-in-out infinite;
+                }
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-4px); }
+                    75% { transform: translateX(4px); }
+                }
+                .animate-shake {
+                    animation: shake 0.3s ease-in-out;
+                }
+            `}</style>
         </div>
     );
 }
