@@ -138,6 +138,7 @@ body {
   padding: 0;
   color: inherit;
   font-size: inherit;
+}
 
 @keyframes blink-red {
   0%, 100% { 
