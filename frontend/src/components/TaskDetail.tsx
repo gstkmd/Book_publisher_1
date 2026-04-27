@@ -496,6 +496,13 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                     Submit Task
                                 </button>
                             )}
+                            <button
+                                onClick={onClose}
+                                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all duration-300 active:scale-90 group border border-transparent hover:border-rose-100 shadow-sm"
+                                title="Close Task Detail"
+                            >
+                                <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+                            </button>
                         </div>
                     </div>
 
@@ -508,7 +515,11 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                         type="text"
                                         value={task.title}
                                         onChange={(e) => handleUpdateField('title', e.target.value)}
-                                        className="text-lg font-extrabold text-slate-900 w-full border-none focus:ring-0 p-0 placeholder:text-slate-300"
+                                        className={`text-lg font-extrabold w-full border-none focus:ring-0 p-0 transition-all duration-500 ${
+                                            !task.title.trim() 
+                                            ? 'animate-blink-red text-rose-500 placeholder:text-rose-400' 
+                                            : 'text-slate-900 placeholder:text-slate-300'
+                                        }`}
                                         placeholder="Task Title (Mandatory)"
                                         required
                                     />

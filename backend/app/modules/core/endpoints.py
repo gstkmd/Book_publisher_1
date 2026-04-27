@@ -103,6 +103,8 @@ async def update_organization(
         org.slug = new_slug
     if "content_settings" in update_data:
         org.content_settings = update_data["content_settings"]
+    if "role_permissions" in update_data:
+        org.role_permissions = update_data["role_permissions"]
     
     # Website Categorization
     if "threat_domains" in update_data:

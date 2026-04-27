@@ -138,4 +138,25 @@ body {
   padding: 0;
   color: inherit;
   font-size: inherit;
+
+@keyframes blink-red {
+  0%, 100% { 
+    color: #ef4444; 
+    text-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+    opacity: 1;
+  }
+  50% { 
+    color: #f87171; 
+    text-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+    opacity: 0.6;
+  }
+}
+
+.animate-blink-red::placeholder {
+  animation: blink-red 1.2s infinite;
+  font-weight: 800;
+}
+
+.animate-blink-red {
+  animation: blink-red 1.2s infinite;
 }

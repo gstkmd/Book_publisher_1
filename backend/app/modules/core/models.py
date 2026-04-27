@@ -61,6 +61,7 @@ class Organization(Document):
     sync_interval_seconds: int = 300 # Default 5 mins
     hide_disabled_features: bool = False # Option to hide instead of lock
     content_settings: Dict[str, Any] = {} # Custom labels and custom fields setup
+    role_permissions: Dict[str, List[str]] = {} # Role name -> List of module names
     
     # Website Categorization
     threat_domains: List[str] = []

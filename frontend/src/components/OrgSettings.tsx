@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { RoleManager } from './RoleManager';
 
 export const OrgSettings = () => {
     // Trigger build fix
@@ -17,6 +18,7 @@ export const OrgSettings = () => {
         contentTypeOptions: 'article, book_chapter, lesson, resource',
         customFields: []
     });
+    const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>({});
 
     // Create Mode
     const [createName, setCreateName] = useState('');
@@ -57,6 +59,7 @@ export const OrgSettings = () => {
                 if (data.copyleaks_email) setClEmail(data.copyleaks_email);
                 setThreatDomains(data.threat_domains || []);
                 setProductiveDomains(data.productive_domains || []);
+                setRolePermissions(data.role_permissions || {});
             } else {
                 setOrg(null);
             }
@@ -85,7 +88,8 @@ export const OrgSettings = () => {
                 copyleaks_email: clEmail,
                 copyleaks_api_key: clApiKey,
                 threat_domains: threatDomains,
-                productive_domains: productiveDomains
+                productive_domains: productiveDomains,
+                role_permissions: rolePermissions
             }, token!);
             alert('Organization updated!');
             setClApiKey(''); // Clear the password field after saving
@@ -345,6 +349,12 @@ export const OrgSettings = () => {
                     )}
                 </div>
             </div>
+            
+            {/* Role & Permission Management Section */}
+            <RoleManager 
+                rolePermissions={rolePermissions}
+                onUpdate={setRolePermissions}
+            />
 
             {/* Website Categorization Section */}
             <div className="bg-white p-6 rounded-lg shadow border border-blue-100">

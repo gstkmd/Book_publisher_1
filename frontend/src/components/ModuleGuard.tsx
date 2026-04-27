@@ -11,10 +11,21 @@ interface ModuleGuardProps {
 }
 
 export default function ModuleGuard({ moduleName, children }: ModuleGuardProps) {
-    const { org } = useAuth();
+    const { org, user } = useAuth();
     
-    // Check if the module is enabled in the current organization context
-    const isEnabled = org?.enabled_modules?.includes(moduleName);
+    // 1. Organization level check (Is the module enabled for the whole workspace?)
+    const isModuleEnabledForOrg = org?.enabled_modules?.includes(moduleName);
+
+    // 2. Role level check (Does this specific user type have access?)
+    const userRole = user?.role || 'user';
+    
+    // Admins always have access to everything that is enabled for the org
+    // Custom roles follow the mapping in org.role_permissions
+    const rolePermissions = org?.role_permissions?.[userRole] || [];
+    const hasRolePermission = userRole === 'admin' || rolePermissions.includes(moduleName);
+
+    // Final access decision
+    const isAccessGranted = isModuleEnabledForOrg && hasRolePermission;
     
     // Mapping internal module names to human-readable labels
     const moduleLabels: Record<string, string> = {
@@ -28,7 +39,7 @@ export default function ModuleGuard({ moduleName, children }: ModuleGuardProps) 
         rights: 'Rights & Content Integrity'
     };
 
-    if (isEnabled) {
+    if (isAccessGranted) {
         return <>{children}</>;
     }
 
