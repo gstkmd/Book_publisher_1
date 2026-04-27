@@ -21,6 +21,7 @@ interface Org {
     plan?: string;
     enabled_modules?: string[];
     hide_disabled_features?: boolean;
+    role_permissions?: Record<string, string[]>;
 }
 
 interface AuthContextType {
