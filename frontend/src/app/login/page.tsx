@@ -4,8 +4,6 @@ import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import Link from 'next/link';
-import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -17,7 +15,6 @@ export default function LoginPage() {
         e.preventDefault();
         setError('');
 
-        // Create form data for OAuth2 password flow
         const formData = new URLSearchParams();
         formData.append('username', email);
         formData.append('password', password);
@@ -26,94 +23,112 @@ export default function LoginPage() {
             const res = await api.post('/auth/access-token', formData, undefined, true);
             login(res.access_token);
         } catch (err: any) {
-            console.error(err);
-            // Try to extract detailed error from API
             let errorMessage = 'Invalid email or password';
-            try {
-                // If it's a string, it might be the error body from api.ts (e.g., "400: {...}")
-                if (typeof err.message === 'string' && err.message.includes(':')) {
-                    const jsonStr = err.message.split(':').slice(1).join(':').trim();
-                    const detail = JSON.parse(jsonStr).detail;
-                    if (detail) errorMessage = detail;
-                }
-            } catch (innerErr) {
-                console.error("Failed to parse error detail", innerErr);
-            }
             setError(errorMessage);
         }
     };
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center p-6 bg-white dark:bg-slate-950 overflow-hidden relative">
-            {/* Dynamic Background */}
-            <div className="absolute inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-indigo-500/10 rounded-full blur-[100px] animate-pulse"></div>
-                <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-violet-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="flex min-h-screen bg-slate-50 relative overflow-hidden">
+            {/* Left Panel: Promotion */}
+            <div className="hidden lg:flex lg:w-1/2 bg-white flex-col justify-between p-16 border-r border-slate-200 relative z-10">
+                <div>
+                  <Link href="/" className="flex items-center gap-3 mb-24 cursor-pointer">
+                      <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black">CP</div>
+                      <span className="text-2xl font-black uppercase tracking-tighter text-slate-900">Connect Publisher</span>
+                  </Link>
+                  <div className="max-w-md">
+                      <h2 className="text-4xl font-black text-slate-900 leading-tight uppercase tracking-tighter mb-6">
+                        One Account. <br/>A Whole Suite of Tools.
+                      </h2>
+                      <p className="text-slate-500 font-medium text-lg leading-relaxed mb-12">
+                        Your Connect ID gives you seamless access to our entire enterprise ecosystem.
+                      </p>
+                      
+                      <div className="space-y-6">
+                          {[
+                            { id: 'CS', name: 'Compliance Sarthi', desc: 'Secure Document Orchestration' },
+                            { id: 'SM', name: 'Stock Manager', desc: 'Inventory & Logistical Control' },
+                            { id: 'AC', name: 'AccountCloud', desc: 'Enterprise Cloud Accounting' }
+                          ].map((item, i) => (
+                            <div key={i} className="flex gap-4 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm hover:translate-x-2 transition-transform cursor-pointer group">
+                                <div className="w-12 h-12 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black text-sm group-hover:bg-indigo-600 transition-colors">{item.id}</div>
+                                <div>
+                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{item.name}</h4>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.desc}</p>
+                                </div>
+                            </div>
+                          ))}
+                      </div>
+                  </div>
+                </div>
+                <div className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-300">
+                    Enterprise Grade Security • 256-bit Encryption
+                </div>
             </div>
 
-            <div className="relative z-10 w-full max-w-md animate-fade-in-up">
-                <Link href="/" className="mb-12 flex items-center justify-center gap-2 group">
-                    <div className="w-8 h-8 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-lg flex items-center justify-center text-white font-black shadow-lg shadow-indigo-500/20 group-hover:rotate-12 transition-transform duration-300">
-                        CP
-                    </div>
-                    <span className="text-xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">Connect Publisher</span>
-                </Link>
+            {/* Right Panel: Login Form */}
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-50 relative">
+                {/* Background soft pulse */}
+                <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-500/5 rounded-full blur-[100px] animate-pulse"></div>
 
-                <div className="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800">
-                    <div className="text-center mb-10">
-                        <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-2">Welcome Back</h2>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Enter your credentials to enter workspace</p>
+                <div className="w-full max-w-sm relative z-10 animate-fade-in-up">
+                    <div className="lg:hidden text-center mb-12">
+                         <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-black mx-auto mb-4">CP</div>
+                         <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Connect Publisher</h1>
                     </div>
 
-                    {error && (
-                        <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-2xl mb-6 text-xs font-black uppercase tracking-widest text-center animate-shake">
-                            {error}
+                    <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-200">
+                        <div className="mb-10">
+                            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-2">Welcome Back</h2>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Provide your credentials to enter</p>
                         </div>
-                    )}
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Email Address</label>
-                            <input
-                                type="email"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none transition-all text-sm font-bold placeholder:text-slate-300"
-                                placeholder="jane@company.com"
-                            />
+                        {error && (
+                            <div className="bg-red-50 text-red-600 border border-red-100 p-4 rounded-xl mb-6 text-[10px] font-black uppercase tracking-widest text-center animate-shake">
+                                {error}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div>
+                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Email Address</label>
+                                <input
+                                    type="email" required
+                                    value={email} onChange={e => setEmail(e.target.value)}
+                                    placeholder="jane@company.com"
+                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:border-indigo-600 outline-none transition-all text-sm font-bold"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Password</label>
+                                <input
+                                    type="password" required
+                                    value={password} onChange={e => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:border-indigo-600 outline-none transition-all text-sm font-bold"
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                className="w-full py-5 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] shadow-lg shadow-indigo-600/20 hover:bg-slate-900 transition-all active:scale-95"
+                            >
+                                Sign In
+                            </button>
+                        </form>
+
+                        <div className="mt-10 text-center">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                New here? <Link href="/signup" className="text-indigo-600 hover:underline">Create Account</Link>
+                            </p>
                         </div>
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Password</label>
-                            <input
-                                type="password"
-                                required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none transition-all text-sm font-bold placeholder:text-slate-300"
-                                placeholder="••••••••"
-                            />
-                        </div>
-                        
-                        <button
-                            type="submit"
-                            className="w-full py-5 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-[0.3em] shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 hover:-translate-y-1 transition-all active:scale-95"
-                        >
-                            Sign In to Platform
-                        </button>
-                    </form>
+                    </div>
 
                     <div className="mt-8 text-center">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                            New here? <Link href="/signup" className="text-indigo-600 hover:scale-105 transition-transform inline-block">Create an account</Link>
-                        </p>
+                        <Link href="/" className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300 hover:text-indigo-600 transition-colors">
+                            ← Back to home
+                        </Link>
                     </div>
-                </div>
-
-                <div className="mt-8 text-center animate-pulse">
-                    <Link href="/" className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-slate-600 transition-colors">
-                      ← Back to home
-                    </Link>
                 </div>
             </div>
 

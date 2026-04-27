@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Building2, User, ArrowRight, ArrowLeft, Check, Eye, EyeOff } from 'lucide-react';
+import { ArrowRight, ArrowLeft } from 'lucide-react';
 
 type Step = 1 | 2;
 
@@ -13,19 +13,13 @@ export default function SignupPage() {
     const { login } = useAuth();
     const router = useRouter();
 
-    // Step 1 fields
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-
-    // Step 2 fields
     const [orgName, setOrgName] = useState('');
     const [orgSlug, setOrgSlug] = useState('');
-
     const [step, setStep] = useState<Step>(1);
     const [error, setError] = useState('');
-    const [accountExistsError, setAccountExistsError] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const toSlug = (name: string) =>
@@ -39,9 +33,8 @@ export default function SignupPage() {
     const handleStep1 = (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        setAccountExistsError(false);
         if (!fullName.trim() || !email.trim() || password.length < 6) {
-            setError('Please fill all fields. Password must be at least 6 characters.');
+            setError('Please fill all fields properly.');
             return;
         }
         setStep(2);
@@ -50,206 +43,165 @@ export default function SignupPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        setAccountExistsError(false);
-        if (!orgName.trim() || !orgSlug.trim()) {
-            setError('Please provide an organization name.');
-            return;
-        }
         setLoading(true);
         try {
-            let userExisted = false;
-            // 1. Try to create user account
-            try {
-                await api.post('/users/', { email, password, full_name: fullName, role: 'admin' });
-            } catch (err: any) {
-                let msg = '';
-                try { const j = JSON.parse(err.message); msg = j.detail || msg; } catch { msg = err.message || msg; }
-                if (typeof msg === 'string' && msg.toLowerCase().includes('already exists')) {
-                    userExisted = true;
-                } else {
-                    throw err; // rethrow other errors
-                }
-            }
+            await api.post('/users/', { email, password, full_name: fullName, role: 'admin' });
+            
+            const params = new URLSearchParams();
+            params.append('username', email);
+            params.append('password', password);
 
-	   // 2. Login to get token
-	   const params = new URLSearchParams() ;
-           params.append('username', email);
-           params.append('password', password);
+            const loginRes = await fetch(
+            	`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}/auth/access-token`,
+    		    {
+        		    method: 'POST',
+        		    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        		    body: params.toString(),
+    		    }
+            );
 
-           const loginRes = await fetch(
-           	`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}/auth/access-token`,
-    		{
-        		method: 'POST',
-        		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        		body: params.toString(),
-    		}
-);
+    		if (!loginRes.ok) throw new Error('Auto-login failed');
+    		const { access_token } = await loginRes.json();
 
-		if (!loginRes.ok) {
-            if (userExisted) {
-                setAccountExistsError(true);
-                throw new Error('Account already exists. Please login.');
-            }
-            throw new Error('Auto-login failed');
-        }
-		const { access_token } = await loginRes.json();
-
-            // 3. Create organization
-            try {
-                await api.post('/organizations/', { name: orgName, slug: orgSlug }, access_token);
-            } catch (orgErr: any) {
-                console.warn('Organization creation warning:', orgErr);
-            }
-
-            // 4. Login via context (redirect to dashboard)
+            await api.post('/organizations/', { name: orgName, slug: orgSlug }, access_token);
             login(access_token);
         } catch (err: any) {
-            let msg = 'Registration failed';
-            try { const j = JSON.parse(err.message); msg = j.detail || msg; } catch { msg = err.message || msg; }
-            setError(msg);
+            setError('Registration failed. Email might already exist.');
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-white dark:bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-            {/* Dynamic Background */}
-            <div className="absolute inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-indigo-500/10 rounded-full blur-[100px] animate-pulse"></div>
-                <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-violet-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="flex min-h-screen bg-white relative overflow-hidden">
+            {/* Promotion Section (visible on lg) */}
+            <div className="hidden lg:flex lg:w-1/2 bg-slate-50 flex-col justify-between p-16 relative border-r border-slate-200">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-100/30 rounded-full blur-[100px]"></div>
+                
+                <div>
+                  <Link href="/" className="inline-flex items-center gap-3 mb-24 cursor-pointer">
+                      <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black">CP</div>
+                      <span className="text-2xl font-black uppercase tracking-tighter text-slate-900">Connect Publisher</span>
+                  </Link>
+                  <div className="max-w-md relative z-10">
+                      <h2 className="text-4xl font-black text-slate-900 leading-tight uppercase tracking-tighter mb-6">
+                        Join the <br/>Enterprise Cloud.
+                      </h2>
+                      <p className="text-slate-500 font-medium text-lg leading-relaxed mb-12">
+                        Get started with the world's most advanced publishing workspace and explore our integrated apps.
+                      </p>
+                      
+                      <div className="grid grid-cols-1 gap-4">
+                          {[
+                            { id: 'CS', name: 'Compliance Sarthi', desc: 'Secure Doc Control' },
+                            { id: 'SM', name: 'Stock Manager', desc: 'Inventory Intelligence' }
+                          ].map((item, i) => (
+                            <div key={i} className="flex items-center gap-4 p-6 rounded-3xl bg-white border border-slate-200 shadow-sm">
+                                <div className="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black text-xs">{item.id}</div>
+                                <div>
+                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{item.name}</h4>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.desc}</p>
+                                </div>
+                            </div>
+                          ))}
+                      </div>
+                  </div>
+                </div>
+                <div className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-300">
+                    One ID • All Connect Apps
+                </div>
             </div>
 
-            <div className="relative z-10 w-full max-w-md animate-fade-in-up">
-                {/* Brand */}
-                <Link href="/" className="mb-10 flex items-center justify-center gap-2 group">
-                    <div className="w-8 h-8 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-lg flex items-center justify-center text-white font-black shadow-lg shadow-indigo-500/20 group-hover:rotate-12 transition-transform duration-300">
-                        CP
+            {/* Signup Form Section */}
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-white relative">
+                <div className="w-full max-w-sm animate-fade-in-up">
+                    <div className="lg:hidden text-center mb-10">
+                         <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-black mx-auto mb-4">CP</div>
+                         <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Connect Publisher</h1>
                     </div>
-                    <span className="text-xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">Connect Publisher</span>
-                </Link>
 
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-2">
-                      Get Started Free
-                    </h1>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Build your publishing empire</p>
-                </div>
+                    <div className="mb-10 text-center lg:text-left">
+                        <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter mb-2">Create Account</h1>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Step {step} of 2</p>
+                    </div>
 
-                {/* Step Indicator */}
-                <div className="flex items-center gap-4 mb-8">
-                    <div className={`flex-1 h-1.5 rounded-full transition-all duration-500 ${step >= 1 ? 'bg-indigo-600 shadow-sm shadow-indigo-500/40' : 'bg-slate-200 dark:bg-slate-800'}`} />
-                    <div className={`flex-1 h-1.5 rounded-full transition-all duration-500 ${step >= 2 ? 'bg-indigo-600 shadow-sm shadow-indigo-500/40' : 'bg-slate-200 dark:bg-slate-800'}`} />
-                </div>
-
-                <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 p-10">
-                    {error && (
-                        <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-2xl mb-6 text-xs font-black uppercase tracking-widest text-center animate-shake">
-                            {error}
-                            {accountExistsError && (
-                                <Link href="/login" className="block mt-2 text-indigo-600 hover:underline">
-                                    Login instead →
-                                </Link>
-                            )}
-                        </div>
-                    )}
-
-                    {/* ── Step 1: Personal Details ── */}
-                    {step === 1 && (
-                        <form onSubmit={handleStep1} className="space-y-6">
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Full Name</label>
-                                <input
-                                    type="text" required autoFocus
-                                    value={fullName} onChange={e => setFullName(e.target.value)}
-                                    placeholder="Jane Smith"
-                                    className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none transition-all text-sm font-bold"
-                                />
+                    <div className="bg-white p-1 rounded-[2.5rem] relative">
+                        {error && (
+                            <div className="bg-red-50 text-red-600 border border-red-100 p-4 rounded-xl mb-6 text-[10px] font-black uppercase tracking-widest text-center animate-shake">
+                                {error}
                             </div>
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Work Email</label>
-                                <input
-                                    type="email" required
-                                    value={email} onChange={e => setEmail(e.target.value)}
-                                    placeholder="jane@company.com"
-                                    className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none transition-all text-sm font-bold"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Password</label>
-                                <div className="relative">
+                        )}
+
+                        {step === 1 && (
+                            <form onSubmit={handleStep1} className="space-y-6">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Full Name</label>
                                     <input
-                                        type={showPassword ? 'text' : 'password'} required minLength={6}
+                                        type="text" required autoFocus
+                                        value={fullName} onChange={e => setFullName(e.target.value)}
+                                        placeholder="Jane Smith"
+                                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:border-indigo-600 outline-none transition-all text-sm font-bold"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Work Email</label>
+                                    <input
+                                        type="email" required
+                                        value={email} onChange={e => setEmail(e.target.value)}
+                                        placeholder="jane@company.com"
+                                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:border-indigo-600 outline-none transition-all text-sm font-bold"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Password</label>
+                                    <input
+                                        type="password" required minLength={6}
                                         value={password} onChange={e => setPassword(e.target.value)}
                                         placeholder="Min. 6 characters"
-                                        className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none transition-all text-sm font-bold pr-12"
+                                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:border-indigo-600 outline-none transition-all text-sm font-bold"
                                     />
-                                    <button type="button" onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors p-1">
-                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </div>
+                                <button type="submit"
+                                    className="w-full flex items-center justify-center gap-3 py-5 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] shadow-lg shadow-indigo-600/20 hover:bg-slate-900 transition-all active:scale-95">
+                                    Continue <ArrowRight className="w-4 h-4" />
+                                </button>
+                            </form>
+                        )}
+
+                        {step === 2 && (
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Organization Name</label>
+                                    <input
+                                        type="text" required autoFocus
+                                        value={orgName} onChange={e => handleOrgNameChange(e.target.value)}
+                                        placeholder="Book Magic Publishing"
+                                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:border-indigo-600 outline-none transition-all text-sm font-bold"
+                                    />
+                                    {orgSlug && (
+                                        <p className="text-[9px] font-black text-indigo-500 mt-2 uppercase tracking-widest leading-none">
+                                            Workspace: {orgSlug}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="flex gap-4 pt-2">
+                                    <button type="button" onClick={() => setStep(1)}
+                                        className="px-6 py-5 border border-slate-200 text-slate-400 rounded-2xl hover:bg-slate-50 transition-all">
+                                        <ArrowLeft className="w-5 h-5" />
+                                    </button>
+                                    <button type="submit" disabled={loading}
+                                        className="flex-1 py-5 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] shadow-lg shadow-indigo-600/20 hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50">
+                                        {loading ? 'Creating...' : 'Launch Platform'}
                                     </button>
                                 </div>
-                            </div>
-                            <button type="submit"
-                                className="w-full flex items-center justify-center gap-3 py-5 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-[0.3em] shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 hover:-translate-y-1 transition-all active:scale-95">
-                                Next Step <ArrowRight className="w-4 h-4" />
-                            </button>
-                        </form>
-                    )}
+                            </form>
+                        )}
 
-                    {/* ── Step 2: Organization Setup ── */}
-                    {step === 2 && (
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="bg-indigo-50/50 dark:bg-indigo-900/20 rounded-2xl p-5 text-[10px] text-indigo-600 dark:text-indigo-400 font-black uppercase tracking-widest border border-indigo-100/50 dark:border-indigo-800/50">
-                                🏢 You will be the account administrator.
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Organization Name</label>
-                                <input
-                                    type="text" required autoFocus
-                                    value={orgName} onChange={e => handleOrgNameChange(e.target.value)}
-                                    placeholder="Book Magic Publishing"
-                                    className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none transition-all text-sm font-bold"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2 block px-1">Workspace URL</label>
-                                <div className="flex items-center gap-2 group">
-                                    <input
-                                        type="text" required
-                                        value={orgSlug} onChange={e => setOrgSlug(toSlug(e.target.value))}
-                                        placeholder="book-magic"
-                                        className="flex-1 px-5 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none transition-all text-sm font-mono font-bold"
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex gap-4 pt-2">
-                                <button type="button" onClick={() => setStep(1)}
-                                    className="px-6 py-5 border-2 border-slate-100 dark:border-slate-800 text-slate-400 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-900 transition-all">
-                                    <ArrowLeft className="w-5 h-5 mx-auto" />
-                                </button>
-                                <button type="submit" disabled={loading}
-                                    className="flex-1 flex items-center justify-center gap-3 py-5 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-[0.3em] shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-50">
-                                    {loading ? 'Creating...' : <>Launch Workspace <ArrowRight className="w-4 h-4" /></>}
-                                </button>
-                            </div>
-                        </form>
-                    )}
-
-                    <div className="mt-8 text-center space-y-3">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                            Already have an account? <Link href="/login" className="text-indigo-600 hover:scale-105 transition-transform inline-block">Login</Link>
-                        </p>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">
-                            Joining via invite? <Link href="/join" className="text-indigo-600/50 hover:text-indigo-600 transition-colors">Use your link</Link>
-                        </p>
+                        <div className="mt-10 text-center">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                Already registered? <Link href="/login" className="text-indigo-600 hover:underline">Log in</Link>
+                            </p>
+                        </div>
                     </div>
-                </div>
-
-                <div className="mt-8 text-center animate-pulse">
-                    <Link href="/" className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-slate-600 transition-colors">
-                      ← Back to home
-                    </Link>
                 </div>
             </div>
 
@@ -260,13 +212,6 @@ export default function SignupPage() {
                 }
                 .animate-fade-in-up {
                     animation: fade-in-up 0.8s ease-out forwards;
-                }
-                @keyframes pulse {
-                    0%, 100% { opacity: 0.1; transform: scale(1); }
-                    50% { opacity: 0.2; transform: scale(1.1); }
-                }
-                .animate-pulse {
-                    animation: pulse 4s ease-in-out infinite;
                 }
                 @keyframes shake {
                     0%, 100% { transform: translateX(0); }
