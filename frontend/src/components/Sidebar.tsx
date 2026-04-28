@@ -49,7 +49,13 @@ export const Sidebar = () => {
         { name: 'Lesson Plans', href: '/dashboard/lesson-plans', icon: FileEdit, featureId: 'lesson_plans' },
         { name: 'Assessments', href: '/dashboard/assessments', icon: CheckSquare, featureId: 'assessments' },
         { name: 'Rights', href: '/dashboard/rights', icon: Scale, featureId: 'rights' },
-        { name: 'Monitoring', href: '/dashboard/monitoring', icon: Activity, featureId: 'monitoring' },
+        { 
+            name: 'Monitoring', 
+            href: '/dashboard/monitoring', 
+            icon: Activity, 
+            featureId: 'monitoring',
+            requiredRoles: ['admin', 'editor_in_chief', 'reviewer', 'super_admin'] 
+        },
         { name: 'Help & FAQ', href: '/dashboard/help', icon: HelpCircle },
     ];
 
@@ -148,8 +154,12 @@ export const Sidebar = () => {
                                 const Icon = item.icon;
                                 const isActive = pathname === item.href;
                                 const isEnabled = !item.featureId || org?.enabled_modules?.includes(item.featureId);
-                                const shouldHide = !isEnabled && org?.hide_disabled_features;
-
+                                 
+                                // Check role-based visibility
+                                const hasRole = !item.requiredRoles || (user?.role && item.requiredRoles.includes(user.role.toLowerCase()));
+                                 
+                                const shouldHide = (!isEnabled && org?.hide_disabled_features) || !hasRole;
+ 
                             if (shouldHide) return null;
 
                             const isLocked = !isEnabled;
