@@ -1,5 +1,9 @@
 'use client';
 
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import Link from 'next/link';
 import { 
     LayoutDashboard, Library, CheckSquare, GitBranch, 
     ClipboardList, FileEdit, Scale, Activity, 
