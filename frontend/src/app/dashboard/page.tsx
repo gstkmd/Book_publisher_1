@@ -89,7 +89,8 @@ const DASHBOARD_ITEMS = [
         icon: Settings, 
         desc: 'Configure your account and preferences',
         color: 'text-slate-600',
-        bgColor: 'bg-slate-100'
+        bgColor: 'bg-slate-100',
+        requiredRoles: ['admin', 'super_admin']
     },
     { 
         name: 'Monitoring', 
@@ -136,15 +137,28 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {DASHBOARD_ITEMS.map((item, idx) => {
-                    const isEnabled = !item.featureId || org?.enabled_modules?.includes(item.featureId);
-                    const hasRole = !item.requiredRoles || (user?.role && item.requiredRoles.includes(user.role.toLowerCase()));
-                    const shouldHide = (!isEnabled && org?.hide_disabled_features) || !hasRole;
+                {[...DASHBOARD_ITEMS]
+                    .sort((a, b) => {
+                        const aEnabled = !a.featureId || org?.enabled_modules?.includes(a.featureId);
+                        const bEnabled = !b.featureId || org?.enabled_modules?.includes(b.featureId);
+                        const aHasRole = !a.requiredRoles || (user?.role && a.requiredRoles.includes(user.role.toLowerCase()));
+                        const bHasRole = !b.requiredRoles || (user?.role && b.requiredRoles.includes(user.role.toLowerCase()));
+                        
+                        const aActive = aEnabled && aHasRole;
+                        const bActive = bEnabled && bHasRole;
 
-                    if (shouldHide) return null;
+                        if (aActive === bActive) return 0;
+                        return aActive ? -1 : 1;
+                    })
+                    .map((item, idx) => {
+                        const isEnabled = !item.featureId || org?.enabled_modules?.includes(item.featureId);
+                        const hasRole = !item.requiredRoles || (user?.role && item.requiredRoles.includes(user.role.toLowerCase()));
+                        const shouldHide = (!isEnabled && org?.hide_disabled_features) || !hasRole;
 
-                    const isLocked = !isEnabled;
-                    const Icon = item.icon;
+                        if (shouldHide) return null;
+
+                        const isLocked = !isEnabled;
+                        const Icon = item.icon;
 
                     return (
                         <div key={item.name} className="animate-in fade-in zoom-in-95 duration-500" style={{ animationDelay: `${idx * 50}ms` }}>

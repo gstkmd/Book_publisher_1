@@ -60,7 +60,12 @@ export const Sidebar = () => {
     ];
 
     const systemItems = [
-        { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+        { 
+            name: 'Settings', 
+            href: '/dashboard/settings', 
+            icon: Settings,
+            requiredRoles: ['admin', 'super_admin']
+        },
     ];
 
     const toggleSidebar = () => setIsOpen(!isOpen);
@@ -147,8 +152,16 @@ export const Sidebar = () => {
                             .sort((a, b) => {
                                 const aEnabled = !a.featureId || org?.enabled_modules?.includes(a.featureId);
                                 const bEnabled = !b.featureId || org?.enabled_modules?.includes(b.featureId);
-                                if (aEnabled === bEnabled) return 0;
-                                return aEnabled ? -1 : 1;
+                                
+                                // Also consider role-based access in sorting if possible
+                                const aHasRole = !a.requiredRoles || (user?.role && a.requiredRoles.includes(user.role.toLowerCase()));
+                                const bHasRole = !b.requiredRoles || (user?.role && b.requiredRoles.includes(user.role.toLowerCase()));
+
+                                const aActive = aEnabled && aHasRole;
+                                const bActive = bEnabled && bHasRole;
+
+                                if (aActive === bActive) return 0;
+                                return aActive ? -1 : 1;
                             })
                             .map((item) => {
                                 const Icon = item.icon;
