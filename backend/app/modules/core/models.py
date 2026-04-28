@@ -24,6 +24,8 @@ class User(Document):
     organization_id: Optional[str] = None # Link to Organization
     role: UserRole = UserRole.USER
     is_active: bool = True
+    monitoring_enabled: bool = True
+    screenshots_enabled: bool = True
     created_at: datetime = datetime.now(timezone.utc)
 
     class Settings:

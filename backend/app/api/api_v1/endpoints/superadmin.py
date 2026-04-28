@@ -84,8 +84,11 @@ async def list_organizations(
     orgs = await Organization.find_all().to_list()
     results = []
     for org in orgs:
-        # Get member count
-        member_count = await User.find(User.organization_id == str(org.id)).count()
+        # Get member count (excluding super admins)
+        member_count = await User.find(
+            User.organization_id == str(org.id),
+            User.role != UserRole.SUPER_ADMIN
+        ).count()
         org_dict = org.model_dump()
         org_dict["id"] = str(org.id)
         org_dict["member_count"] = member_count

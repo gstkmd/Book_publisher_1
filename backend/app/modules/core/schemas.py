@@ -9,6 +9,8 @@ class UserBase(BaseModel):
     is_active: Optional[bool] = True
     full_name: Optional[str] = None
     role: Optional[UserRole] = UserRole.USER
+    monitoring_enabled: Optional[bool] = True
+    screenshots_enabled: Optional[bool] = True
 
 class UserCreate(UserBase):
     email: EmailStr

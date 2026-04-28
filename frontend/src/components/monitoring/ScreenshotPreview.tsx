@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Download } from 'lucide-react';
+import { SecureImage } from './SecureImage';
+import { useAuth } from '@/context/AuthContext';
 
 interface Screenshot {
     id: string;
@@ -24,6 +26,8 @@ export function ScreenshotPreview({
     onNavigate,
     apiUrl 
 }: ScreenshotPreviewProps) {
+    const { token } = useAuth();
+    
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (!screenshot) return;
@@ -82,6 +86,32 @@ export function ScreenshotPreview({
         }
     };
 
+    const handleDownload = async () => {
+        if (!screenshot || !token) return;
+        try {
+            const imageUrl = `${apiUrl}/monitoring/dashboard/screenshot/${screenshot.id}?download=true`;
+            const response = await fetch(imageUrl, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) throw new Error('Download failed');
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `screenshot_${screenshot.id}_${new Date(screenshot.timestamp).getTime()}.png`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (err) {
+            console.error('Download failed', err);
+        }
+    };
+
     return (
         <Modal 
             isOpen={!!screenshot} 
@@ -125,19 +155,27 @@ export function ScreenshotPreview({
 
                 <div className="w-full flex flex-col items-center gap-6">
                     <div className="relative bg-white p-2 rounded-xl shadow-inner border border-gray-100">
-                        <img 
+                        <SecureImage 
                             src={`${apiUrl}/monitoring/dashboard/screenshot/${screenshot.id}`} 
                             alt="Full Size Screenshot"
                             className="max-w-full max-h-[70vh] object-contain rounded-lg transition-opacity duration-300"
-                            onLoad={(e) => e.currentTarget.style.opacity = '1'}
-                            style={{ opacity: 0 }}
                         />
                     </div>
                     
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="text-sm font-bold text-gray-600 bg-white px-6 py-2.5 rounded-full border border-gray-200 shadow-sm flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                            Captured at: {formatDateTimeIST(screenshot.timestamp)}
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="text-sm font-bold text-gray-600 bg-white px-6 py-2.5 rounded-full border border-gray-200 shadow-sm flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                Captured at: {formatDateTimeIST(screenshot.timestamp)}
+                            </div>
+                            
+                            <button
+                                onClick={handleDownload}
+                                className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold text-sm transition-all shadow-md active:scale-95"
+                            >
+                                <Download size={18} />
+                                Download
+                            </button>
                         </div>
                         <div className="text-xs text-gray-400 font-medium">
                             Use arrow keys to navigate

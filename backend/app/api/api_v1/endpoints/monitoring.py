@@ -12,7 +12,7 @@ import mimetypes
 from bson import ObjectId
 
 from app.api import deps
-from app.modules.core.models import User
+from app.modules.core.models import User, UserRole
 from app.modules.generic.monitoring_models import MonitoringActivity, MonitoringScreenshot, MonitoringAgent
 
 router = APIRouter()
@@ -324,15 +324,17 @@ async def track_idle_time(
 
 @router.get("/dashboard/summary")
 async def get_dashboard_summary(current_user: User = Depends(deps.get_current_user)):
-    """Get summary data for dashboard from MongoDB"""
-    # Start of day UTC (Ensure 'today' is UTC aware for consistent comparison)
-    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    # 0. Get super admin IDs to exclude them from stats
+    super_admins = await User.find(User.role == UserRole.SUPER_ADMIN).to_list()
+    sa_ids = [u.id for u in super_admins]
+
     # 1. Total active agents today (unique users with activity)
     active_agents_pipeline = [
         {
             "$match": {
                 "timestamp": {"$gte": today},
-                "activity_type": "active"
+                "activity_type": "active",
+                "user": {"$nin": sa_ids}
             }
         },
         # Add a field to ensure organization_id is a string for comparison
@@ -360,7 +362,8 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
     sc_today_pipeline = [
         {
             "$match": {
-                "timestamp": {"$gte": today}
+                "timestamp": {"$gte": today},
+                "user": {"$nin": sa_ids}
             }
         },
         {
@@ -383,7 +386,8 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
         {
             "$match": {
                 "timestamp": {"$gte": today},
-                "activity_type": "active"
+                "activity_type": "active",
+                "user": {"$nin": sa_ids}
             }
         },
         {
@@ -421,7 +425,8 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
         {
             "$match": {
                 "timestamp": {"$gte": today},
-                "activity_type": "idle"
+                "activity_type": "idle",
+                "user": {"$nin": sa_ids}
             }
         },
         {
@@ -465,8 +470,11 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
     # Start of day UTC
     today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     
-    # Fetch all members of the organization
-    members = await User.find(User.organization_id == current_user.organization_id).to_list()
+    # Fetch all members of the organization (excluding super admins)
+    members = await User.find(
+        User.organization_id == current_user.organization_id,
+        User.role != UserRole.SUPER_ADMIN
+    ).to_list()
     print(f"DEBUG: [get_agents] Admin {current_user.email} (Org: {current_user.organization_id}) fetched {len(members)} members")
     
     agents_list = []
@@ -582,6 +590,9 @@ async def get_screenshots(
     # Enforce strict sort order: latest timestamp first, then latest record ID as fallback
     screenshots = await beanie_query.sort("-timestamp", "-_id").skip(offset).limit(limit).to_list()
     
+    # Filter out screenshots from super admins
+    screenshots = [s for s in screenshots if s.user and s.user.role != UserRole.SUPER_ADMIN]
+    
     return [
         {
             "id": str(s.id),
@@ -621,6 +632,11 @@ async def get_agent_activity(
             end_date = datetime.now(timezone.utc) + timedelta(days=1)
 
         print(f"DEBUG: [AgentDetail-3] Range: {start_date} to {end_date}")
+        
+        # Verify target user is not a super admin
+        target_user = await User.get(user_oid)
+        if target_user and target_user.role == UserRole.SUPER_ADMIN:
+            raise HTTPException(status_code=403, detail="Cannot view activity for super admins")
         
         user_match_or = [
             {"user": user_oid},
@@ -886,27 +902,42 @@ async def get_agent_activity(
         raise HTTPException(status_code=500, detail=f"{err_msg}\n{traceback.format_exc()}")
 
 @router.get("/dashboard/screenshot/{screenshot_id}")
-async def get_screenshot(screenshot_id: str):
-    """Serve screenshot file from MongoDB record"""
+async def get_screenshot(
+    screenshot_id: str,
+    download: bool = False,
+    current_user: User = Depends(deps.get_current_user)
+):
+    """Serve screenshot file from MongoDB record with optional download header"""
     try:
         shot = await MonitoringScreenshot.get(ObjectId(screenshot_id))
-        if shot and shot.file_url:
-            # Try multiple possible locations for the storage directory
-            path = shot.file_url
+        if not shot or not shot.file_url:
+            raise HTTPException(status_code=404, detail="Screenshot record not found")
             
-            possible_paths = [
-                path,
-                os.path.join(os.getcwd(), path),
-                os.path.join(os.getcwd(), "..", path), # Go up to project root Book_publisher_1/
-                os.path.abspath(path),
-                os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), path)
-            ]
-            
-            for p in possible_paths:
-                if os.path.exists(p) and os.path.isfile(p):
-                    content_type, _ = mimetypes.guess_type(p)
-                    return FileResponse(p, media_type=content_type or "image/png")
+        # Security check: Must belong to same organization
+        if str(shot.organization_id) != str(current_user.organization_id):
+            raise HTTPException(status_code=403, detail="Not authorized to view this screenshot")
+
+        path = shot.file_url
+        
+        possible_paths = [
+            path,
+            os.path.join(os.getcwd(), path),
+            os.path.join(os.getcwd(), "..", path),
+            os.path.abspath(path)
+        ]
+        
+        for p in possible_paths:
+            if os.path.exists(p) and os.path.isfile(p):
+                content_type, _ = mimetypes.guess_type(p)
+                headers = {}
+                if download:
+                    filename = f"screenshot_{shot.timestamp.strftime('%Y%m%d_%H%M%S')}.png"
+                    headers["Content-Disposition"] = f"attachment; filename={filename}"
+                
+                return FileResponse(p, media_type=content_type or "image/png", headers=headers)
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error serving screenshot: {e}")
         
-    raise HTTPException(status_code=404, detail="Screenshot not found")
+    raise HTTPException(status_code=404, detail="Screenshot file not found")

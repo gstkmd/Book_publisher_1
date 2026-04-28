@@ -14,6 +14,8 @@ export interface OrganizationMember {
     organization_role: string;
     membership_status: string;
     joined_at: string;
+    monitoring_enabled: boolean;
+    screenshots_enabled: boolean;
 }
 
 export interface InviteToken {
@@ -49,5 +51,13 @@ export const TeamService = {
 
     acceptInvite: async (inviteToken: string, token: string): Promise<{ message: string, organization_id: string, org_name: string }> => {
         return api.post(`/organizations/invitations/${inviteToken}/accept`, {}, token);
+    },
+    
+    updateMonitoringStatus: async (userId: string, enabled: boolean, token: string): Promise<any> => {
+        return api.patch(`/organizations/members/${userId}/monitoring?enabled=${enabled}`, {}, token);
+    },
+    
+    updateScreenshotsStatus: async (userId: string, enabled: boolean, token: string): Promise<any> => {
+        return api.patch(`/organizations/members/${userId}/screenshots?enabled=${enabled}`, {}, token);
     }
 };

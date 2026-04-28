@@ -1,4 +1,5 @@
 import React from 'react';
+import { SecureImage } from './SecureImage';
 
 interface Screenshot {
     id: string;
@@ -25,7 +26,7 @@ export function ScreenshotGallery({ screenshots, apiUrl, onScreenshotClick }: Sc
                         onClick={() => onScreenshotClick(shot)}
                         className="group relative rounded-lg overflow-hidden border border-gray-200 cursor-pointer"
                     >
-                        <img
+                        <SecureImage
                             src={`${apiUrl}/monitoring/dashboard/screenshot/${shot.id}`}
                             alt={`Screenshot from ${shot.computer_name}`}
                             className="w-full h-48 object-cover transition-transform group-hover:scale-105"

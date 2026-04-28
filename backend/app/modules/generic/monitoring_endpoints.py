@@ -44,6 +44,9 @@ async def submit_activity(
     if not current_user.organization_id:
         raise HTTPException(status_code=400, detail="User not part of an organization")
 
+    if not current_user.monitoring_enabled:
+        return {"status": "ignored", "message": "Monitoring is disabled for this user", "count": 0}
+
     activities = []
     print(f"DEBUG: [Activity] User: {current_user.email}, UserId: {current_user.id}, OrgId: {current_user.organization_id}, Role: {current_user.role}, Logs: {len(req.logs)}, Root AgentId: {req.agent_id}")
     
@@ -82,6 +85,9 @@ async def get_team_activity(
         fetch_links=True
     ).sort(-MonitoringActivity.timestamp).limit(200).to_list()
     
+    # Filter out activity from super admins
+    activities = [a for a in activities if a.user and a.user.role != "super_admin"]
+    
     return activities
 
 @router.post("/screenshots/upload")
@@ -96,6 +102,9 @@ async def upload_screenshot(
 ):
     if not current_user.organization_id:
         raise HTTPException(status_code=400, detail="User not part of an organization")
+
+    if not current_user.screenshots_enabled:
+        return {"status": "ignored", "message": "Screenshots are disabled for this user"}
 
     # Handle agent tracking (matches monitoring.py style)
     target_agent_id = agent_id or agentId # Use whichever is provided
@@ -170,5 +179,7 @@ async def get_agent_config(current_user: User = Depends(get_current_user)):
         "monitoring_retention_days": org.monitoring_retention_days or 30,
         "screenshot_retention_days": org.screenshot_retention_days or 7,
         "threat_domains": org.threat_domains or [],
-        "productive_domains": org.productive_domains or []
+        "productive_domains": org.productive_domains or [],
+        "monitoring_enabled": current_user.monitoring_enabled,
+        "screenshots_enabled": current_user.screenshots_enabled
     }

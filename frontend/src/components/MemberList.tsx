@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Link2, Copy, Check, X, UserPlus } from 'lucide-react';
+import { Link2, Copy, Check, X, UserPlus, Activity, Camera } from 'lucide-react';
 import { TeamService, OrganizationMember } from '@/lib/services/TeamService';
 import toast from 'react-hot-toast';
 
@@ -131,6 +131,26 @@ export const MemberList = () => {
             toast.error('Failed to update role: ' + (err.message || 'Unknown error'));
         }
     };
+    
+    const handleToggleMonitoring = async (userId: string, currentStatus: boolean) => {
+        try {
+            await TeamService.updateMonitoringStatus(userId, !currentStatus, token!);
+            fetchMembers();
+            toast.success(`Monitoring ${!currentStatus ? 'enabled' : 'disabled'}`);
+        } catch (err: any) {
+            toast.error('Failed to update monitoring: ' + (err.message || 'Unknown error'));
+        }
+    };
+    
+    const handleToggleScreenshots = async (userId: string, currentStatus: boolean) => {
+        try {
+            await TeamService.updateScreenshotsStatus(userId, !currentStatus, token!);
+            fetchMembers();
+            toast.success(`Screenshots ${!currentStatus ? 'enabled' : 'disabled'}`);
+        } catch (err: any) {
+            toast.error('Failed to update screenshots: ' + (err.message || 'Unknown error'));
+        }
+    };
 
     return (
         <div className="bg-white p-6 rounded-lg shadow mb-6 relative">
@@ -167,6 +187,22 @@ export const MemberList = () => {
                             >
                                 {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                             </select>
+                            <button
+                                type="button"
+                                onClick={() => handleToggleMonitoring(m._id, m.monitoring_enabled)}
+                                className={`p-1.5 rounded-lg transition-all ${m.monitoring_enabled ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100' : 'text-slate-400 bg-slate-50 hover:bg-slate-100'}`}
+                                title={m.monitoring_enabled ? "Monitoring Enabled" : "Monitoring Disabled"}
+                            >
+                                <Activity className="w-4 h-4" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleToggleScreenshots(m._id, m.screenshots_enabled)}
+                                className={`p-1.5 rounded-lg transition-all ${m.screenshots_enabled ? 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100' : 'text-slate-400 bg-slate-50 hover:bg-slate-100'}`}
+                                title={m.screenshots_enabled ? "Screenshots Enabled" : "Screenshots Disabled"}
+                            >
+                                <Camera className="w-4 h-4" />
+                            </button>
                             <button
                                 type="button"
                                 onClick={() => handleToggleStatus(m._id, m.is_active, m.email)}

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.modules.core.models import User, Organization, InviteToken, OrganizationMember
+from app.modules.core.models import User, Organization, InviteToken, OrganizationMember, UserRole
 from beanie import PydanticObjectId
 from app.api.deps import get_current_user
 from typing import List, Optional
@@ -282,7 +282,7 @@ async def get_organization_members(
     memberships = await OrganizationMember.find(OrganizationMember.organization_id == organization_id).to_list()
     user_ids = [PydanticObjectId(m.user_id) for m in memberships]
     
-    users = await User.find({"_id": {"$in": user_ids}}).to_list()
+    users = await User.find({"_id": {"$in": user_ids}, "role": {"$ne": UserRole.SUPER_ADMIN}}).to_list()
     
     # Attach role and specific membership info
     result = []
@@ -295,6 +295,9 @@ async def get_organization_members(
             u_dict["organization_role"] = m.role
             u_dict["membership_status"] = m.status
             u_dict["joined_at"] = m.joined_at
+            # Ensure monitoring flags are included
+            u_dict["monitoring_enabled"] = u.monitoring_enabled
+            u_dict["screenshots_enabled"] = u.screenshots_enabled
         result.append(u_dict)
         
     return result
@@ -342,8 +345,11 @@ async def get_organization_stats(current_user: User = Depends(get_current_user))
             "plan_limit_mb": 1024  # 1GB free tier
         }
 
-    # 1. Member Count
-    member_count = await User.find(User.organization_id == current_user.organization_id).count()
+    # 1. Member Count (excluding super admins)
+    member_count = await User.find(
+        User.organization_id == current_user.organization_id,
+        User.role != UserRole.SUPER_ADMIN
+    ).count()
 
     # 2. Content Count
     # Need to import generic models inside function to avoid circular imports if any
@@ -410,4 +416,38 @@ async def update_member_role(
         await member.save()
 
     return {"message": f"User role updated to {role}"}
+
+@router.patch("/members/{user_id}/monitoring")
+async def update_member_monitoring(
+    user_id: PydanticObjectId,
+    enabled: bool,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can manage members")
+
+    user = await User.get(user_id)
+    if not user or user.organization_id != current_user.organization_id:
+        raise HTTPException(status_code=404, detail="Member not found in your organization")
+
+    user.monitoring_enabled = enabled
+    await user.save()
+    return {"message": f"Monitoring {'enabled' if enabled else 'disabled'} for user"}
+
+@router.patch("/members/{user_id}/screenshots")
+async def update_member_screenshots(
+    user_id: PydanticObjectId,
+    enabled: bool,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can manage members")
+
+    user = await User.get(user_id)
+    if not user or user.organization_id != current_user.organization_id:
+        raise HTTPException(status_code=404, detail="Member not found in your organization")
+
+    user.screenshots_enabled = enabled
+    await user.save()
+    return {"message": f"Screenshots {'enabled' if enabled else 'disabled'} for user"}
 
