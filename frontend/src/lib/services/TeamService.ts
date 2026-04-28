@@ -43,7 +43,7 @@ export const TeamService = {
         return api.post(`/organizations/invitations/${invitationId}/revoke`, {}, token);
     },
 
-    validateInvite: async (inviteToken: string): Promise<{ email: string, role: string, org_name: string, status: string }> => {
+    validateInvite: async (inviteToken: string): Promise<{ email: string, role: string, org_name: string, status: string, user_exists: boolean }> => {
         return api.get(`/organizations/invitations/${inviteToken}`);
     },
 

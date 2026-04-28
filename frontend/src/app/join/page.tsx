@@ -39,7 +39,7 @@ function JoinPageContent() {
             setLoading(false);
             return;
         }
-        api.get(`/organizations/invite/${token}`)
+        api.get(`/organizations/invitations/${token}`)
             .then(data => { setInvite(data); setLoading(false); })
             .catch(err => {
                 let msg = 'Invalid or expired invite link.';
@@ -55,7 +55,16 @@ function JoinPageContent() {
         if (password.length < 6) { setSubmitError('Password must be at least 6 characters.'); return; }
         setSubmitting(true);
         try {
-            await api.post('/organizations/join', { token, full_name: fullName, password });
+            // First create/login user
+            const authRes = await api.post('/auth/access-token', new URLSearchParams({
+                username: invite!.email,
+                password: password
+            }), undefined, true);
+            
+            const activeToken = authRes.access_token;
+            
+            // Then accept invite
+            await api.post(`/organizations/invitations/${token}/accept`, {}, activeToken);
             setSuccess(true);
         } catch (err: any) {
             let msg = 'Failed to join. Please try again.';

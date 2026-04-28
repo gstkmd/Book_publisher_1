@@ -192,11 +192,15 @@ async def validate_invite_token(token: str):
     org = await Organization.get(PydanticObjectId(invite.organization_id))
     org_name = org.name if org else "Unknown Organization"
 
+    # Check if user already exists
+    user_exists = await User.find_one(User.email == invite.email) is not None
+
     return {
         "email": invite.email,
         "role": invite.role,
         "org_name": org_name,
-        "status": invite.status
+        "status": invite.status,
+        "user_exists": user_exists
     }
 
 

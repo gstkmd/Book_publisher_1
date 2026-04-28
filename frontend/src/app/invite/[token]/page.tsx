@@ -30,6 +30,10 @@ export default function InvitePage() {
         TeamService.validateInvite(token)
             .then(data => {
                 setInviteData(data);
+                // Automatically switch to signup mode if user doesn't exist
+                if (data.user_exists === false) {
+                    setIsLoginMode(false);
+                }
                 setError(null);
             })
             .catch(err => {
