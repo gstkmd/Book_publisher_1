@@ -141,8 +141,19 @@ export default function DashboardPage() {
                     .sort((a, b) => {
                         const aEnabled = !a.featureId || org?.enabled_modules?.includes(a.featureId);
                         const bEnabled = !b.featureId || org?.enabled_modules?.includes(b.featureId);
-                        const aHasRole = !a.requiredRoles || (user?.role && a.requiredRoles.includes(user.role.toLowerCase()));
-                        const bHasRole = !b.requiredRoles || (user?.role && b.requiredRoles.includes(user.role.toLowerCase()));
+                        
+                        const checkRole = (item: any) => {
+                            if (user?.role === 'admin' || user?.role === 'super_admin') return true;
+                            if (item.requiredRoles && !item.requiredRoles.includes(user?.role?.toLowerCase())) return false;
+                            if (item.featureId) {
+                                const rolePermissions = org?.role_permissions?.[user?.role || 'user'] || [];
+                                return rolePermissions.includes(item.featureId);
+                            }
+                            return true;
+                        };
+
+                        const aHasRole = checkRole(a);
+                        const bHasRole = checkRole(b);
                         
                         const aActive = aEnabled && aHasRole;
                         const bActive = bEnabled && bHasRole;
@@ -152,7 +163,17 @@ export default function DashboardPage() {
                     })
                     .map((item, idx) => {
                         const isEnabled = !item.featureId || org?.enabled_modules?.includes(item.featureId);
-                        const hasRole = !item.requiredRoles || (user?.role && item.requiredRoles.includes(user.role.toLowerCase()));
+                        
+                        const hasRole = (() => {
+                            if (user?.role === 'admin' || user?.role === 'super_admin') return true;
+                            if (item.requiredRoles && !item.requiredRoles.includes(user?.role?.toLowerCase())) return false;
+                            if (item.featureId) {
+                                const rolePermissions = org?.role_permissions?.[user?.role || 'user'] || [];
+                                return rolePermissions.includes(item.featureId);
+                            }
+                            return true;
+                        })();
+
                         const shouldHide = (!isEnabled && org?.hide_disabled_features) || !hasRole;
 
                         if (shouldHide) return null;

@@ -153,9 +153,19 @@ export const Sidebar = () => {
                                 const aEnabled = !a.featureId || org?.enabled_modules?.includes(a.featureId);
                                 const bEnabled = !b.featureId || org?.enabled_modules?.includes(b.featureId);
                                 
-                                // Also consider role-based access in sorting if possible
-                                const aHasRole = !a.requiredRoles || (user?.role && a.requiredRoles.includes(user.role.toLowerCase()));
-                                const bHasRole = !b.requiredRoles || (user?.role && b.requiredRoles.includes(user.role.toLowerCase()));
+                                // Role check logic matching ModuleGuard
+                                const checkRole = (item: any) => {
+                                    if (user?.role === 'admin' || user?.role === 'super_admin') return true;
+                                    if (item.requiredRoles && !item.requiredRoles.includes(user?.role?.toLowerCase())) return false;
+                                    if (item.featureId) {
+                                        const rolePermissions = org?.role_permissions?.[user?.role || 'user'] || [];
+                                        return rolePermissions.includes(item.featureId);
+                                    }
+                                    return true;
+                                };
+
+                                const aHasRole = checkRole(a);
+                                const bHasRole = checkRole(b);
 
                                 const aActive = aEnabled && aHasRole;
                                 const bActive = bEnabled && bHasRole;
@@ -168,8 +178,16 @@ export const Sidebar = () => {
                                 const isActive = pathname === item.href;
                                 const isEnabled = !item.featureId || org?.enabled_modules?.includes(item.featureId);
                                  
-                                // Check role-based visibility
-                                const hasRole = !item.requiredRoles || (user?.role && item.requiredRoles.includes(user.role.toLowerCase()));
+                                // Check role-based visibility matching ModuleGuard
+                                const hasRole = (() => {
+                                    if (user?.role === 'admin' || user?.role === 'super_admin') return true;
+                                    if (item.requiredRoles && !item.requiredRoles.includes(user?.role?.toLowerCase())) return false;
+                                    if (item.featureId) {
+                                        const rolePermissions = org?.role_permissions?.[user?.role || 'user'] || [];
+                                        return rolePermissions.includes(item.featureId);
+                                    }
+                                    return true;
+                                })();
                                  
                                 const shouldHide = (!isEnabled && org?.hide_disabled_features) || !hasRole;
  
