@@ -22,7 +22,7 @@ export default function ModuleGuard({ moduleName, children }: ModuleGuardProps) 
     // Admins always have access to everything that is enabled for the org
     // Custom roles follow the mapping in org.role_permissions
     const rolePermissions = org?.role_permissions?.[userRole] || [];
-    const hasRolePermission = userRole === 'admin' || rolePermissions.includes(moduleName);
+    const hasRolePermission = userRole === 'admin' || userRole === 'super_admin' || rolePermissions.includes(moduleName);
 
     // Final access decision
     const isAccessGranted = isModuleEnabledForOrg && hasRolePermission;

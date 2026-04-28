@@ -399,5 +399,15 @@ async def update_member_role(
         raise HTTPException(status_code=400, detail="Invalid role")
         
     await user.save()
+
+    # Also update the OrganizationMember record to keep them in sync
+    member = await OrganizationMember.find_one(
+        OrganizationMember.organization_id == current_user.organization_id,
+        OrganizationMember.user_id == str(user_id)
+    )
+    if member:
+        member.role = role
+        await member.save()
+
     return {"message": f"User role updated to {role}"}
 
