@@ -156,7 +156,8 @@ export const Sidebar = () => {
                                 // Role check logic matching ModuleGuard
                                 const checkRole = (item: any) => {
                                     if (user?.role === 'admin' || user?.role === 'super_admin') return true;
-                                    if (item.requiredRoles && !item.requiredRoles.includes(user?.role?.toLowerCase())) return false;
+                                    const userRole = user?.role?.toLowerCase() || '';
+                                    if (item.requiredRoles && !item.requiredRoles.includes(userRole)) return false;
                                     if (item.featureId) {
                                         const rolePermissions = org?.role_permissions?.[user?.role || 'user'] || [];
                                         return rolePermissions.includes(item.featureId);
@@ -181,7 +182,8 @@ export const Sidebar = () => {
                                 // Check role-based visibility matching ModuleGuard
                                 const hasRole = (() => {
                                     if (user?.role === 'admin' || user?.role === 'super_admin') return true;
-                                    if (item.requiredRoles && !item.requiredRoles.includes(user?.role?.toLowerCase())) return false;
+                                    const userRole = user?.role?.toLowerCase() || '';
+                                    if (item.requiredRoles && !item.requiredRoles.includes(userRole)) return false;
                                     if (item.featureId) {
                                         const rolePermissions = org?.role_permissions?.[user?.role || 'user'] || [];
                                         return rolePermissions.includes(item.featureId);
