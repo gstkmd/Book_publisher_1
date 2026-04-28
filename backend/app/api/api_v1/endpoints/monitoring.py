@@ -327,6 +327,9 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
     # 0. Get super admin IDs to exclude them from stats
     super_admins = await User.find(User.role == UserRole.SUPER_ADMIN).to_list()
     sa_ids = [u.id for u in super_admins]
+    
+    # Start of day UTC
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
 
     # 1. Total active agents today (unique users with activity)
     active_agents_pipeline = [
