@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(..., alias="SECRET_KEY")
     ENCRYPTION_KEY: str = Field(..., alias="ENCRYPTION_KEY") # 32-byte url-safe base64 encoded Fernet key
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8 # 8 days
+    FRONTEND_HOST: str = "http://localhost:3000"
     
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
     # e.g: '["http://localhost", "http://localhost:4200", "http://localhost:3000", \

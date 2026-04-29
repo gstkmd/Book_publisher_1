@@ -8,7 +8,53 @@ from app.core.config import settings
 from app.modules.core.models import User
 from app.modules.core.schemas import UserCreate, User as UserSchema
 
+from app.modules.core import schemas
+from app.core.gmail_service import gmail_service
+
 router = APIRouter()
+
+@router.post("/password-recovery/{email}", response_model=schemas.Msg)
+async def recover_password(email: str) -> Any:
+    """
+    Password recovery
+    """
+    user = await User.find_one(User.email == email.lower())
+
+    if not user:
+        # We don't want to reveal if a user exists or not for security
+        return {"msg": "Password recovery email sent"}
+        
+    password_reset_token = security.generate_password_reset_token(email=email.lower())
+    await gmail_service.send_password_reset_email(
+        email=user.email,
+        token=password_reset_token,
+        host=settings.FRONTEND_HOST
+    )
+    return {"msg": "Password recovery email sent"}
+
+@router.post("/reset-password/", response_model=schemas.Msg)
+async def reset_password(
+    body: schemas.PasswordReset
+) -> Any:
+    """
+    Reset password
+    """
+    email = security.verify_password_reset_token(body.token)
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid token")
+    
+    user = await User.find_one(User.email == email)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="The user with this username does not exist in the system.",
+        )
+    elif not user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+        
+    user.hashed_password = security.get_password_hash(body.new_password)
+    await user.save()
+    return {"msg": "Password updated successfully"}
 
 @router.post("/access-token", response_model=dict)
 async def login_access_token(form_data: OAuth2PasswordRequestForm = Depends()) -> Any:

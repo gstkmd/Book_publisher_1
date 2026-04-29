@@ -2,18 +2,108 @@ import os
 import shutil
 from typing import List, Optional, Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.modules.core.models import User, Organization, UserRole, WebhookSubscription, InviteToken, OrganizationMember
+from app.modules.core.models import User, Organization, UserRole, WebhookSubscription, InviteToken, OrganizationMember, GlobalSettings
 from app.api.deps import get_current_super_admin
 from pydantic import BaseModel
-from app.core.security import get_password_hash
+from app.core.security import get_password_hash, encrypt_string, decrypt_string
+from app.modules.core import schemas
 from beanie import PydanticObjectId
 from datetime import datetime, timezone, timedelta
 from app.modules.generic.monitoring_models import MonitoringActivity, MonitoringScreenshot, MonitoringAgent
 from app.modules.generic.models import Content, ContentVersion, Comment, Task, TaskComment, ActivityLog, Notification
 from app.modules.generic.rights_models import License, Contract
 from app.modules.educational.models import Standard, Assessment, LessonPlan
+from app.core.gmail_service import gmail_service
 
 router = APIRouter()
+
+# --- Global Settings / Email Configuration ---
+
+@router.get("/email-settings", response_model=schemas.GlobalSettings)
+async def get_email_settings(
+    current_user: User = Depends(get_current_super_admin)
+):
+    settings = await GlobalSettings.find_one()
+    if not settings:
+        settings = GlobalSettings()
+        await settings.insert()
+    
+    return schemas.GlobalSettings(
+        smtp_server=settings.smtp_server,
+        smtp_port=settings.smtp_port,
+        smtp_user=settings.smtp_user,
+        smtp_from_email=settings.smtp_from_email,
+        smtp_use_tls=settings.smtp_use_tls,
+        smtp_password_masked="••••••••" if settings.smtp_password_encrypted else None,
+        updated_at=settings.updated_at
+    )
+
+@router.patch("/email-settings", response_model=schemas.GlobalSettings)
+async def update_email_settings(
+    update: schemas.GlobalSettingsUpdate,
+    current_user: User = Depends(get_current_super_admin)
+):
+    settings = await GlobalSettings.find_one()
+    if not settings:
+        settings = GlobalSettings()
+        await settings.insert()
+    
+    if update.smtp_server is not None:
+        settings.smtp_server = update.smtp_server
+    if update.smtp_port is not None:
+        settings.smtp_port = update.smtp_port
+    if update.smtp_user is not None:
+        settings.smtp_user = update.smtp_user
+    if update.smtp_from_email is not None:
+        settings.smtp_from_email = update.smtp_from_email
+    if update.smtp_use_tls is not None:
+        settings.smtp_use_tls = update.smtp_use_tls
+    if update.smtp_password is not None:
+        settings.smtp_password_encrypted = encrypt_string(update.smtp_password)
+    
+    settings.updated_at = datetime.now(timezone.utc)
+    settings.updated_by = str(current_user.id)
+    await settings.save()
+    
+    return schemas.GlobalSettings(
+        smtp_server=settings.smtp_server,
+        smtp_port=settings.smtp_port,
+        smtp_user=settings.smtp_user,
+        smtp_from_email=settings.smtp_from_email,
+        smtp_use_tls=settings.smtp_use_tls,
+        smtp_password_masked="••••••••" if settings.smtp_password_encrypted else None,
+        updated_at=settings.updated_at
+    )
+
+@router.post("/email-settings/test")
+async def test_email_settings(
+    current_user: User = Depends(get_current_super_admin)
+):
+    settings = await GlobalSettings.find_one()
+    if not settings or not settings.smtp_server:
+        raise HTTPException(status_code=400, detail="SMTP settings not fully configured")
+    
+    # Decrypt password for the test
+    password = decrypt_string(settings.smtp_password_encrypted)
+    
+    try:
+        success = await gmail_service.test_connection(
+            server=settings.smtp_server,
+            port=settings.smtp_port,
+            user=settings.smtp_user,
+            password=password,
+            from_email=settings.smtp_from_email,
+            use_tls=settings.smtp_use_tls,
+            to_email=current_user.email
+        )
+        if success:
+            return {"message": f"Test email sent successfully to {current_user.email}!"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to send test email. Check your SMTP settings.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Connection error: {str(e)}")
+
+# --- End Global Settings ---
 
 class OrgUpdate(BaseModel):
     name: Optional[str] = None

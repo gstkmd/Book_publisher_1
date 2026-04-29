@@ -123,3 +123,19 @@ class InviteToken(Document):
             IndexModel([("organization_id", ASCENDING)]),
             IndexModel([("status", ASCENDING)])
         ]
+
+class GlobalSettings(Document):
+    # SMTP Settings (Encrypted where sensitive)
+    smtp_server: Optional[str] = None
+    smtp_port: Optional[int] = 587
+    smtp_user: Optional[str] = None
+    smtp_password_encrypted: Optional[str] = None
+    smtp_from_email: Optional[str] = None
+    smtp_use_tls: bool = True
+    
+    # System info
+    updated_at: datetime = datetime.now(timezone.utc)
+    updated_by: Optional[str] = None # User ID
+
+    class Settings:
+        name = "global_settings"

@@ -108,6 +108,11 @@ export default function LoginPage() {
                                     placeholder="••••••••"
                                     className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:border-indigo-600 outline-none transition-all text-sm font-bold"
                                 />
+                                <div className="flex justify-end mt-2">
+                                    <Link href="/login/forgot-password" title="Recover your password" className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-slate-900 transition-colors">
+                                        Forgot password?
+                                    </Link>
+                                </div>
                             </div>
                             <button
                                 type="submit"

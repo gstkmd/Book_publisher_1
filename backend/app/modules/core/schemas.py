@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, Any
 from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 from beanie import PydanticObjectId
@@ -37,4 +38,28 @@ class User(UserInDBBase):
 
 class UserInDB(UserInDBBase):
     hashed_password: str
+
+class Msg(BaseModel):
+    msg: str
+
+class GlobalSettingsBase(BaseModel):
+    smtp_server: Optional[str] = None
+    smtp_port: Optional[int] = 587
+    smtp_user: Optional[str] = None
+    smtp_from_email: Optional[str] = None
+    smtp_use_tls: bool = True
+
+class GlobalSettingsUpdate(GlobalSettingsBase):
+    smtp_password: Optional[str] = None
+
+class GlobalSettings(GlobalSettingsBase):
+    smtp_password_masked: Optional[str] = None
+    updated_at: Optional[datetime] = None
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+class PasswordReset(BaseModel):
+    token: str
+    new_password: str
 

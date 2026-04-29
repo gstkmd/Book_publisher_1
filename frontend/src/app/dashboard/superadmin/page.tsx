@@ -19,7 +19,11 @@ import {
     Clock,
     Database,
     Package,
-    History
+    History,
+    Mail,
+    Server,
+    ShieldCheck,
+    Send
 } from 'lucide-react';
 
 interface Organization {
@@ -46,12 +50,34 @@ interface UserRes {
     role: string;
 }
 
+interface SMTPSettings {
+    smtp_server: string;
+    smtp_port: number;
+    smtp_user: string;
+    smtp_from_email: string;
+    smtp_use_tls: boolean;
+    smtp_password_masked?: string;
+    updated_at?: string;
+}
+
 export default function SuperAdminDashboard() {
     const { token, impersonateOrganization } = useAuth();
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({ total_orgs: 0, total_users: 0, total_storage_formatted: '0 B' });
     
+    // SMTP State
+    const [smtpSettings, setSmtpSettings] = useState<SMTPSettings>({
+        smtp_server: '',
+        smtp_port: 587,
+        smtp_user: '',
+        smtp_from_email: '',
+        smtp_use_tls: true
+    });
+    const [newSmtpPassword, setNewSmtpPassword] = useState('');
+    const [smtpLoading, setSmtpLoading] = useState(false);
+    const [smtpSuccess, setSmtpSuccess] = useState(false);
+
     // Org Edit State
     const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
     const [editData, setEditData] = useState({
@@ -79,6 +105,7 @@ export default function SuperAdminDashboard() {
         try {
             const orgsData = await api.get('/superadmin/organizations', token);
             const statsData = await api.get('/superadmin/stats', token);
+            const smtpData = await api.get('/superadmin/email-settings', token);
             
             if (Array.isArray(orgsData)) {
                 setOrganizations(orgsData);
@@ -91,10 +118,48 @@ export default function SuperAdminDashboard() {
                     total_storage_formatted: statsData.total_storage_formatted
                 });
             }
+
+            if (smtpData) {
+                setSmtpSettings(smtpData);
+            }
         } catch (err) {
             console.error('Failed to fetch data:', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSaveSmtp = async () => {
+        setSmtpLoading(true);
+        setSmtpSuccess(false);
+        try {
+            const data: any = { ...smtpSettings };
+            if (newSmtpPassword) {
+                data.smtp_password = newSmtpPassword;
+            }
+            await api.patch('/superadmin/email-settings', data, token || undefined);
+            setSmtpSuccess(true);
+            setNewSmtpPassword('');
+            fetchData();
+            setTimeout(() => setSmtpSuccess(false), 3000);
+        } catch (err) {
+            console.error(err);
+            alert("Failed to save SMTP settings");
+        } finally {
+            setSmtpLoading(false);
+        }
+    };
+
+    const handleTestSmtp = async () => {
+        setSmtpLoading(true);
+        try {
+            const res = await api.post('/superadmin/email-settings/test', {}, token || undefined);
+            alert(res.message || "Test email sent!");
+        } catch (err: any) {
+            console.error(err);
+            alert(err.response?.data?.detail || "SMTP test failed");
+        } finally {
+            setSmtpLoading(false);
         }
     };
 
@@ -335,6 +400,120 @@ export default function SuperAdminDashboard() {
                             ))}
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            {/* SMTP Settings */}
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden animate-in slide-in-from-bottom-4 duration-700">
+                <div className="px-6 py-4 border-b border-slate-50 flex justify-between items-center">
+                    <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                        <Mail className="w-5 h-5 text-indigo-600" />
+                        System Communication (SMTP)
+                    </h2>
+                    {smtpSettings.updated_at && (
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">
+                            Last Updated: {new Date(smtpSettings.updated_at).toLocaleString()}
+                        </span>
+                    )}
+                </div>
+                <div className="p-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Info Column */}
+                        <div className="space-y-4">
+                            <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                    <Server className="w-4 h-4" /> SMTP Infrastructure
+                                </h3>
+                                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                                    Configure the platform-wide mail delivery system. These settings are used for password resets, invites, and system notifications.
+                                </p>
+                            </div>
+                            <button 
+                                onClick={handleTestSmtp}
+                                disabled={smtpLoading || !smtpSettings.smtp_server}
+                                className="w-full py-4 bg-indigo-50 text-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-100 transition-all disabled:opacity-50"
+                            >
+                                <Send className="w-4 h-4" /> {smtpLoading ? "Sending Test..." : "Send Test Email"}
+                            </button>
+                        </div>
+
+                        {/* Form Column */}
+                        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">SMTP Server</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="smtp.gmail.com"
+                                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-indigo-100"
+                                    value={smtpSettings.smtp_server}
+                                    onChange={(e) => setSmtpSettings({...smtpSettings, smtp_server: e.target.value})}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Port</label>
+                                <input 
+                                    type="number" 
+                                    placeholder="587"
+                                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-indigo-100"
+                                    value={smtpSettings.smtp_port}
+                                    onChange={(e) => setSmtpSettings({...smtpSettings, smtp_port: parseInt(e.target.value)})}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Sender Email</label>
+                                <input 
+                                    type="email" 
+                                    placeholder="noreply@connectpublisher.com"
+                                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-indigo-100"
+                                    value={smtpSettings.smtp_from_email}
+                                    onChange={(e) => setSmtpSettings({...smtpSettings, smtp_from_email: e.target.value})}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">SMTP Username</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="user@example.com"
+                                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-indigo-100"
+                                    value={smtpSettings.smtp_user}
+                                    onChange={(e) => setSmtpSettings({...smtpSettings, smtp_user: e.target.value})}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">SMTP Password</label>
+                                <input 
+                                    type="password" 
+                                    placeholder={smtpSettings.smtp_password_masked || "Enter new password..."}
+                                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 font-bold outline-none focus:ring-2 focus:ring-indigo-100"
+                                    value={newSmtpPassword}
+                                    onChange={(e) => setNewSmtpPassword(e.target.value)}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl mt-4 self-end">
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-900 uppercase tracking-tight">Use TLS/SSL</p>
+                                </div>
+                                <button 
+                                    onClick={() => setSmtpSettings({...smtpSettings, smtp_use_tls: !smtpSettings.smtp_use_tls})}
+                                    className={`w-12 h-6 rounded-full transition-all relative ${smtpSettings.smtp_use_tls ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${smtpSettings.smtp_use_tls ? 'left-7' : 'left-1'}`} />
+                                </button>
+                            </div>
+                            
+                            <div className="col-span-1 md:col-span-2 pt-4">
+                                <button 
+                                    onClick={handleSaveSmtp}
+                                    disabled={smtpLoading}
+                                    className={`w-full py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-lg
+                                        ${smtpSuccess ? 'bg-emerald-500 text-white' : 'bg-slate-900 text-white hover:bg-indigo-600'}
+                                    `}
+                                >
+                                    {smtpLoading ? "Saving..." : smtpSuccess ? <><ShieldCheck className="w-4 h-4" /> Settings Saved</> : "Save SMTP Configuration"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
