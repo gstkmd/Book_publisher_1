@@ -328,14 +328,19 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
     super_admins = await User.find(User.role == UserRole.SUPER_ADMIN).to_list()
     sa_ids = [u.id for u in super_admins]
     
-    # Start of day UTC
-    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    # Today range with timezone buffer (-6h to +30h from UTC midnight)
+    today_base = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    start_date = today_base - timedelta(hours=6)
+    end_date = today_base + timedelta(hours=30)
+    
+    # Legacy variable for compatibility
+    today = start_date 
 
     # 1. Total active agents today (unique users with activity)
     active_agents_pipeline = [
         {
             "$match": {
-                "timestamp": {"$gte": today},
+                "timestamp": {"$gte": start_date, "$lte": end_date},
                 "activity_type": "active",
                 "user": {"$nin": sa_ids}
             }
@@ -365,7 +370,7 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
     sc_today_pipeline = [
         {
             "$match": {
-                "timestamp": {"$gte": today},
+                "timestamp": {"$gte": start_date, "$lte": end_date},
                 "user": {"$nin": sa_ids}
             }
         },
@@ -388,7 +393,7 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
     pipeline = [
         {
             "$match": {
-                "timestamp": {"$gte": today},
+                "timestamp": {"$gte": start_date, "$lte": end_date},
                 "activity_type": "active",
                 "user": {"$nin": sa_ids}
             }
@@ -427,7 +432,7 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
     idle_pipeline = [
         {
             "$match": {
-                "timestamp": {"$gte": today},
+                "timestamp": {"$gte": start_date, "$lte": end_date},
                 "activity_type": "idle",
                 "user": {"$nin": sa_ids}
             }
@@ -556,55 +561,67 @@ async def get_screenshots(
     """Get recent screenshots from MongoDB for current organization"""
     from bson import ObjectId
     
-    # Note: organization_id string is usually sufficient here for Beanie's query builder
-    # but we will ensure it's matched carefully.
-    query = {"organization_id": str(current_user.organization_id)}
+    # 1. Build a robust query dict
+    query = {
+        "organization_id": str(current_user.organization_id)
+    }
     
     if date:
         try:
-            # When a single date is provided (e.g. from a date picker),
-            # we expand the range to ensure we capture activity in different timezones (like IST).
-            # IST is UTC+5:30, so we subtract and add some buffer.
             base_date = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-            start_date = base_date - timedelta(hours=6) # Capture from late night yesterday UTC
-            end_date = base_date + timedelta(hours=30)  # Capture until early morning tomorrow UTC
+            start_date = base_date - timedelta(hours=6) 
+            end_date = base_date + timedelta(hours=30)  
             query["timestamp"] = {"$gte": start_date, "$lte": end_date}
-        except Exception:
-            pass
+            print(f"DEBUG: [get_screenshots] Date Filter: {start_date} to {end_date}")
+        except Exception as e:
+            print(f"DEBUG: [get_screenshots] Date parsing failed: {e}")
 
-    # Use aggregation for robust link handling
-    beanie_query = MonitoringScreenshot.find(query, fetch_links=True)
-    
     if agent_id:
         try:
             agent_oid = ObjectId(agent_id)
-            # Use aggregation style for matching links if find fails
-            beanie_query = beanie_query.find({
-                "$or": [
-                    {"user": agent_oid},
-                    {"user.$id": agent_oid},
-                    {"user._id": agent_oid},
-                    {"user": str(agent_oid)}
-                ]
-            })
+            query["$or"] = [
+                {"user": agent_oid},
+                {"user.$id": agent_oid},
+                {"user._id": agent_oid},
+                {"user": str(agent_oid)},
+                {"user": {"$ref": "users", "$id": agent_oid}}
+            ]
+            print(f"DEBUG: [get_screenshots] Agent Filter applied for: {agent_id}")
+        except Exception as e:
+            print(f"DEBUG: [get_screenshots] Agent ID parsing failed: {e}")
+
+    # 2. Fetch with links explicitly
+    print(f"DEBUG: [get_screenshots] Final Query: {query}")
+    beanie_query = MonitoringScreenshot.find(query, fetch_links=True)
+    
+    # 3. Execute with sort, skip, and limit
+    screenshots = await beanie_query.sort("-timestamp", "-_id").skip(offset).limit(limit).to_list()
+    print(f"DEBUG: [get_screenshots] Found {len(screenshots)} raw screenshots")
+    
+    # 4. Filter and process
+    results = []
+    for s in screenshots:
+        # Check if user is resolved and has role
+        is_sa = False
+        try:
+            if hasattr(s.user, "role") and s.user.role == UserRole.SUPER_ADMIN:
+                is_sa = True
         except Exception:
             pass
             
-    # Enforce strict sort order: latest timestamp first, then latest record ID as fallback
-    screenshots = await beanie_query.sort("-timestamp", "-_id").skip(offset).limit(limit).to_list()
-    
-    # Filter out screenshots from super admins
-    screenshots = [s for s in screenshots if s.user and hasattr(s.user, "role") and s.user.role != UserRole.SUPER_ADMIN]
-    
-    return [
-        {
+        if is_sa:
+            continue
+            
+        results.append({
             "id": str(s.id),
             "filename": os.path.basename(s.file_url) if s.file_url else "unknown.png",
             "filepath": s.file_url,
             "timestamp": s.timestamp,
             "computer_name": s.user.full_name if (s.user and hasattr(s.user, 'full_name')) else "Unknown"
-        } for s in screenshots
-    ]
+        })
+        
+    print(f"DEBUG: [get_screenshots] Returning {len(results)} filtered results")
+    return results
 
 @router.get("/dashboard/agent/{agent_id}/activity")
 async def get_agent_activity(
@@ -646,6 +663,10 @@ async def get_agent_activity(
         target_user = await User.get(user_oid)
         if target_user and target_user.role == UserRole.SUPER_ADMIN:
             raise HTTPException(status_code=403, detail="Cannot view activity for super admins")
+            
+        # Get super admin IDs to exclude them from stats
+        super_admins = await User.find(User.role == UserRole.SUPER_ADMIN).to_list()
+        sa_ids = [u.id for u in super_admins]
         
         # Robust DBRef and Link matching logic
         user_match_or = [
@@ -745,11 +766,12 @@ async def get_agent_activity(
         productivity_score = min(100, round((total_active_minutes / total_tracked) * 100)) if total_tracked > 0 else 0
 
         # Screenshot count
-        # Use aggregation for consistency with active minutes
+        # Use aggregation for consistency with active minutes and SA exclusion
         screenshot_pipeline = [
             {
                 "$match": {
-                    "timestamp": {"$gte": start_date, "$lte": end_date}
+                    "timestamp": {"$gte": start_date, "$lte": end_date},
+                    "user": {"$nin": sa_ids} # Use sa_ids from above
                 }
             },
             {
