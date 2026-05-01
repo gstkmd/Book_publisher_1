@@ -143,14 +143,20 @@ export default function DashboardPage() {
                         const bEnabled = !b.featureId || org?.enabled_modules?.includes(b.featureId);
                         
                         const checkRole = (item: any) => {
-                            if (user?.role === 'admin' || user?.role === 'super_admin') return true;
-                            const userRole = user?.role?.toLowerCase() || '';
+                            const userRole = (user?.role || 'user').toLowerCase();
+                            if (userRole === 'admin' || userRole === 'super_admin') return true;
+                            
+                            // 1. Check explicit role restrictions
                             if (item.requiredRoles && !item.requiredRoles.includes(userRole)) return false;
-                            if (item.featureId) {
-                                const rolePermissions = org?.role_permissions?.[user?.role || 'user'] || [];
-                                return rolePermissions.includes(item.featureId);
+                            
+                            // 2. Check granular feature permissions if defined in org
+                            if (item.featureId && org?.role_permissions?.[userRole]) {
+                                return org.role_permissions[userRole].includes(item.featureId);
                             }
-                            return true;
+                            
+                            // Default to true for items without a featureId (Settings, etc.)
+                            // Otherwise, default to only allowing 'tasks' if no specific permissions are set
+                            return !item.featureId || item.featureId === 'tasks';
                         };
 
                         const aHasRole = checkRole(a);
@@ -166,14 +172,20 @@ export default function DashboardPage() {
                         const isEnabled = !item.featureId || org?.enabled_modules?.includes(item.featureId);
                         
                         const hasRole = (() => {
-                            if (user?.role === 'admin' || user?.role === 'super_admin') return true;
-                            const userRole = user?.role?.toLowerCase() || '';
+                            const userRole = (user?.role || 'user').toLowerCase();
+                            if (userRole === 'admin' || userRole === 'super_admin') return true;
+                            
+                            // 1. Check explicit role restrictions
                             if (item.requiredRoles && !item.requiredRoles.includes(userRole)) return false;
-                            if (item.featureId) {
-                                const rolePermissions = org?.role_permissions?.[user?.role || 'user'] || [];
-                                return rolePermissions.includes(item.featureId);
+                            
+                            // 2. Check granular feature permissions if defined in org
+                            if (item.featureId && org?.role_permissions?.[userRole]) {
+                                return org.role_permissions[userRole].includes(item.featureId);
                             }
-                            return true;
+                            
+                            // Default to true for items without a featureId
+                            // Otherwise, default to only allowing 'tasks' if no specific permissions are set
+                            return !item.featureId || item.featureId === 'tasks';
                         })();
 
                         const shouldHide = (!isEnabled && org?.hide_disabled_features) || !hasRole;

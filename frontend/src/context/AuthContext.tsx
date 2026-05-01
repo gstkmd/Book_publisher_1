@@ -31,6 +31,7 @@ interface AuthContextType {
     login: (token: string) => void;
     logout: () => void;
     isLoading: boolean;
+    activeStatus: any;
     refreshActiveStatus: () => Promise<void>;
     impersonateOrganization: (orgId: string) => Promise<void>;
     exitOrganizationContext: () => Promise<void>;
@@ -251,7 +252,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, org, token, login, logout, isLoading, refreshActiveStatus, impersonateOrganization, exitOrganizationContext }}>
+        <AuthContext.Provider value={{ user, org, token, login, logout, isLoading, activeStatus, refreshActiveStatus, impersonateOrganization, exitOrganizationContext }}>
             {children}
 
             {/* 2-Hour Continuous Work Confirmation Modal */}

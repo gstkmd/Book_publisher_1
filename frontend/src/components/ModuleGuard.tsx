@@ -4,6 +4,7 @@ import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Lock, Sparkles, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 interface ModuleGuardProps {
     moduleName: string;
@@ -11,7 +12,9 @@ interface ModuleGuardProps {
 }
 
 export default function ModuleGuard({ moduleName, children }: ModuleGuardProps) {
-    const { org, user } = useAuth();
+    const { org, user, activeStatus } = useAuth();
+    const searchParams = useSearchParams();
+    const taskIdParam = searchParams?.get('taskId');
     
     // 1. Organization level check (Is the module enabled for the whole workspace?)
     const isModuleEnabledForOrg = org?.enabled_modules?.includes(moduleName);
@@ -24,7 +27,11 @@ export default function ModuleGuard({ moduleName, children }: ModuleGuardProps) 
     // Custom roles follow the mapping in org.role_permissions
     // FALLBACK: If permissions are not defined for this role, OR if it's the basic 'tasks' module, grant access.
     const rolePermissions = org?.role_permissions?.[userRole] || [];
-    const hasRolePermission = isAdmin || (moduleName === 'tasks') || rolePermissions.includes(moduleName);
+    
+    // Contextual Access: If the user has an active task assigned and is accessing via that task
+    const isWorkingOnTask = taskIdParam && activeStatus?.active_task_id === taskIdParam;
+    
+    const hasRolePermission = isAdmin || (moduleName === 'tasks') || rolePermissions.includes(moduleName) || isWorkingOnTask;
 
     // Final access decision
     const isAccessGranted = isModuleEnabledForOrg && hasRolePermission;

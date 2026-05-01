@@ -188,9 +188,24 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
     const fetchLibraryContent = async () => {
         try {
             const data = await api.get('/generic/content', token!);
-            setLibraryContent(Array.isArray(data) ? data : []);
+            let filtered = Array.isArray(data) ? data : [];
+            
+            // RBAC Filter: If not admin and doesn't have global library access, 
+            // only show content they authored or that is already linked to this task
+            const userRole = (user?.role || 'user').toLowerCase();
+            const hasGlobalLibraryAccess = userRole === 'admin' || userRole === 'super_admin' || (org?.role_permissions?.[userRole]?.includes('library'));
+            
+            if (!hasGlobalLibraryAccess) {
+                filtered = filtered.filter(c => 
+                    c.author === user?.id || 
+                    (task?.content_id && (c._id === task.content_id || c.id === task.content_id || (task.content_id._id === c._id)))
+                );
+            }
+            
+            setLibraryContent(filtered);
         } catch (err) {
             console.error('Failed to fetch library content:', err);
+            setLibraryContent([]);
         }
     };
 
