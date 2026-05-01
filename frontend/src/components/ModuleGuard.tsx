@@ -16,13 +16,15 @@ export default function ModuleGuard({ moduleName, children }: ModuleGuardProps) 
     // 1. Organization level check (Is the module enabled for the whole workspace?)
     const isModuleEnabledForOrg = org?.enabled_modules?.includes(moduleName);
 
-    // 2. Role level check (Does this specific user type have access?)
-    const userRole = user?.role || 'user';
+    const userRole = (user?.role || 'user').toLowerCase();
     
     // Admins always have access to everything that is enabled for the org
+    const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+    
     // Custom roles follow the mapping in org.role_permissions
+    // FALLBACK: If permissions are not defined for this role, OR if it's the basic 'tasks' module, grant access.
     const rolePermissions = org?.role_permissions?.[userRole] || [];
-    const hasRolePermission = userRole === 'admin' || userRole === 'super_admin' || rolePermissions.includes(moduleName);
+    const hasRolePermission = isAdmin || (moduleName === 'tasks') || rolePermissions.includes(moduleName);
 
     // Final access decision
     const isAccessGranted = isModuleEnabledForOrg && hasRolePermission;

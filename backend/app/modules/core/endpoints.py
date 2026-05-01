@@ -165,7 +165,7 @@ async def invite_member(
     invite = InviteToken(
         token=token,
         email=email_lower,
-        role=req.role or "user",
+        role=(req.role or "user").lower(),
         organization_id=organization_id,
         status="pending",
         invited_by=str(current_user.id),
@@ -252,13 +252,13 @@ async def accept_invitation(
     # Create or update membership
     if existing_member:
         existing_member.status = "active"
-        existing_member.role = invite.role
+        existing_member.role = invite.role.lower()
         await existing_member.save()
     else:
         new_member = OrganizationMember(
             organization_id=invite.organization_id,
             user_id=str(current_user.id),
-            role=invite.role,
+            role=invite.role.lower(),
             status="active",
             invited_by=invite.invited_by
         )
@@ -266,7 +266,7 @@ async def accept_invitation(
 
     # Switch user context to this org so they can actually see the invited workspace
     current_user.organization_id = invite.organization_id
-    current_user.role = invite.role
+    current_user.role = invite.role.lower()
     await current_user.save()
 
     invite.status = "accepted"
