@@ -474,7 +474,9 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
                                         Content
                                     </button>
                                     <Link
-                                        href={`/dashboard/editor/${task.content_id?._id || task.content_id?.id || task.content_id}?taskId=${taskId}`}
+                                        href={`/dashboard/editor/${task.content_id?._id || task.content_id?.id || task.content_id}${taskId ? '?taskId=' + taskId : ''}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                         className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 hover:bg-white hover:shadow-sm transition-all duration-300"
                                     >
                                         <ExternalLink className="w-3 h-3" />

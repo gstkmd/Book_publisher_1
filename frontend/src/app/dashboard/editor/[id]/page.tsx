@@ -161,8 +161,15 @@ function EditorEditContent() {
             }, token!);
 
             alert('Content updated successfully!');
+            
+            // If we have a taskId, it means we likely opened this in a new tab from TaskDetail
+            // We should just close this tab to go back to the task creation window
             if (taskId) {
-                router.push(`/dashboard/tasks/${taskId}`);
+                if (window.opener) {
+                    window.close();
+                } else {
+                    router.push(`/dashboard/tasks/${taskId}`);
+                }
             } else {
                 router.push('/dashboard/library');
             }
@@ -198,7 +205,11 @@ function EditorEditContent() {
 
             alert('Content published successfully!');
             if (taskId) {
-                router.push(`/dashboard/tasks/${taskId}`);
+                if (window.opener) {
+                    window.close();
+                } else {
+                    router.push(`/dashboard/tasks/${taskId}`);
+                }
             } else {
                 router.push('/dashboard/library');
             }
@@ -343,7 +354,11 @@ function EditorEditContent() {
                                 <button
                                     onClick={() => {
                                         if (taskId) {
-                                            router.push(`/dashboard/tasks/${taskId}`);
+                                            if (window.opener) {
+                                                window.close();
+                                            } else {
+                                                router.push(`/dashboard/tasks/${taskId}`);
+                                            }
                                         } else {
                                             router.push('/dashboard/library');
                                         }
