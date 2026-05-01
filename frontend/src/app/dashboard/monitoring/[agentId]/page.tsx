@@ -268,25 +268,6 @@ export default function AgentDetailPage() {
                         </div>
                     </div>
                     
-                    {/* Screenshots Preview in Activity Tab */}
-                    <div className="mt-8">
-                        <ScreenshotGallery 
-                            screenshots={screenshots.slice(0, 8)} 
-                            apiUrl={API_BASE} 
-                            onScreenshotClick={(shot) => setSelectedScreenshot(shot)}
-                        />
-                        {screenshots.length > 8 && (
-                            <div className="mt-2 text-right">
-                                <button 
-                                    onClick={() => setActiveTab('screenshots')}
-                                    className="text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
-                                >
-                                    View all {screenshots.length} screenshots →
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
                     {/* Raw Recent Activity Table */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-8">
                         <div className="px-6 py-4 border-b border-gray-50 flex flex-wrap justify-between items-center gap-4">

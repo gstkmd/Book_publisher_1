@@ -475,8 +475,13 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
 @router.get("/dashboard/agents")
 async def get_agents(current_user: User = Depends(deps.get_current_user)):
     """Get list of all agents from MongoDB for current organization"""
-    # Start of day UTC
-    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    # Today range with timezone buffer (-6h to +30h from UTC midnight)
+    today_base = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    start_date = today_base - timedelta(hours=6)
+    end_date = today_base + timedelta(hours=30)
+    
+    # Legacy variable for compatibility
+    today = start_date
     
     # Fetch all members of the organization (excluding super admins)
     members = await User.find(
@@ -522,7 +527,7 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
             {
                 "$match": {
                     "organization_id": current_user.organization_id,
-                    "timestamp": {"$gte": today}
+                    "timestamp": {"$gte": start_date, "$lte": end_date}
                 }
             },
             # Map the member ID to the user field carefully
