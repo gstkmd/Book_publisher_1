@@ -663,71 +663,81 @@ async def get_agent_activity(
         # 0. Summary Stats Calculation
         print(f"DEBUG: [AgentDetail-4] Calculating summary stats...")
         
-        # Active minutes
-        active_pipeline = [
-            {
-                "$match": {
-                    "timestamp": {"$gte": start_date, "$lte": end_date},
-                    "activity_type": "active"
+        total_active_seconds = 0
+        try:
+            # Active minutes
+            active_pipeline = [
+                {
+                    "$match": {
+                        "timestamp": {"$gte": start_date, "$lte": end_date},
+                        "activity_type": "active"
+                    }
+                },
+                {
+                    "$addFields": {
+                        "org_id_str": {"$toString": "$organization_id"},
+                        "duration_val": {"$convert": {"input": "$duration", "to": "double", "onError": 0, "onNull": 0}}
+                    }
+                },
+                {
+                    "$match": {
+                        "org_id_str": str(current_user.organization_id),
+                        "$or": user_match_or
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": None,
+                        "total_seconds": {"$sum": "$duration_val"}
+                    }
                 }
-            },
-            {
-                "$addFields": {
-                    "org_id_str": {"$toString": "$organization_id"}
-                }
-            },
-            {
-                "$match": {
-                    "org_id_str": str(current_user.organization_id),
-                    "$or": user_match_or
-                }
-            },
-            {
-                "$group": {
-                    "_id": None,
-                    "total_seconds": {"$sum": "$duration"}
-                }
-            }
-        ]
-        active_res = await MonitoringActivity.aggregate(active_pipeline).to_list()
-        total_active_seconds = active_res[0]["total_seconds"] if active_res else 0
+            ]
+            active_res = await MonitoringActivity.aggregate(active_pipeline).to_list()
+            total_active_seconds = active_res[0]["total_seconds"] if active_res else 0
+        except Exception as active_err:
+            print(f"ERROR: [AgentDetail-ActivePipe] {active_err}")
+
         total_active_minutes = round(total_active_seconds / 60, 1)
+        print(f"DEBUG: [AgentDetail-5] Active mins: {total_active_minutes}")
 
         print(f"DEBUG: [AgentDetail-5] Active mins: {total_active_minutes}")
 
         # Idle minutes
-        idle_pipeline = [
-            {
-                "$match": {
-                    "timestamp": {"$gte": start_date, "$lte": end_date},
-                    "activity_type": "idle"
-                }
-            },
-            {
-                "$addFields": {
-                    "org_id_str": {"$toString": "$organization_id"}
-                }
-            },
-            {
-                "$match": {
-                    "org_id_str": str(current_user.organization_id),
-                    "$or": user_match_or
-                }
-            },
-            {
-                "$group": {
-                    "_id": None,
-                    "total_seconds": {"$sum": "$duration"}
-                }
-            }
-        ]
-        idle_res = await MonitoringActivity.aggregate(idle_pipeline).to_list()
         total_idle_seconds = 0
-        if idle_res and len(idle_res) > 0 and idle_res[0].get("total_seconds"):
-            total_idle_seconds = idle_res[0]["total_seconds"]
+        try:
+            idle_pipeline = [
+                {
+                    "$match": {
+                        "timestamp": {"$gte": start_date, "$lte": end_date},
+                        "activity_type": "idle"
+                    }
+                },
+                {
+                    "$addFields": {
+                        "org_id_str": {"$toString": "$organization_id"},
+                        "duration_val": {"$convert": {"input": "$duration", "to": "double", "onError": 0, "onNull": 0}}
+                    }
+                },
+                {
+                    "$match": {
+                        "org_id_str": str(current_user.organization_id),
+                        "$or": user_match_or
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": None,
+                        "total_seconds": {"$sum": "$duration_val"}
+                    }
+                }
+            ]
+            idle_res = await MonitoringActivity.aggregate(idle_pipeline).to_list()
+            if idle_res and len(idle_res) > 0 and idle_res[0].get("total_seconds"):
+                total_idle_seconds = idle_res[0]["total_seconds"]
+        except Exception as idle_err:
+            print(f"ERROR: [AgentDetail-IdlePipe] {idle_err}")
         
         total_idle_minutes = round(total_idle_seconds / 60, 1)
-
         print(f"DEBUG: [AgentDetail-6] Idle mins: {total_idle_minutes}")
 
         # Productivity Score
@@ -793,81 +803,90 @@ async def get_agent_activity(
 
         # 1. App usage aggregation
         print(f"DEBUG: [AgentDetail-10] Aggregating app usage...")
-        app_pipeline = [
-            {
-                "$match": {
-                    "timestamp": {"$gte": start_date, "$lte": end_date}
-                }
-            },
-            {
-                "$addFields": {
-                    "org_id_str": {"$toString": "$organization_id"}
-                }
-            },
-            {
-                "$match": {
-                    "org_id_str": str(current_user.organization_id),
-                    "$or": user_match_or
-                }
-            },
-            {
-                "$group": {
-                    "_id": "$app_name",
-                    "total_seconds": {"$sum": "$duration"},
-                    "total_keys": {"$sum": "$keys_pressed"},
-                    "total_clicks": {"$sum": "$mouse_clicks"}
-                }
-            },
-            {
-                "$project": {
-                    "app_name": "$_id",
-                    "total_seconds": 1,
-                    "total_keys": 1,
-                    "total_clicks": 1,
-                    "_id": 0
-                }
-            },
-            {"$sort": {"total_seconds": -1}}
-        ]
-        
-        apps_result = await MonitoringActivity.aggregate(app_pipeline).to_list()
+        apps_result = []
+        try:
+            app_pipeline = [
+                {
+                    "$match": {
+                        "timestamp": {"$gte": start_date, "$lte": end_date}
+                    }
+                },
+                {
+                    "$addFields": {
+                        "org_id_str": {"$toString": "$organization_id"},
+                        "duration_val": {"$convert": {"input": "$duration", "to": "double", "onError": 0, "onNull": 0}}
+                    }
+                },
+                {
+                    "$match": {
+                        "org_id_str": str(current_user.organization_id),
+                        "$or": user_match_or
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": "$app_name",
+                        "total_seconds": {"$sum": "$duration_val"},
+                        "total_keys": {"$sum": "$keys_pressed"},
+                        "total_clicks": {"$sum": "$mouse_clicks"}
+                    }
+                },
+                {
+                    "$project": {
+                        "app_name": {"$ifNull": ["$_id", "Unknown"]},
+                        "total_seconds": 1,
+                        "total_keys": 1,
+                        "total_clicks": 1,
+                        "_id": 0
+                    }
+                },
+                {"$sort": {"total_seconds": -1}}
+            ]
+            apps_result = await MonitoringActivity.aggregate(app_pipeline).to_list()
+        except Exception as app_err:
+            print(f"ERROR: [AgentDetail-AppPipe] {app_err}")
         
         # 2. Hourly activity aggregation
         print(f"DEBUG: [AgentDetail-11] Aggregating hourly activity...")
-        hourly_pipeline = [
-            {
-                "$match": {
-                    "timestamp": {"$gte": start_date, "$lte": end_date}
-                }
-            },
-            {
-                "$addFields": {
-                    "org_id_str": {"$toString": "$organization_id"}
-                }
-            },
-            {
-                "$match": {
-                    "org_id_str": str(current_user.organization_id),
-                    "$or": user_match_or
-                }
-            },
-            {
-                "$group": {
-                    "_id": {"$hour": "$timestamp"},
-                    "active_seconds": {"$sum": "$duration"}
-                }
-            },
-            {
-                "$project": {
-                    "hour": {"$toString": "$_id"},
-                    "active_seconds": 1,
-                    "_id": 0
-                }
-            },
-            {"$sort": {"hour": 1}}
-        ]
-        
-        hourly_result = await MonitoringActivity.aggregate(hourly_pipeline).to_list()
+        hourly_result = []
+        try:
+            hourly_pipeline = [
+                {
+                    "$match": {
+                        "timestamp": {"$gte": start_date, "$lte": end_date}
+                    }
+                },
+                {
+                    "$addFields": {
+                        "org_id_str": {"$toString": "$organization_id"},
+                        "duration_val": {"$convert": {"input": "$duration", "to": "double", "onError": 0, "onNull": 0}},
+                        "ts_date": {"$toDate": "$timestamp"}
+                    }
+                },
+                {
+                    "$match": {
+                        "org_id_str": str(current_user.organization_id),
+                        "$or": user_match_or
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": {"$hour": "$ts_date"},
+                        "active_seconds": {"$sum": "$duration_val"}
+                    }
+                },
+                {
+                    "$project": {
+                        "hour": {"$toString": "$_id"},
+                        "active_seconds": 1,
+                        "_id": 0
+                    }
+                },
+                {"$sort": {"hour": 1}}
+            ]
+            hourly_result = await MonitoringActivity.aggregate(hourly_pipeline).to_list()
+        except Exception as hourly_err:
+            print(f"ERROR: [AgentDetail-HourlyPipe] {hourly_err}")
         
         # 3. Raw Logs
         print(f"DEBUG: [AgentDetail-12] Fetching raw logs...")
