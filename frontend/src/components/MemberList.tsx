@@ -26,11 +26,34 @@ export const MemberList = () => {
     const [inviteRole, setInviteRole] = useState('user');
     const [inviting, setInviting] = useState(false);
     const [generatedLink, setGeneratedLink] = useState('');
+    const [availableRoles, setAvailableRoles] = useState<{ value: string, label: string }[]>(ROLES);
     const [copied, setCopied] = useState(false);
 
     useEffect(() => {
-        if (token && user?.organization_id) fetchMembers();
+        if (token && user?.organization_id) {
+            fetchMembers();
+            fetchRoles();
+        }
     }, [token, user?.organization_id]);
+
+    const fetchRoles = async () => {
+        try {
+            const orgData = await TeamService.getOrganization(token!);
+            if (orgData?.role_permissions) {
+                const roles = Object.keys(orgData.role_permissions).map(role => ({
+                    value: role,
+                    label: role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                }));
+                // Ensure admin is always there if not in permissions
+                if (!roles.find(r => r.value === 'admin')) {
+                    roles.push({ value: 'admin', label: 'Admin' });
+                }
+                setAvailableRoles(roles);
+            }
+        } catch (err) {
+            console.error('Failed to fetch roles:', err);
+        }
+    };
 
     const fetchMembers = async () => {
         try {
@@ -185,7 +208,7 @@ export const MemberList = () => {
                                 onChange={(e) => handleRoleChange(m._id, e.target.value)}
                                 className="text-xs bg-gray-50 border-none px-2 py-1 rounded capitalize focus:ring-1 focus:ring-blue-500 text-slate-900"
                             >
-                                {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                                {availableRoles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                             </select>
                             <button
                                 type="button"
@@ -249,7 +272,7 @@ export const MemberList = () => {
                                     value={inviteRole} onChange={e => setInviteRole(e.target.value)}
                                     className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-slate-900"
                                 >
-                                    {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                                    {availableRoles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                                 </select>
                             </div>
 

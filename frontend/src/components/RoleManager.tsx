@@ -28,7 +28,7 @@ export function RoleManager({ rolePermissions, onUpdate }: RoleManagerProps) {
         if (Object.keys(rolePermissions).length === 0) {
             const initial: Record<string, string[]> = {};
             DEFAULT_ROLES.forEach(role => {
-                initial[role] = role === 'admin' ? AVAILABLE_MODULES.map(m => m.id) : ['tasks', 'library'];
+                initial[role] = role === 'admin' ? AVAILABLE_MODULES.map(m => m.id) : ['tasks'];
             });
             onUpdate(initial);
         }

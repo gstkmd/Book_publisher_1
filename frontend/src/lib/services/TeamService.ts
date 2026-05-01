@@ -33,6 +33,10 @@ export const TeamService = {
         return api.get(`/organizations/${orgId}/members`, token);
     },
 
+    getOrganization: async (token: string): Promise<any> => {
+        return api.get('/organizations/me', token);
+    },
+
     getInvitations: async (orgId: string, token: string): Promise<InviteToken[]> => {
         return api.get(`/organizations/${orgId}/invitations`, token);
     },
