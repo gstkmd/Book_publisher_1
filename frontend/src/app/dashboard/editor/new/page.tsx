@@ -13,6 +13,8 @@ function EditorNewContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const taskId = searchParams.get('taskId');
+    const fromTask = searchParams.get('fromTask') === 'true';
+
     const [title, setTitle] = useState('');
     const [type, setType] = useState('article');
     const [content, setContent] = useState('');
@@ -70,7 +72,7 @@ function EditorNewContent() {
         }
     }, [title, orgSettings]);
 
-    const handleSaveDraft = async () => {
+    const handleSave = async (status: 'draft' | 'published' = 'draft') => {
         if (!title.trim()) {
             toast.error('Please enter a title');
             return;
@@ -85,16 +87,21 @@ function EditorNewContent() {
                 slug,
                 body: { text: content },
                 type,
-                status: 'draft',
+                status: status,
                 author: user?.id,
                 organization_id: user?.organization_id || null,
                 custom_fields: customValues,
                 attachments: attachments
             }, token!);
 
-            toast.success('Draft saved successfully!');
-            if (taskId) {
-                router.push(`/dashboard/tasks/${taskId}`);
+            toast.success(status === 'published' ? 'Content published successfully!' : 'Draft saved successfully!');
+            
+            if (taskId || fromTask) {
+                if (window.opener || window.history.length === 1) {
+                    window.close();
+                } else {
+                    router.push(taskId ? `/dashboard/tasks/${taskId}` : '/dashboard/tasks');
+                }
             } else {
                 router.push('/dashboard/library');
             }
@@ -102,7 +109,7 @@ function EditorNewContent() {
             console.error(err);
             let msg = 'Unknown error occurred on the server.';
             try { msg = JSON.parse(err.message).detail || msg; } catch { msg = err.message || msg; }
-            toast.error('Failed to save draft: ' + msg);
+            toast.error(`Failed to ${status === 'published' ? 'publish' : 'save'}: ` + msg);
         } finally {
             setSaving(false);
         }
@@ -120,34 +127,77 @@ function EditorNewContent() {
     const customFields = orgSettings?.customFields || [];
 
     return (
-        <div className="container mx-auto p-8">
-            <h1 className="text-3xl font-bold mb-8">Create New Content</h1>
-            <div className="bg-white p-6 rounded-lg shadow">
-                <div className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{labels.title}</label>
-                        <input
-                            type="text"
-                            list="title-options"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                            placeholder={`Enter ${labels.title.toLowerCase()}...`}
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                        />
-                        {orgSettings?.titleOptions && (
-                            <datalist id="title-options">
-                                {orgSettings.titleOptions.split(',').map((opt: string) => (
-                                    <option key={opt.trim()} value={opt.trim()} />
-                                ))}
-                            </datalist>
-                        )}
+        <div className="flex flex-col min-h-screen bg-slate-50/50">
+            {/* Sticky Header Actions */}
+            <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 py-4">
+                <div className="container mx-auto flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <h1 className="text-xl font-black text-slate-900 tracking-tight">Create New Content</h1>
+                        <div className="h-6 w-[1px] bg-slate-200" />
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full">{type}</span>
                     </div>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => handleSave('draft')}
+                            disabled={saving}
+                            className="bg-white text-slate-900 border border-slate-900 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 disabled:opacity-50 transition-all active:scale-95"
+                        >
+                            {saving ? 'Saving...' : 'Save Draft'}
+                        </button>
+                        <button
+                            onClick={() => handleSave('published')}
+                            disabled={saving}
+                            className="bg-slate-900 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-all shadow-lg active:scale-95"
+                        >
+                            {saving ? 'Publishing...' : 'Publish Now'}
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (taskId || fromTask) {
+                                    if (window.opener || window.history.length === 1) {
+                                        window.close();
+                                    } else {
+                                        router.push(taskId ? `/dashboard/tasks/${taskId}` : '/dashboard/tasks');
+                                    }
+                                } else {
+                                    router.push('/dashboard/library');
+                                }
+                            }}
+                            className="bg-rose-50 text-rose-600 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-100 transition-all active:scale-95"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <div className="container mx-auto p-8 max-w-5xl">
+                <div className="space-y-8">
+                    {/* Meta Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{labels.title} *</label>
+                            <input
+                                type="text"
+                                list="title-options"
+                                className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900 placeholder:text-slate-300 transition-all"
+                                placeholder={`Enter ${labels.title.toLowerCase()}...`}
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                            />
+                            {orgSettings?.titleOptions && (
+                                <datalist id="title-options">
+                                    {orgSettings.titleOptions.split(',').map((opt: string) => (
+                                        <option key={opt.trim()} value={opt.trim()} />
+                                    ))}
+                                </datalist>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Classification</label>
                             <select
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900 transition-all appearance-none cursor-pointer"
                                 value={type}
                                 onChange={(e) => setType(e.target.value)}
                             >
@@ -167,14 +217,15 @@ function EditorNewContent() {
                                 )}
                             </select>
                         </div>
+
                         {/* Custom Fields */}
                         {customFields.map((field: any) => (
-                            <div key={field.name}>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
+                            <div key={field.name} className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{field.label}</label>
                                 <input
                                     type="text"
                                     list={`options-${field.name}`}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                    className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900 placeholder:text-slate-300 transition-all"
                                     placeholder={`Enter ${field.label.toLowerCase()}...`}
                                     value={customValues[field.name] || ''}
                                     onChange={(e) => setCustomValues({ ...customValues, [field.name]: e.target.value })}
@@ -190,40 +241,27 @@ function EditorNewContent() {
                         ))}
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{labels.body}</label>
-                        <RichTextEditor
-                            content={content}
-                            onChange={(html) => setContent(html)}
-                            placeholder="Start writing..."
-                        />
+                    {/* Content Editor Area */}
+                    <div className="bg-white p-2 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 min-h-[65vh] flex flex-col">
+                        <div className="p-4 border-b border-slate-50 flex items-center justify-between">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{labels.body}</span>
+                            <span className="text-[10px] font-bold text-slate-300 mr-4">Live Edit Enabled</span>
+                        </div>
+                        <div className="flex-1">
+                            <RichTextEditor
+                                content={content}
+                                onChange={(html) => setContent(html)}
+                                placeholder="Start crafting your manuscript..."
+                            />
+                        </div>
                     </div>
 
-                    <SupportingDocuments
-                        attachments={attachments}
-                        onChange={setAttachments}
-                    />
-
-                    <div className="flex justify-end gap-3">
-                        <button
-                            onClick={() => {
-                                if (taskId) {
-                                    router.push(`/dashboard/tasks/${taskId}`);
-                                } else {
-                                    router.push('/dashboard/library');
-                                }
-                            }}
-                            className="px-6 py-2 text-gray-600 hover:text-gray-800"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={handleSaveDraft}
-                            disabled={saving}
-                            className="bg-blue-600 text-white px-8 py-2 rounded font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {saving ? 'Saving...' : 'Save Draft'}
-                        </button>
+                    {/* Attachments Section */}
+                    <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
+                        <SupportingDocuments
+                            attachments={attachments}
+                            onChange={setAttachments}
+                        />
                     </div>
                 </div>
             </div>
