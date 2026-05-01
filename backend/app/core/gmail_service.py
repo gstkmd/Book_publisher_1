@@ -94,4 +94,23 @@ class EmailService:
         """
         await self.send_email(email, subject, content)
 
+    async def send_invitation_email(self, email: str, token: str, host: str, org_name: str, invited_by: str):
+        subject = f"Invitation to join {org_name} on Connect Publisher"
+        link = f"{host}/invite/{token}"
+        
+        content = f"""
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+            <h2 style="color: #4f46e5; text-transform: uppercase; letter-spacing: 1px;">Connect Publisher</h2>
+            <p><strong>{invited_by}</strong> has invited you to join <strong>{org_name}</strong> as a team member.</p>
+            <p>Click the button below to accept the invitation and set up your account. This link will expire in 48 hours.</p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{link}" style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Accept Invitation</a>
+            </div>
+            <p style="color: #666; font-size: 12px;">If you already have an account, you will be added to the organization after clicking the link.</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+            <p style="font-size: 10px; color: #999;">{link}</p>
+        </div>
+        """
+        await self.send_email(email, subject, content)
+
 gmail_service = EmailService() # Keeping variable name for compatibility

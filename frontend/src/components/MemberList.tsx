@@ -226,7 +226,7 @@ export const MemberList = () => {
                         <div className="flex items-center justify-between mb-6">
                             <div>
                                 <h3 className="font-black text-slate-900 text-lg">Invite a Team Member</h3>
-                                <p className="text-slate-500 text-xs mt-0.5">Generate a secure link — valid for 48 hours</p>
+                                <p className="text-slate-500 text-xs mt-0.5">An invitation will be sent to their email address</p>
                             </div>
                             <button type="button" onClick={handleCloseInvite} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-50 transition">
                                 <X className="w-5 h-5" />
@@ -258,31 +258,35 @@ export const MemberList = () => {
                                 onClick={handleGenerateLink} disabled={inviting || !inviteEmail}
                                 className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl font-black text-sm uppercase tracking-wider hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <Link2 className="w-4 h-4" />
-                                {inviting ? 'Generating…' : 'Generate Invite Link'}
+                                <UserPlus className="w-4 h-4" />
+                                {inviting ? 'Sending…' : 'Send Invitation Email'}
                             </button>
 
-                            {/* Generated Link */}
+                            {/* Success State */}
                             {generatedLink && (
                                 <div className="mt-4 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                                    <p className="text-xs font-black text-emerald-700 uppercase tracking-wider mb-2">✅ Link Ready — Share this with your team member</p>
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="text"
-                                            readOnly
-                                            className="flex-1 text-xs text-emerald-800 bg-white border border-emerald-200 rounded-lg px-3 py-2 font-mono outline-none focus:ring-1 focus:ring-emerald-400"
-                                            value={generatedLink}
-                                            onClick={e => (e.target as HTMLInputElement).select()}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={handleCopy}
-                                            className={`shrink-0 p-2 rounded-lg transition-all ${copied ? 'bg-emerald-600 text-white' : 'bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-100'}`}
-                                        >
-                                            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                        </button>
+                                    <p className="text-xs font-black text-emerald-700 uppercase tracking-wider mb-2">✅ Invitation Sent!</p>
+                                    <p className="text-sm text-emerald-800">
+                                        An email has been sent to <strong>{inviteEmail}</strong> with a secure link to join your team.
+                                    </p>
+                                    <div className="mt-3 pt-3 border-t border-emerald-100">
+                                        <p className="text-[10px] font-black text-emerald-600 uppercase mb-1">Backup Link (just in case):</p>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="text"
+                                                readOnly
+                                                className="flex-1 text-[10px] text-emerald-800 bg-white border border-emerald-200 rounded px-2 py-1.5 font-mono outline-none"
+                                                value={generatedLink}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleCopy}
+                                                className="p-1.5 bg-white border border-emerald-200 text-emerald-600 rounded hover:bg-emerald-50"
+                                            >
+                                                {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                            </button>
+                                        </div>
                                     </div>
-                                    <p className="text-[10px] text-emerald-600 mt-2">⏱ Expires in 48 hours · Can only be used once</p>
                                 </div>
                             )}
                         </div>

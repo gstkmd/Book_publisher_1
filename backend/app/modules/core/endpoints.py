@@ -124,13 +124,16 @@ async def update_organization(
 
 # ─── TEAM INVITATION & MEMBERSHIP ENDPOINTS ───────────────────────────────────
 
+from app.core.gmail_service import gmail_service
+from app.core.config import settings
+
 @router.post("/{organization_id}/invite")
 async def invite_member(
     organization_id: str,
     req: InviteLinkRequest,
     current_user: User = Depends(get_current_user)
 ):
-    """Admin invites a user by email, returns an invite link."""
+    """Admin invites a user by email and sends an invite link via email."""
     if current_user.organization_id != organization_id:
         raise HTTPException(status_code=403, detail="Not authorized for this organization")
     if current_user.role not in ["admin", "owner", "super_admin"]:
@@ -170,8 +173,19 @@ async def invite_member(
     )
     await invite.create()
     
-    # Return the token or full constructed link (frontend usually constructs it, but we return token here)
-    return {"token": token, "message": "Invitation created successfully"}
+    # Send Invitation Email
+    org = await Organization.get(PydanticObjectId(organization_id))
+    org_name = org.name if org else "Connect Publisher"
+    
+    await gmail_service.send_invitation_email(
+        email=email_lower,
+        token=token,
+        host=settings.FRONTEND_HOST,
+        org_name=org_name,
+        invited_by=current_user.full_name or current_user.email
+    )
+    
+    return {"token": token, "message": "Invitation sent successfully via email"}
 
 
 @router.get("/invitations/{token}")
