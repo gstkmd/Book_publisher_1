@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Lock, Sparkles, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -11,7 +11,7 @@ interface ModuleGuardProps {
     children: React.ReactNode;
 }
 
-export default function ModuleGuard({ moduleName, children }: ModuleGuardProps) {
+function GuardContent({ moduleName, children }: ModuleGuardProps) {
     const { org, user, activeStatus } = useAuth();
     const searchParams = useSearchParams();
     const taskIdParam = searchParams?.get('taskId');
@@ -135,5 +135,13 @@ export default function ModuleGuard({ moduleName, children }: ModuleGuardProps) 
         );
     }
 
-    return null; // Should not reach here if logic is correct
+    return null;
+}
+
+export default function ModuleGuard(props: ModuleGuardProps) {
+    return (
+        <Suspense fallback={null}>
+            <GuardContent {...props} />
+        </Suspense>
+    );
 }
