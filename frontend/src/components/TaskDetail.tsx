@@ -53,7 +53,7 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
     const [newContentTitle, setNewContentTitle] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const { token, user } = useAuth();
+    const { token, user, org } = useAuth();
 
     useEffect(() => {
         if (token) {
