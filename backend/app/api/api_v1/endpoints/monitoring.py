@@ -594,7 +594,7 @@ async def get_screenshots(
     screenshots = await beanie_query.sort("-timestamp", "-_id").skip(offset).limit(limit).to_list()
     
     # Filter out screenshots from super admins
-    screenshots = [s for s in screenshots if s.user and s.user.role != UserRole.SUPER_ADMIN]
+    screenshots = [s for s in screenshots if s.user and hasattr(s.user, "role") and s.user.role != UserRole.SUPER_ADMIN]
     
     return [
         {

@@ -86,7 +86,7 @@ async def get_team_activity(
     ).sort(-MonitoringActivity.timestamp).limit(200).to_list()
     
     # Filter out activity from super admins
-    activities = [a for a in activities if a.user and a.user.role != "super_admin"]
+    activities = [a for a in activities if a.user and hasattr(a.user, "role") and a.user.role != "super_admin"]
     
     return activities
 
