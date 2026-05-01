@@ -193,13 +193,19 @@ export const TaskDetail = ({ taskId, onClose, onUpdate }: TaskDetailProps) => {
             // RBAC Filter: If not admin and doesn't have global library access, 
             // only show content they authored or that is already linked to this task
             const userRole = (user?.role || 'user').toLowerCase();
-            const hasGlobalLibraryAccess = userRole === 'admin' || userRole === 'super_admin' || (org?.role_permissions?.[userRole]?.includes('library'));
+            const hasGlobalLibraryAccess = userRole === 'admin' || userRole === 'super_admin' || 
+                                          (org?.role_permissions?.[userRole] && org.role_permissions[userRole].includes('library'));
             
             if (!hasGlobalLibraryAccess) {
-                filtered = filtered.filter(c => 
-                    c.author === user?.id || 
-                    (task?.content_id && (c._id === task.content_id || c.id === task.content_id || (task.content_id._id === c._id)))
-                );
+                const userId = user?.id?.toString();
+                const currentContentId = task?.content_id?._id || task?.content_id?.id || task?.content_id;
+                
+                filtered = filtered.filter(c => {
+                    const contentAuthorId = c.author?._id || c.author?.id || c.author;
+                    const isAuthor = userId && contentAuthorId && contentAuthorId.toString() === userId;
+                    const isLinked = currentContentId && (c._id === currentContentId || c.id === currentContentId);
+                    return isAuthor || isLinked;
+                });
             }
             
             setLibraryContent(filtered);
