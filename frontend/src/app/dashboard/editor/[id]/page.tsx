@@ -27,6 +27,7 @@ function EditorEditContent() {
     const searchParams = useSearchParams();
     const contentId = params.id as string;
     const taskId = searchParams.get('taskId');
+    const fromTask = searchParams.get('fromTask') === 'true';
 
     const [title, setTitle] = useState('');
     const [type, setType] = useState('article');
@@ -162,13 +163,13 @@ function EditorEditContent() {
 
             alert('Content updated successfully!');
             
-            // If we have a taskId, it means we likely opened this in a new tab from TaskDetail
+            // If we have a taskId or fromTask flag, it means we likely opened this in a new tab from TaskDetail
             // We should just close this tab to go back to the task creation window
-            if (taskId) {
-                if (window.opener) {
+            if (taskId || fromTask) {
+                if (window.opener || window.history.length === 1) {
                     window.close();
                 } else {
-                    router.push(`/dashboard/tasks/${taskId}`);
+                    router.push(taskId ? `/dashboard/tasks/${taskId}` : '/dashboard/tasks');
                 }
             } else {
                 router.push('/dashboard/library');
@@ -204,11 +205,11 @@ function EditorEditContent() {
             }, token!);
 
             alert('Content published successfully!');
-            if (taskId) {
-                if (window.opener) {
+            if (taskId || fromTask) {
+                if (window.opener || window.history.length === 1) {
                     window.close();
                 } else {
-                    router.push(`/dashboard/tasks/${taskId}`);
+                    router.push(taskId ? `/dashboard/tasks/${taskId}` : '/dashboard/tasks');
                 }
             } else {
                 router.push('/dashboard/library');
@@ -353,11 +354,11 @@ function EditorEditContent() {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        if (taskId) {
-                                            if (window.opener) {
+                                        if (taskId || fromTask) {
+                                            if (window.opener || window.history.length === 1) {
                                                 window.close();
                                             } else {
-                                                router.push(`/dashboard/tasks/${taskId}`);
+                                                router.push(taskId ? `/dashboard/tasks/${taskId}` : '/dashboard/tasks');
                                             }
                                         } else {
                                             router.push('/dashboard/library');
