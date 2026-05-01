@@ -617,6 +617,12 @@ async def get_agent_activity(
     
     try:
         print(f"DEBUG: [AgentDetail-1] Starting request for agent_id: {agent_id}, date: {date}")
+        
+        # Robust ID Validation
+        if not ObjectId.is_valid(agent_id):
+            print(f"ERROR: [AgentDetail-ID] Invalid agent_id format: {agent_id}")
+            raise HTTPException(status_code=400, detail=f"Invalid agent ID format: {agent_id}")
+            
         user_oid = ObjectId(agent_id)
         
         if not date:
@@ -641,14 +647,18 @@ async def get_agent_activity(
         if target_user and target_user.role == UserRole.SUPER_ADMIN:
             raise HTTPException(status_code=403, detail="Cannot view activity for super admins")
         
+        # Robust DBRef and Link matching logic
         user_match_or = [
             {"user": user_oid},
             {"user.$id": user_oid},
             {"user._id": user_oid},
             {"user.id": user_oid},
             {"user": str(user_oid)},
-            {"user": {"$ref": "users", "$id": user_oid}} # Explicit DBRef match
+            {"user": {"$ref": "users", "$id": user_oid}} 
         ]
+        
+        # Standard Beanie Link match condition for find()
+        beanie_user_match = {"$or": user_match_or}
 
         # 0. Summary Stats Calculation
         print(f"DEBUG: [AgentDetail-4] Calculating summary stats...")
@@ -861,33 +871,40 @@ async def get_agent_activity(
         
         # 3. Raw Logs
         print(f"DEBUG: [AgentDetail-12] Fetching raw logs...")
+        # Use the combined filter for Beanie find
         raw_logs = await MonitoringActivity.find(
-            {"$or": user_match_or},
+            beanie_user_match,
             MonitoringActivity.timestamp >= start_date,
             MonitoringActivity.timestamp <= end_date,
-            fetch_links=True # Fetch link to ensure serialization is easier
+            fetch_links=True
         ).sort(-MonitoringActivity.timestamp).limit(1000).to_list()
         
         serialized_logs = []
         for log in raw_logs:
-            # Safely convert document to dict
-            log_dict = log.dict()
-            log_dict["id"] = str(log.id)
-            
-            # Remove complex 'user' field entirely to avoid serialization errors
-            # (The frontend already has user info in the 'summary')
-            if "user" in log_dict:
-                log_dict.pop("user")
-            
-            # Handle datetime serialization explicitly
-            if isinstance(log_dict.get("timestamp"), datetime):
-                log_dict["timestamp"] = log_dict["timestamp"].isoformat()
-            
-            # Ensure organization_id is string
-            if "organization_id" in log_dict:
-                log_dict["organization_id"] = str(log_dict["organization_id"])
+            try:
+                # Safely convert document to dict
+                log_dict = log.dict()
+                log_dict["id"] = str(log.id)
                 
-            serialized_logs.append(log_dict)
+                # Remove complex 'user' field entirely to avoid serialization errors
+                if "user" in log_dict:
+                    log_dict.pop("user")
+                
+                # Handle datetime serialization for ALL date fields
+                for key, val in log_dict.items():
+                    if isinstance(val, datetime):
+                        log_dict[key] = val.isoformat()
+                    elif isinstance(val, ObjectId):
+                        log_dict[key] = str(val)
+                
+                # Ensure organization_id is string
+                if "organization_id" in log_dict:
+                    log_dict["organization_id"] = str(log_dict["organization_id"])
+                    
+                serialized_logs.append(log_dict)
+            except Exception as log_err:
+                print(f"DEBUG: [AgentDetail-LogSerial] Failed to serialize a log entry: {log_err}")
+                continue
         
         print(f"DEBUG: [AgentDetail-13] Returning results")
         return {
