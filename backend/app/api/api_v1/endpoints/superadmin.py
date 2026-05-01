@@ -43,37 +43,54 @@ async def update_email_settings(
     update: schemas.GlobalSettingsUpdate,
     current_user: User = Depends(get_current_super_admin)
 ):
-    settings = await GlobalSettings.find_one()
-    if not settings:
-        settings = GlobalSettings()
-        await settings.insert()
-    
-    if update.smtp_server is not None:
-        settings.smtp_server = update.smtp_server
-    if update.smtp_port is not None:
-        settings.smtp_port = update.smtp_port
-    if update.smtp_user is not None:
-        settings.smtp_user = update.smtp_user
-    if update.smtp_from_email is not None:
-        settings.smtp_from_email = update.smtp_from_email
-    if update.smtp_use_tls is not None:
-        settings.smtp_use_tls = update.smtp_use_tls
-    if update.smtp_password is not None:
-        settings.smtp_password_encrypted = encrypt_string(update.smtp_password)
-    
-    settings.updated_at = datetime.now(timezone.utc)
-    settings.updated_by = str(current_user.id)
-    await settings.save()
-    
-    return schemas.GlobalSettings(
-        smtp_server=settings.smtp_server,
-        smtp_port=settings.smtp_port,
-        smtp_user=settings.smtp_user,
-        smtp_from_email=settings.smtp_from_email,
-        smtp_use_tls=settings.smtp_use_tls,
-        smtp_password_masked="••••••••" if settings.smtp_password_encrypted else None,
-        updated_at=settings.updated_at
-    )
+    try:
+        print(f"[DEBUG] Updating email settings. User: {current_user.email}")
+        settings = await GlobalSettings.find_one()
+        if not settings:
+            print("[DEBUG] No settings found, creating new GlobalSettings document.")
+            settings = GlobalSettings()
+            await settings.insert()
+        
+        if update.smtp_server is not None:
+            settings.smtp_server = update.smtp_server
+        if update.smtp_port is not None:
+            settings.smtp_port = update.smtp_port
+        if update.smtp_user is not None:
+            settings.smtp_user = update.smtp_user
+        if update.smtp_from_email is not None:
+            settings.smtp_from_email = update.smtp_from_email
+        if update.smtp_use_tls is not None:
+            settings.smtp_use_tls = update.smtp_use_tls
+        
+        if update.smtp_password:
+            print("[DEBUG] Encrypting new SMTP password.")
+            try:
+                settings.smtp_password_encrypted = encrypt_string(update.smtp_password)
+            except Exception as enc_err:
+                print(f"[ERROR] Encryption failed: {str(enc_err)}")
+                raise HTTPException(status_code=500, detail=f"Encryption error: {str(enc_err)}")
+        
+        settings.updated_at = datetime.now(timezone.utc)
+        settings.updated_by = str(current_user.id)
+        
+        print("[DEBUG] Saving settings to database...")
+        await settings.save()
+        print("[DEBUG] Save successful.")
+        
+        return schemas.GlobalSettings(
+            smtp_server=settings.smtp_server,
+            smtp_port=settings.smtp_port,
+            smtp_user=settings.smtp_user,
+            smtp_from_email=settings.smtp_from_email,
+            smtp_use_tls=settings.smtp_use_tls,
+            smtp_password_masked="••••••••" if settings.smtp_password_encrypted else None,
+            updated_at=settings.updated_at
+        )
+    except Exception as e:
+        print(f"[CRITICAL ERROR] Failed to update email settings: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @router.post("/email-settings/test")
 async def test_email_settings(
