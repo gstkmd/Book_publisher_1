@@ -236,52 +236,92 @@ function EditorEditContent() {
     const customFields = orgSettings?.customFields || [];
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            {/* Main Editor Area */}
-            <div className={`flex-1 transition-all duration-300 overflow-y-auto ${showComments ? 'w-1/2' : 'w-full'}`}>
-                <div className={`container mx-auto p-8 ${showComments ? 'max-w-none' : ''}`}>
-                    <div className="flex items-center justify-between mb-8">
-                        <h1 className="text-3xl font-bold">Edit Content</h1>
-                        <div className="flex items-center gap-3">
-                            <button
-                                onClick={() => setShowComments(!showComments)}
-                                className={`text-sm px-4 py-2 text-white rounded transition-colors ${showComments ? 'bg-purple-700' : 'bg-purple-600 hover:bg-purple-700'}`}
-                            >
-                                {showComments ? 'Hide Comments' : 'Show Comments & Review'}
-                                {unresolvedCount > 0 && (
-                                    <span className="ml-2 bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full">
-                                        {unresolvedCount}
-                                    </span>
-                                )}
-                            </button>
-                        </div>
+        <div className="flex flex-col min-h-screen bg-slate-50/50">
+            {/* Sticky Header Actions */}
+            <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 py-4">
+                <div className="container mx-auto flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <h1 className="text-xl font-black text-slate-900 tracking-tight">Manuscript Editor</h1>
+                        <div className="h-6 w-[1px] bg-slate-200" />
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full">{type}</span>
                     </div>
-                    <div className="bg-white p-6 rounded-lg shadow">
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">{labels.title} *</label>
-                                <input
-                                    type="text"
-                                    list="title-options"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder={`Enter ${labels.title.toLowerCase()}...`}
-                                    value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                />
-                                {orgSettings?.titleOptions && (
-                                    <datalist id="title-options">
-                                        {orgSettings.titleOptions.split(',').map((opt: string) => (
-                                            <option key={opt.trim()} value={opt.trim()} />
-                                        ))}
-                                    </datalist>
-                                )}
-                            </div>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setShowComments(!showComments)}
+                            className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all ${showComments ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
+                        >
+                            {showComments ? 'Hide Review Panel' : 'Review & Comments'}
+                            {unresolvedCount > 0 && (
+                                <span className="ml-2 bg-rose-500 text-white text-[9px] px-1.5 py-0.5 rounded-full">
+                                    {unresolvedCount}
+                                </span>
+                            )}
+                        </button>
+                        <div className="h-6 w-[1px] bg-slate-200 mx-1" />
+                        <button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="bg-white text-slate-900 border border-slate-900 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 disabled:opacity-50 transition-all active:scale-95"
+                        >
+                            {saving ? 'Saving...' : 'Save Draft'}
+                        </button>
+                        <button
+                            onClick={handlePublish}
+                            disabled={saving}
+                            className="bg-slate-900 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-all shadow-lg active:scale-95"
+                        >
+                            {saving ? 'Publishing...' : 'Publish'}
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (taskId || fromTask) {
+                                    if (window.opener || window.history.length === 1) {
+                                        window.close();
+                                    } else {
+                                        router.push(taskId ? `/dashboard/tasks/${taskId}` : '/dashboard/tasks');
+                                    }
+                                } else {
+                                    router.push('/dashboard/library');
+                                }
+                            }}
+                            className="bg-rose-50 text-rose-600 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-100 transition-all active:scale-95"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <div className="flex flex-1 overflow-hidden">
+                {/* Main Editor Area */}
+                <div className={`flex-1 overflow-y-auto transition-all duration-500 ${showComments ? 'w-1/2' : 'w-full'}`}>
+                    <div className="container mx-auto p-8 max-w-5xl">
+                        <div className="space-y-8">
+                            {/* Meta Section */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{labels.title} *</label>
+                                    <input
+                                        type="text"
+                                        list="title-options"
+                                        className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900 placeholder:text-slate-300 transition-all"
+                                        placeholder={`Enter ${labels.title.toLowerCase()}...`}
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                    />
+                                    {orgSettings?.titleOptions && (
+                                        <datalist id="title-options">
+                                            {orgSettings.titleOptions.split(',').map((opt: string) => (
+                                                <option key={opt.trim()} value={opt.trim()} />
+                                            ))}
+                                        </datalist>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Classification</label>
                                     <select
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900 transition-all appearance-none cursor-pointer"
                                         value={type}
                                         onChange={(e) => setType(e.target.value)}
                                     >
@@ -301,14 +341,15 @@ function EditorEditContent() {
                                         )}
                                     </select>
                                 </div>
+
                                 {/* Custom Fields */}
                                 {customFields.map((field: any) => (
-                                    <div key={field.name}>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
+                                    <div key={field.name} className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{field.label}</label>
                                         <input
                                             type="text"
                                             list={`options-${field.name}`}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900 placeholder:text-slate-300 transition-all"
                                             placeholder={`Enter ${field.label.toLowerCase()}...`}
                                             value={customValues[field.name] || ''}
                                             onChange={(e) => setCustomValues({ ...customValues, [field.name]: e.target.value })}
@@ -324,62 +365,39 @@ function EditorEditContent() {
                                 ))}
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">{labels.body}</label>
-                                <RichTextEditor
-                                    content={content}
-                                    onChange={(html) => setContent(html)}
-                                    placeholder="Start writing..."
-                                />
+                            {/* Content Editor Area */}
+                            <div className="bg-white p-2 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 min-h-[65vh] flex flex-col">
+                                <div className="p-4 border-b border-slate-50 flex items-center justify-between">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{labels.body}</span>
+                                    <span className="text-[10px] font-bold text-slate-300 mr-4">Live Edit Enabled</span>
+                                </div>
+                                <div className="flex-1">
+                                    <RichTextEditor
+                                        content={content}
+                                        onChange={(html) => setContent(html)}
+                                        placeholder="Start crafting your manuscript..."
+                                    />
+                                </div>
                             </div>
 
-                            <SupportingDocuments
-                                attachments={attachments}
-                                onChange={setAttachments}
-                            />
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={handleSave}
-                                    disabled={saving}
-                                    className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                >
-                                    {saving ? 'Saving...' : 'Save Draft'}
-                                </button>
-                                <button
-                                    onClick={handlePublish}
-                                    disabled={saving}
-                                    className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                >
-                                    {saving ? 'Publishing...' : 'Publish'}
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        if (taskId || fromTask) {
-                                            if (window.opener || window.history.length === 1) {
-                                                window.close();
-                                            } else {
-                                                router.push(taskId ? `/dashboard/tasks/${taskId}` : '/dashboard/tasks');
-                                            }
-                                        } else {
-                                            router.push('/dashboard/library');
-                                        }
-                                    }}
-                                    className="bg-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-400 transition"
-                                >
-                                    Cancel
-                                </button>
+                            {/* Attachments Section */}
+                            <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
+                                <SupportingDocuments
+                                    attachments={attachments}
+                                    onChange={setAttachments}
+                                />
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Review / Comments Split Panel */}
-            {showComments && (
-                <div className="w-1/2 h-full border-l shadow-2xl z-40 bg-white">
-                    <ReviewDisplay contentId={contentId} onClose={() => setShowComments(false)} />
-                </div>
-            )}
+                {/* Review / Comments Split Panel */}
+                {showComments && (
+                    <div className="w-1/2 h-full border-l border-slate-200 bg-white animate-in slide-in-from-right duration-500">
+                        <ReviewDisplay contentId={contentId} onClose={() => setShowComments(false)} />
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

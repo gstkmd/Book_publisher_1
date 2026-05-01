@@ -176,7 +176,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
         content: content || '',
         editorProps: {
             attributes: {
-                class: 'tiptap prose prose-indigo focus:outline-none max-w-none p-4 min-h-[200px] bg-white custom-scrollbar rounded-b-lg border border-t-0 border-gray-100',
+                class: 'tiptap prose prose-indigo focus:outline-none max-w-none p-8 min-h-[600px] bg-white custom-scrollbar rounded-b-[2rem] border-none',
             },
         },
         onUpdate: ({ editor }) => {
@@ -208,7 +208,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
     };
 
     return (
-        <div className="flex flex-col border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all">
+        <div className="flex flex-col overflow-hidden transition-all">
             <MenuBar editor={editor} onImageUpload={handleImageTrigger} />
             <EditorContent editor={editor} />
             <input
