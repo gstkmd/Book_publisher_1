@@ -22,6 +22,7 @@ function EditorNewContent() {
     const [orgSettings, setOrgSettings] = useState<any>(null);
     const [customValues, setCustomValues] = useState<Record<string, string>>({});
     const [attachments, setAttachments] = useState<{ name: string; url: string }[]>([]);
+    const [activeTab, setActiveTab] = useState<'info' | 'content'>('info');
 
     useEffect(() => {
         if (!isLoading && !user) {
@@ -134,7 +135,20 @@ function EditorNewContent() {
                     <div className="flex items-center gap-4">
                         <h1 className="text-xl font-black text-slate-900 tracking-tight">Create New Content</h1>
                         <div className="h-6 w-[1px] bg-slate-200" />
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full">{type}</span>
+                        <div className="flex bg-slate-100 p-1 rounded-xl">
+                            <button
+                                onClick={() => setActiveTab('info')}
+                                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'info' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                General Info
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('content')}
+                                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'content' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Manuscript Content
+                            </button>
+                        </div>
                     </div>
                     <div className="flex items-center gap-3">
                         <button
@@ -173,96 +187,102 @@ function EditorNewContent() {
 
             <div className="container mx-auto p-8 max-w-5xl">
                 <div className="space-y-8">
-                    {/* Meta Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{labels.title} *</label>
-                            <input
-                                type="text"
-                                list="title-options"
-                                className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900 placeholder:text-slate-300 transition-all"
-                                placeholder={`Enter ${labels.title.toLowerCase()}...`}
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                            />
-                            {orgSettings?.titleOptions && (
-                                <datalist id="title-options">
-                                    {orgSettings.titleOptions.split(',').map((opt: string) => (
-                                        <option key={opt.trim()} value={opt.trim()} />
-                                    ))}
-                                </datalist>
-                            )}
-                        </div>
+                    {activeTab === 'info' && (
+                        <>
+                            {/* Meta Section */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{labels.title} *</label>
+                                    <input
+                                        type="text"
+                                        list="title-options"
+                                        className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900 placeholder:text-slate-300 transition-all"
+                                        placeholder={`Enter ${labels.title.toLowerCase()}...`}
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                    />
+                                    {orgSettings?.titleOptions && (
+                                        <datalist id="title-options">
+                                            {orgSettings.titleOptions.split(',').map((opt: string) => (
+                                                <option key={opt.trim()} value={opt.trim()} />
+                                            ))}
+                                        </datalist>
+                                    )}
+                                </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Classification</label>
-                            <select
-                                className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900 transition-all appearance-none cursor-pointer"
-                                value={type}
-                                onChange={(e) => setType(e.target.value)}
-                            >
-                                {orgSettings?.contentTypeOptions ? (
-                                    orgSettings.contentTypeOptions.split(',').map((opt: string) => (
-                                        <option key={opt.trim()} value={opt.trim().toLowerCase()}>
-                                            {opt.trim()}
-                                        </option>
-                                    ))
-                                ) : (
-                                    <>
-                                        <option value="article">Article</option>
-                                        <option value="book_chapter">Textbook Chapter</option>
-                                        <option value="lesson">Lesson</option>
-                                        <option value="resource">Activity</option>
-                                    </>
-                                )}
-                            </select>
-                        </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Classification</label>
+                                    <select
+                                        className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900 transition-all appearance-none cursor-pointer"
+                                        value={type}
+                                        onChange={(e) => setType(e.target.value)}
+                                    >
+                                        {orgSettings?.contentTypeOptions ? (
+                                            orgSettings.contentTypeOptions.split(',').map((opt: string) => (
+                                                <option key={opt.trim()} value={opt.trim().toLowerCase()}>
+                                                    {opt.trim()}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <>
+                                                <option value="article">Article</option>
+                                                <option value="book_chapter">Textbook Chapter</option>
+                                                <option value="lesson">Lesson</option>
+                                                <option value="resource">Activity</option>
+                                            </>
+                                        )}
+                                    </select>
+                                </div>
 
-                        {/* Custom Fields */}
-                        {customFields.map((field: any) => (
-                            <div key={field.name} className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{field.label}</label>
-                                <input
-                                    type="text"
-                                    list={`options-${field.name}`}
-                                    className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900 placeholder:text-slate-300 transition-all"
-                                    placeholder={`Enter ${field.label.toLowerCase()}...`}
-                                    value={customValues[field.name] || ''}
-                                    onChange={(e) => setCustomValues({ ...customValues, [field.name]: e.target.value })}
-                                />
-                                {field.options && (
-                                    <datalist id={`options-${field.name}`}>
-                                        {field.options.split(',').map((opt: string) => (
-                                            <option key={opt.trim()} value={opt.trim()} />
-                                        ))}
-                                    </datalist>
-                                )}
+                                {/* Custom Fields */}
+                                {customFields.map((field: any) => (
+                                    <div key={field.name} className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{field.label}</label>
+                                        <input
+                                            type="text"
+                                            list={`options-${field.name}`}
+                                            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900 placeholder:text-slate-300 transition-all"
+                                            placeholder={`Enter ${field.label.toLowerCase()}...`}
+                                            value={customValues[field.name] || ''}
+                                            onChange={(e) => setCustomValues({ ...customValues, [field.name]: e.target.value })}
+                                        />
+                                        {field.options && (
+                                            <datalist id={`options-${field.name}`}>
+                                                {field.options.split(',').map((opt: string) => (
+                                                    <option key={opt.trim()} value={opt.trim()} />
+                                                ))}
+                                            </datalist>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
 
-                    {/* Content Editor Area */}
-                    <div className="bg-white p-2 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 min-h-[65vh] flex flex-col">
-                        <div className="p-4 border-b border-slate-50 flex items-center justify-between">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{labels.body}</span>
-                            <span className="text-[10px] font-bold text-slate-300 mr-4">Live Edit Enabled</span>
-                        </div>
-                        <div className="flex-1">
-                            <RichTextEditor
-                                content={content}
-                                onChange={(html) => setContent(html)}
-                                placeholder="Start crafting your manuscript..."
-                            />
-                        </div>
-                    </div>
+                            {/* Attachments Section */}
+                            <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
+                                <SupportingDocuments
+                                    attachments={attachments}
+                                    onChange={setAttachments}
+                                />
+                            </div>
+                        </>
+                    )}
 
-                    {/* Attachments Section */}
-                    <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
-                        <SupportingDocuments
-                            attachments={attachments}
-                            onChange={setAttachments}
-                        />
-                    </div>
+                    {activeTab === 'content' && (
+                        /* Content Editor Area */
+                        <div className="bg-white p-2 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 min-h-[75vh] flex flex-col">
+                            <div className="p-4 border-b border-slate-50 flex items-center justify-between">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{labels.body}</span>
+                                <span className="text-[10px] font-bold text-slate-300 mr-4">Live Edit Enabled</span>
+                            </div>
+                            <div className="flex-1">
+                                <RichTextEditor
+                                    content={content}
+                                    onChange={(html) => setContent(html)}
+                                    placeholder="Start crafting your manuscript..."
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
