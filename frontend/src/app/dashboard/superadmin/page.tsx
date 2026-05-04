@@ -41,6 +41,11 @@ interface Organization {
     file_storage_formatted?: string;
     total_storage_formatted?: string;
     usage_updated_at?: string;
+    subscription_status: string;
+    trial_ends_at?: string;
+    plan_display_name?: string;
+    plan_price_display?: string;
+    max_users?: number;
 }
 
 interface UserRes {
