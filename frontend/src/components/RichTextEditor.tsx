@@ -23,13 +23,13 @@ const MenuBar = ({ editor, onImageUpload }: { editor: any, onImageUpload: () => 
     if (!editor) return null;
 
     return (
-        <div className="flex flex-wrap items-center gap-1 p-2 bg-slate-50 border-b border-slate-100 sticky top-0 z-10">
+        <div className="flex flex-wrap items-center gap-1 p-3 bg-indigo-50/50 border-b border-indigo-100 sticky top-0 z-10 backdrop-blur-sm">
             <div className="flex items-center gap-0.5 mr-2">
                 <button
                     type="button"
                     onClick={() => editor.chain().focus().toggleBold().run()}
                     disabled={!editor.can().chain().focus().toggleBold().run()}
-                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('bold') ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    className={`p-2 rounded-xl hover:bg-white hover:shadow-md hover:scale-110 transition-all ${editor.isActive('bold') ? 'bg-indigo-600 shadow-lg text-white' : 'text-indigo-400'}`}
                     title="Bold"
                 >
                     <Bold className="w-4 h-4" />
@@ -38,7 +38,7 @@ const MenuBar = ({ editor, onImageUpload }: { editor: any, onImageUpload: () => 
                     type="button"
                     onClick={() => editor.chain().focus().toggleItalic().run()}
                     disabled={!editor.can().chain().focus().toggleItalic().run()}
-                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('italic') ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    className={`p-2 rounded-xl hover:bg-white hover:shadow-md hover:scale-110 transition-all ${editor.isActive('italic') ? 'bg-indigo-600 shadow-lg text-white' : 'text-indigo-400'}`}
                     title="Italic"
                 >
                     <Italic className="w-4 h-4" />
@@ -47,7 +47,7 @@ const MenuBar = ({ editor, onImageUpload }: { editor: any, onImageUpload: () => 
                     type="button"
                     onClick={() => editor.chain().focus().toggleStrike().run()}
                     disabled={!editor.can().chain().focus().toggleStrike().run()}
-                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('strike') ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    className={`p-2 rounded-xl hover:bg-white hover:shadow-md hover:scale-110 transition-all ${editor.isActive('strike') ? 'bg-indigo-600 shadow-lg text-white' : 'text-indigo-400'}`}
                     title="Strikethrough"
                 >
                     <Strikethrough className="w-4 h-4" />
@@ -56,7 +56,7 @@ const MenuBar = ({ editor, onImageUpload }: { editor: any, onImageUpload: () => 
                     type="button"
                     onClick={() => editor.chain().focus().toggleCode().run()}
                     disabled={!editor.can().chain().focus().toggleCode().run()}
-                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('code') ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    className={`p-2 rounded-xl hover:bg-white hover:shadow-md hover:scale-110 transition-all ${editor.isActive('code') ? 'bg-indigo-600 shadow-lg text-white' : 'text-indigo-400'}`}
                     title="Inline Code"
                 >
                     <Code className="w-4 h-4" />
@@ -69,7 +69,7 @@ const MenuBar = ({ editor, onImageUpload }: { editor: any, onImageUpload: () => 
                 <button
                     type="button"
                     onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('heading', { level: 1 }) ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    className={`p-2 rounded-xl hover:bg-white hover:shadow-md hover:scale-110 transition-all ${editor.isActive('heading', { level: 1 }) ? 'bg-indigo-600 shadow-lg text-white' : 'text-indigo-400'}`}
                     title="Heading 1"
                 >
                     <Heading1 className="w-4 h-4" />
@@ -77,7 +77,7 @@ const MenuBar = ({ editor, onImageUpload }: { editor: any, onImageUpload: () => 
                 <button
                     type="button"
                     onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('heading', { level: 2 }) ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    className={`p-2 rounded-xl hover:bg-white hover:shadow-md hover:scale-110 transition-all ${editor.isActive('heading', { level: 2 }) ? 'bg-indigo-600 shadow-lg text-white' : 'text-indigo-400'}`}
                     title="Heading 2"
                 >
                     <Heading2 className="w-4 h-4" />
@@ -85,7 +85,7 @@ const MenuBar = ({ editor, onImageUpload }: { editor: any, onImageUpload: () => 
                 <button
                     type="button"
                     onClick={() => editor.chain().focus().toggleBlockquote().run()}
-                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('blockquote') ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    className={`p-2 rounded-xl hover:bg-white hover:shadow-md hover:scale-110 transition-all ${editor.isActive('blockquote') ? 'bg-indigo-600 shadow-lg text-white' : 'text-indigo-400'}`}
                     title="Blockquote"
                 >
                     <Quote className="w-4 h-4" />
@@ -98,7 +98,7 @@ const MenuBar = ({ editor, onImageUpload }: { editor: any, onImageUpload: () => 
                 <button
                     type="button"
                     onClick={() => editor.chain().focus().toggleBulletList().run()}
-                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('bulletList') ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    className={`p-2 rounded-xl hover:bg-white hover:shadow-md hover:scale-110 transition-all ${editor.isActive('bulletList') ? 'bg-indigo-600 shadow-lg text-white' : 'text-indigo-400'}`}
                     title="Bullet List"
                 >
                     <List className="w-4 h-4" />
@@ -106,7 +106,7 @@ const MenuBar = ({ editor, onImageUpload }: { editor: any, onImageUpload: () => 
                 <button
                     type="button"
                     onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                    className={`p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all ${editor.isActive('orderedList') ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-500'}`}
+                    className={`p-2 rounded-xl hover:bg-white hover:shadow-md hover:scale-110 transition-all ${editor.isActive('orderedList') ? 'bg-indigo-600 shadow-lg text-white' : 'text-indigo-400'}`}
                     title="Ordered List"
                 >
                     <ListOrdered className="w-4 h-4" />

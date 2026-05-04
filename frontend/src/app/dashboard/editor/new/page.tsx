@@ -154,14 +154,14 @@ function EditorNewContent() {
                         <button
                             onClick={() => handleSave('draft')}
                             disabled={saving}
-                            className="bg-white text-slate-900 border border-slate-900 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 disabled:opacity-50 transition-all active:scale-95"
+                            className="bg-white text-indigo-600 border-2 border-indigo-600 px-6 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-indigo-50 disabled:opacity-50 transition-all active:scale-95 shadow-sm"
                         >
                             {saving ? 'Saving...' : 'Save Draft'}
                         </button>
                         <button
                             onClick={() => handleSave('published')}
                             disabled={saving}
-                            className="bg-slate-900 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-all shadow-lg active:scale-95"
+                            className="bg-indigo-600 text-white px-6 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-lg shadow-indigo-200 active:scale-95"
                         >
                             {saving ? 'Publishing...' : 'Publish Now'}
                         </button>
@@ -177,7 +177,7 @@ function EditorNewContent() {
                                     router.push('/dashboard/library');
                                 }
                             }}
-                            className="bg-rose-50 text-rose-600 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-100 transition-all active:scale-95"
+                            className="bg-rose-100 text-rose-600 px-6 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-rose-200 transition-all active:scale-95 shadow-sm"
                         >
                             Cancel
                         </button>
@@ -189,14 +189,16 @@ function EditorNewContent() {
                 <div className="space-y-8">
                     {activeTab === 'info' && (
                         <>
-                            {/* Meta Section */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white p-8 rounded-[2rem] shadow-sm border-t-4 border-t-indigo-500 border-x border-b border-slate-100">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{labels.title} *</label>
+                                    <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                                        {labels.title} *
+                                    </label>
                                     <input
                                         type="text"
                                         list="title-options"
-                                        className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900 placeholder:text-slate-300 transition-all"
+                                        className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white font-bold text-slate-900 placeholder:text-slate-300 transition-all shadow-sm"
                                         placeholder={`Enter ${labels.title.toLowerCase()}...`}
                                         value={title}
                                         onChange={(e) => setTitle(e.target.value)}
@@ -211,9 +213,12 @@ function EditorNewContent() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Classification</label>
+                                    <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                                        Classification
+                                    </label>
                                     <select
-                                        className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900 transition-all appearance-none cursor-pointer"
+                                        className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white font-bold text-slate-900 transition-all appearance-none cursor-pointer shadow-sm"
                                         value={type}
                                         onChange={(e) => setType(e.target.value)}
                                     >
@@ -237,11 +242,14 @@ function EditorNewContent() {
                                 {/* Custom Fields */}
                                 {customFields.map((field: any) => (
                                     <div key={field.name} className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{field.label}</label>
+                                        <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                                            {field.label}
+                                        </label>
                                         <input
                                             type="text"
                                             list={`options-${field.name}`}
-                                            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900 placeholder:text-slate-300 transition-all"
+                                            className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white font-bold text-slate-900 placeholder:text-slate-300 transition-all shadow-sm"
                                             placeholder={`Enter ${field.label.toLowerCase()}...`}
                                             value={customValues[field.name] || ''}
                                             onChange={(e) => setCustomValues({ ...customValues, [field.name]: e.target.value })}
@@ -258,7 +266,7 @@ function EditorNewContent() {
                             </div>
 
                             {/* Attachments Section */}
-                            <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
+                            <div className="bg-white p-8 rounded-[2rem] shadow-sm border-t-4 border-t-violet-500 border-x border-b border-slate-100">
                                 <SupportingDocuments
                                     attachments={attachments}
                                     onChange={setAttachments}
@@ -269,10 +277,13 @@ function EditorNewContent() {
 
                     {activeTab === 'content' && (
                         /* Content Editor Area */
-                        <div className="bg-white p-2 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 min-h-[75vh] flex flex-col">
-                            <div className="p-4 border-b border-slate-50 flex items-center justify-between">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{labels.body}</span>
-                                <span className="text-[10px] font-bold text-slate-300 mr-4">Live Edit Enabled</span>
+                        <div className="bg-white p-2 rounded-[2.5rem] shadow-2xl shadow-indigo-100/50 border-t-4 border-t-indigo-600 border-x border-b border-slate-100 min-h-[75vh] flex flex-col">
+                            <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-indigo-50/30 rounded-t-[2.3rem]">
+                                <span className="text-[11px] font-black text-indigo-600 uppercase tracking-widest ml-4 flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                                    {labels.body}
+                                </span>
+                                <span className="text-[10px] font-bold text-indigo-400 mr-4 bg-white px-3 py-1 rounded-full border border-indigo-100 shadow-sm">Live Edit Enabled</span>
                             </div>
                             <div className="flex-1">
                                 <RichTextEditor

@@ -259,10 +259,10 @@ export const Sidebar = () => {
                                 <Shield className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${adminOpen ? 'text-indigo-600' : 'text-slate-400'}`} />
                                 {!isCollapsed && (
                                     <>
-                                        <span className="text-[13px] font-bold uppercase tracking-wider">
-                                            Admin
+                                        <span className={`text-[13px] font-black uppercase tracking-wider ${adminOpen ? 'text-indigo-600' : 'text-slate-500'}`}>
+                                            Admin Controls
                                         </span>
-                                        <ChevronDown className={`ml-auto w-4 h-4 transition-transform duration-200 ${adminOpen ? 'rotate-180 text-indigo-600' : 'text-slate-300'}`} />
+                                        <ChevronDown className={`ml-auto w-4 h-4 transition-transform duration-200 ${adminOpen ? 'rotate-180 text-indigo-600' : 'text-slate-400'}`} />
                                     </>
                                 )}
                             </button>
