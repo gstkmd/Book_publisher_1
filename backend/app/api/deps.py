@@ -3,6 +3,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from pydantic import ValidationError
+from beanie import PydanticObjectId
 from app.core import security
 from app.core.config import settings
 from app.modules.core.models import User, UserRole
@@ -29,7 +30,7 @@ async def get_current_user(token: str = Depends(reusable_oauth2)) -> User:
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Token subject '{token_data}' is not a valid user ID",
+            detail="Could not validate credentials",
         )
     
     user = await User.get(user_id)
