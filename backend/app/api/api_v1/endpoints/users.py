@@ -14,12 +14,12 @@ router = APIRouter()
 async def read_user_me(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
-    # Explicitly convert to dict and handle ObjectIds to avoid serialization 500s
-    user_data = current_user.model_dump()
-    user_data["id"] = str(current_user.id)
-    if user_data.get("organization_id"):
-        user_data["organization_id"] = str(user_data["organization_id"])
-    return user_data
+    try:
+        # FastAPI's recommended way to serialize complex objects
+        return jsonable_encoder(current_user)
+    except Exception as e:
+        # Convert the internal 500 into a 400 we can see in the frontend
+        raise HTTPException(status_code=400, detail=f"User serialization error: {str(e)}")
 
 @router.post("/", response_model=UserSchema)
 async def create_user(
