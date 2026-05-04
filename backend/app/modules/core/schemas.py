@@ -9,7 +9,7 @@ class UserBase(BaseModel):
     email: Optional[EmailStr] = None
     is_active: Optional[bool] = True
     full_name: Optional[str] = None
-    role: Optional[UserRole] = UserRole.USER
+    role: Optional[str] = "user"
     monitoring_enabled: Optional[bool] = True
     screenshots_enabled: Optional[bool] = True
 

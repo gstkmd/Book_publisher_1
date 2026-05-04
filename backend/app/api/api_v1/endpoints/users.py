@@ -7,6 +7,7 @@ from app.core import security
 from app.core.config import settings
 from app.modules.core.models import User
 from app.modules.core.schemas import UserCreate, User as UserSchema, UserUpdate
+from app.modules.core.utils import normalize_role
 
 router = APIRouter()
 
@@ -14,12 +15,15 @@ router = APIRouter()
 async def read_user_me(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
-    try:
-        # FastAPI's recommended way to serialize complex objects
-        return jsonable_encoder(current_user)
-    except Exception as e:
-        # Convert the internal 500 into a 400 we can see in the frontend
-        raise HTTPException(status_code=400, detail=f"User serialization error: {str(e)}")
+    # Normalize role to prevent validation errors with dynamic roles
+    user_data = current_user.model_dump()
+    user_data["id"] = str(current_user.id)
+    user_data["role"] = normalize_role(user_data.get("role", "user"))
+    
+    if user_data.get("organization_id"):
+        user_data["organization_id"] = str(user_data["organization_id"])
+        
+    return user_data
 
 @router.post("/", response_model=UserSchema)
 async def create_user(

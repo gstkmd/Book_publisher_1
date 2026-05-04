@@ -26,11 +26,16 @@ async def get_current_user(token: str = Depends(reusable_oauth2)) -> User:
         )
     
     try:
-        user = await User.get(token_data)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Auth database error: {str(e)}")
+        user_id = PydanticObjectId(token_data)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Could not validate credentials",
+        )
+    
+    user = await User.get(user_id)
     if not user:
-        raise HTTPException(status_code=404, detail=f"User with ID {token_data} not found")
+        raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user account")
     return user
