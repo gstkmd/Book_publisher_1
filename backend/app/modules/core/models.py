@@ -22,7 +22,7 @@ class User(Document):
     hashed_password: str
     full_name: Optional[str] = None
     organization_id: Optional[str] = None # Link to Organization
-    role: UserRole = UserRole.USER
+    role: str = UserRole.USER.value
     is_active: bool = True
     monitoring_enabled: bool = True
     screenshots_enabled: bool = True

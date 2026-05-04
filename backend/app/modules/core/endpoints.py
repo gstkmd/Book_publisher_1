@@ -391,7 +391,15 @@ async def update_member_status(
         raise HTTPException(status_code=403, detail="Only admins can manage members")
 
     user = await User.get(user_id)
-    if not user or user.organization_id != current_user.organization_id:
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Verify membership
+    member = await OrganizationMember.find_one(
+        OrganizationMember.organization_id == current_user.organization_id,
+        OrganizationMember.user_id == str(user_id)
+    )
+    if not member:
         raise HTTPException(status_code=404, detail="Member not found in your organization")
 
     user.is_active = is_active
@@ -408,26 +416,24 @@ async def update_member_role(
         raise HTTPException(status_code=403, detail="Only admins can manage members")
 
     user = await User.get(user_id)
-    if not user or user.organization_id != current_user.organization_id:
-        raise HTTPException(status_code=404, detail="Member not found in your organization")
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-    # Validate role - simplified check
-    from app.modules.core.models import UserRole
-    try:
-        user.role = UserRole(role)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid role")
-        
-    await user.save()
-
-    # Also update the OrganizationMember record to keep them in sync
+    # Verify membership
     member = await OrganizationMember.find_one(
         OrganizationMember.organization_id == current_user.organization_id,
         OrganizationMember.user_id == str(user_id)
     )
-    if member:
-        member.role = role
-        await member.save()
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found in your organization")
+
+    # Update role
+    user.role = role
+    await user.save()
+
+    # Also update the OrganizationMember record to keep them in sync
+    member.role = role
+    await member.save()
 
     return {"message": f"User role updated to {role}"}
 
@@ -441,7 +447,15 @@ async def update_member_monitoring(
         raise HTTPException(status_code=403, detail="Only admins can manage members")
 
     user = await User.get(user_id)
-    if not user or user.organization_id != current_user.organization_id:
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Verify membership
+    member = await OrganizationMember.find_one(
+        OrganizationMember.organization_id == current_user.organization_id,
+        OrganizationMember.user_id == str(user_id)
+    )
+    if not member:
         raise HTTPException(status_code=404, detail="Member not found in your organization")
 
     user.monitoring_enabled = enabled
@@ -458,7 +472,15 @@ async def update_member_screenshots(
         raise HTTPException(status_code=403, detail="Only admins can manage members")
 
     user = await User.get(user_id)
-    if not user or user.organization_id != current_user.organization_id:
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Verify membership
+    member = await OrganizationMember.find_one(
+        OrganizationMember.organization_id == current_user.organization_id,
+        OrganizationMember.user_id == str(user_id)
+    )
+    if not member:
         raise HTTPException(status_code=404, detail="Member not found in your organization")
 
     user.screenshots_enabled = enabled
