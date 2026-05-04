@@ -1,8 +1,9 @@
+version: "3.9"
+
 services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
@@ -28,7 +29,6 @@ services:
   worker:
     build:
       context: ./backend
-      dockerfile: Dockerfile
     command: celery -A app.core.celery_app worker --loglevel=info
     volumes:
       - ./backend:/app
@@ -52,6 +52,7 @@ services:
 
   mongo:
     image: mongo:6
+    container_name: mongo
     restart: unless-stopped
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
@@ -62,7 +63,9 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - mongo_data:/data/db
+      - /root/Book_publisher_1/mongo_data:/data/db
+    ports:
+      - "27017:27017"
     networks:
       - app_network
 
@@ -80,7 +83,6 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     ports:
@@ -93,6 +95,3 @@ services:
 networks:
   app_network:
     driver: bridge
-
-volumes:
-  mongo_data:
