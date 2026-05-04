@@ -52,7 +52,11 @@ async def get_current_user(token: str = Depends(reusable_oauth2)) -> User:
                     await org.save()
                 
                 from datetime import datetime, timezone
-                if datetime.now(timezone.utc) > org.trial_ends_at:
+                trial_end = org.trial_ends_at
+                if trial_end.tzinfo is None:
+                    trial_end = trial_end.replace(tzinfo=timezone.utc)
+                
+                if datetime.now(timezone.utc) > trial_end:
                     raise HTTPException(
                         status_code=status.HTTP_402_PAYMENT_REQUIRED,
                         detail="Your 10-day trial has expired. Please subscribe to a plan to continue."
