@@ -21,7 +21,7 @@ export default function LoginPage() {
 
         try {
             const res = await api.post('/auth/access-token', formData, undefined, true);
-            login(res.access_token);
+            await login(res.access_token);
         } catch (err: any) {
             let errorMessage = 'Invalid email or password';
             setError(errorMessage);

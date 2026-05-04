@@ -28,7 +28,7 @@ interface AuthContextType {
     user: User | null;
     org: Org | null;
     token: string | null;
-    login: (token: string) => void;
+    login: (token: string) => Promise<void>;
     logout: () => void;
     isLoading: boolean;
     activeStatus: any;
@@ -82,18 +82,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, []);
 
-    const login = (newToken: string) => {
+    const login = async (newToken: string) => {
         localStorage.setItem('token', newToken);
         setToken(newToken);
-        api.get('/users/me', newToken).then((userData) => {
+        setIsLoading(true); // Re-enter loading state while fetching profile
+        
+        try {
+            console.log(`[AUTH-${instanceId}] 🚀 Login initiated, fetching user profile...`);
+            const userData = await api.get('/users/me', newToken);
             setUser(userData);
+            
             if (userData.organization_id) {
-                api.get('/organizations/me', newToken)
-                    .then((orgData) => { if (orgData) setOrg(orgData); })
-                    .catch(() => { });
+                try {
+                    const orgData = await api.get('/organizations/me', newToken);
+                    if (orgData) setOrg(orgData);
+                } catch (orgErr) {
+                    console.warn(`[AUTH-${instanceId}] ⚠️ Failed to fetch org during login:`, orgErr);
+                }
             }
-        });
-        router.push('/dashboard');
+            
+            console.log(`[AUTH-${instanceId}] ✅ Login complete, redirecting to dashboard`);
+            router.push('/dashboard');
+        } catch (err) {
+            console.error(`[AUTH-${instanceId}] ❌ Profile fetch failed during login:`, err);
+            toast.error("Failed to load user profile. Please try logging in again.");
+            logout();
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const logout = () => {

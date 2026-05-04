@@ -6,7 +6,7 @@ import { TeamService } from '@/lib/services/TeamService';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import Link from 'next/link';
-import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, AlertCircle } from 'lucide-react';
 
 export default function InvitePage() {
     const params = useParams();
@@ -71,9 +71,10 @@ export default function InvitePage() {
                         });
                     } catch (err: any) {
                         // If they already exist, we seamlessly switch context and try logging them in
-                        if (err.message && err.message.includes('already exists')) {
+                        if (err.message && (err.message.includes('already exists') || err.message.includes('Already in data'))) {
                             userExisted = true;
                             setIsLoginMode(true); // Flip UI mode to login for them
+                            toast.error("Account already exists. Please sign in with your password to join.");
                         } else {
                             throw err; // Re-throw other errors normally
                         }
@@ -187,8 +188,13 @@ export default function InvitePage() {
                             You are signed in as <span className="font-bold">{currentUser?.email}</span>.
                         </p>
                         {currentUser?.email !== inviteData.email ? (
-                            <div className="p-4 bg-amber-50 text-amber-800 rounded-xl text-sm border border-amber-100 mb-6 font-medium">
-                                This invitation is for <b>{inviteData.email}</b>, but you are logged in as <b>{currentUser?.email}</b>. Please switch accounts.
+                            <div className="p-4 bg-amber-50 text-amber-800 rounded-xl text-sm border border-amber-100 mb-6 font-medium text-left">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <AlertCircle className="w-4 h-4 text-amber-600" />
+                                    <span className="font-black uppercase tracking-tight text-[10px]">Account Mismatch</span>
+                                </div>
+                                This invitation is for <b>{inviteData.email}</b>, but you are logged in as <b>{currentUser?.email}</b>. 
+                                <button onClick={() => logout()} className="block mt-2 text-indigo-600 font-bold hover:underline">Logout & Switch Account</button>
                             </div>
                         ) : (
                             <button
@@ -203,37 +209,60 @@ export default function InvitePage() {
                 ) : (
                     // Not logged in
                     <form onSubmit={handleAcceptInvite} className="space-y-4">
+                        {inviteData.user_exists && isLoginMode && (
+                            <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl mb-2">
+                                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-1">Welcome Back!</p>
+                                <p className="text-xs text-indigo-900 leading-relaxed font-medium">
+                                    You already have a Connect ID. Please sign in with your password to join the organization.
+                                </p>
+                            </div>
+                        )}
+
                         {!isLoginMode && (
                             <div>
                                 <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Full Name</label>
                                 <input
                                     type="text" required
                                     value={fullName} onChange={e => setFullName(e.target.value)}
+                                    placeholder="Enter your name"
                                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition text-sm font-medium"
                                 />
                             </div>
                         )}
                         <div>
-                            <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">Password</label>
+                            <div className="flex items-center justify-between mb-1.5">
+                                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider">Password</label>
+                                {isLoginMode && (
+                                    <Link href="/login/forgot-password" title="Recover your password" className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-slate-900 transition-colors">
+                                        Forgot?
+                                    </Link>
+                                )}
+                            </div>
                             <input
                                 type="password" required
                                 value={password} onChange={e => setPassword(e.target.value)}
+                                placeholder="••••••••"
                                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition text-sm font-medium"
                             />
                         </div>
 
                         <button
                             type="submit" disabled={isProcessing}
-                            className="w-full py-3.5 mt-2 bg-indigo-600 text-white rounded-xl font-bold uppercase tracking-wider text-sm transition hover:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-200"
+                            className="w-full py-4 mt-2 bg-indigo-600 text-white rounded-2xl font-bold uppercase tracking-wider text-xs transition hover:bg-slate-900 disabled:opacity-50 shadow-lg shadow-indigo-200 active:scale-[0.98]"
                         >
-                            {isProcessing ? 'Processing...' : (isLoginMode ? 'Sign In & Accept' : 'Create Account & Accept')}
+                            {isProcessing ? (
+                                <div className="flex items-center justify-center gap-2">
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span>Processing...</span>
+                                </div>
+                            ) : (isLoginMode ? 'Sign In & Accept' : 'Create Account & Accept')}
                         </button>
 
                         <div className="pt-4 text-center">
                             <button
                                 type="button"
                                 onClick={() => { setIsLoginMode(!isLoginMode); setAuthError(''); }}
-                                className="text-sm font-bold text-slate-600 hover:text-indigo-600 transition"
+                                className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition"
                             >
                                 {isLoginMode ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
                             </button>

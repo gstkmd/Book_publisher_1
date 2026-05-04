@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { Building2, Shield, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
 
@@ -49,13 +50,26 @@ function JoinPageContent() {
             });
     }, [token]);
 
+    const { login } = useAuth();
+
     const handleJoin = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitError('');
         if (password.length < 6) { setSubmitError('Password must be at least 6 characters.'); return; }
         setSubmitting(true);
         try {
-            // First create/login user
+            // Check if user needs to be created or just logged in
+            // For simplicity in this legacy component, we'll try to signup first, if fails because exists, we login
+            try {
+                await api.post('/users/', {
+                    email: invite!.email,
+                    password: password,
+                    full_name: fullName
+                });
+            } catch (err: any) {
+                if (!err.message?.includes('already exists')) throw err;
+            }
+
             const authRes = await api.post('/auth/access-token', new URLSearchParams({
                 username: invite!.email,
                 password: password
@@ -65,6 +79,7 @@ function JoinPageContent() {
             
             // Then accept invite
             await api.post(`/organizations/invitations/${token}/accept`, {}, activeToken);
+            await login(activeToken);
             setSuccess(true);
         } catch (err: any) {
             let msg = 'Failed to join. Please try again.';

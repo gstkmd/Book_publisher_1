@@ -64,7 +64,7 @@ export default function SignupPage() {
     		const { access_token } = await loginRes.json();
 
             await api.post('/organizations/', { name: orgName, slug: orgSlug }, access_token);
-            login(access_token);
+            await login(access_token);
         } catch (err: any) {
             setError('Registration failed. Email might already exist.');
             setLoading(false);
