@@ -131,6 +131,9 @@ class OrgUpdate(BaseModel):
     sync_interval_seconds: Optional[int] = None
     enabled_modules: Optional[List[str]] = None
     hide_disabled_features: Optional[bool] = None
+    plan_display_name: Optional[str] = None
+    plan_price_display: Optional[str] = None
+    max_users: Optional[int] = None
 
 class ModuleUpdate(BaseModel):
     enabled_modules: List[str]

@@ -53,7 +53,12 @@ class WebhookSubscription(Document):
 class Organization(Document):
     name: str
     slug: str
-    plan: str = "free" # free, pro, enterprise
+    plan: str = "trial" # basic_10k, pro_18k, enterprise, trial, custom
+    plan_display_name: Optional[str] = None # For custom plans
+    plan_price_display: Optional[str] = None # e.g. "₹15,000"
+    max_users: int = 10 # Default limit
+    subscription_status: str = "trialing" # trialing, active, past_due, canceled
+    trial_ends_at: Optional[datetime] = None
     stripe_customer_id: Optional[str] = None
     created_at: datetime = datetime.now(timezone.utc)
     is_active: bool = True

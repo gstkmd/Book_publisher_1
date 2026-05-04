@@ -86,7 +86,10 @@ export default function SuperAdminDashboard() {
         screenshot_retention_days: 7,
         sync_interval_seconds: 300,
         enabled_modules: [] as string[],
-        hide_disabled_features: false
+        hide_disabled_features: false,
+        plan_display_name: '',
+        plan_price_display: '',
+        max_users: 10
     });
 
     // User Search State
@@ -175,7 +178,10 @@ export default function SuperAdminDashboard() {
             screenshot_retention_days: org.screenshot_retention_days || 7,
             sync_interval_seconds: org.sync_interval_seconds || 300,
             enabled_modules: org.enabled_modules || [],
-            hide_disabled_features: org.hide_disabled_features || false
+            hide_disabled_features: org.hide_disabled_features || false,
+            plan_display_name: org.plan_display_name || '',
+            plan_price_display: org.plan_price_display || '',
+            max_users: org.max_users || 10
         });
     };
 
@@ -575,18 +581,63 @@ export default function SuperAdminDashboard() {
                             <button onClick={() => setEditingOrg(null)} className="p-2 hover:bg-white rounded-xl text-slate-400"><XCircle className="w-6 h-6" /></button>
                         </div>
                         <div className="p-8 grid grid-cols-2 gap-6">
-                            <div className="space-y-2">
+                            <div className="col-span-2 space-y-4">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Subscription Plan</label>
-                                <select 
-                                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 font-bold"
-                                    value={editData.plan}
-                                    onChange={(e) => setEditData({...editData, plan: e.target.value})}
-                                >
-                                    <option value="free">Free Tier</option>
-                                    <option value="pro">Pro Plan</option>
-                                    <option value="enterprise">Enterprise</option>
-                                </select>
+                                <div className="grid grid-cols-5 gap-4">
+                                    {[
+                                        { id: 'trial', label: '10d Trial', color: 'bg-amber-50 text-amber-600 border-amber-100', active: 'bg-amber-600 text-white border-amber-600' },
+                                        { id: 'basic_10k', label: 'Basic (10k)', color: 'bg-blue-50 text-blue-600 border-blue-100', active: 'bg-blue-600 text-white border-blue-600' },
+                                        { id: 'pro_18k', label: 'Growth (18k)', color: 'bg-indigo-50 text-indigo-600 border-indigo-100', active: 'bg-indigo-600 text-white border-indigo-600' },
+                                        { id: 'enterprise', label: 'Enterprise', color: 'bg-emerald-50 text-emerald-600 border-emerald-100', active: 'bg-emerald-600 text-white border-emerald-600' },
+                                        { id: 'custom', label: 'Custom Plan', color: 'bg-purple-50 text-purple-600 border-purple-100', active: 'bg-purple-600 text-white border-purple-600' },
+                                    ].map(plan => (
+                                        <button
+                                            key={plan.id}
+                                            onClick={() => setEditData({...editData, plan: plan.id})}
+                                            className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2
+                                                ${editData.plan === plan.id ? plan.active + ' shadow-lg scale-105' : plan.color + ' hover:border-slate-300'}
+                                            `}
+                                        >
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-center">{plan.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
+
+                            {/* Custom Plan Details */}
+                            {editData.plan === 'custom' && (
+                                <div className="col-span-2 grid grid-cols-3 gap-6 p-6 bg-purple-50/30 rounded-[2rem] border border-purple-100 animate-in slide-in-from-top-2">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-purple-600 uppercase tracking-widest pl-1">Plan Name</label>
+                                        <input 
+                                            type="text" 
+                                            placeholder="e.g. VIP Enterprise"
+                                            className="w-full bg-white border border-purple-100 rounded-xl px-4 py-3 font-bold"
+                                            value={editData.plan_display_name}
+                                            onChange={(e) => setEditData({...editData, plan_display_name: e.target.value})}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-purple-600 uppercase tracking-widest pl-1">Price Display</label>
+                                        <input 
+                                            type="text" 
+                                            placeholder="e.g. ₹25,000"
+                                            className="w-full bg-white border border-purple-100 rounded-xl px-4 py-3 font-bold"
+                                            value={editData.plan_price_display}
+                                            onChange={(e) => setEditData({...editData, plan_price_display: e.target.value})}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-purple-600 uppercase tracking-widest pl-1">Max Users</label>
+                                        <input 
+                                            type="number" 
+                                            className="w-full bg-white border border-purple-100 rounded-xl px-4 py-3 font-bold"
+                                            value={editData.max_users}
+                                            onChange={(e) => setEditData({...editData, max_users: parseInt(e.target.value)})}
+                                        />
+                                    </div>
+                                </div>
+                            )}
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Sync Interval (Seconds)</label>
                                 <div className="flex items-center bg-slate-50 rounded-xl px-4 py-3">

@@ -38,6 +38,31 @@ async def get_current_user(token: str = Depends(reusable_oauth2)) -> User:
         raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user account")
+
+    # Subscription / Trial Check
+    if user.organization_id and user.role != UserRole.SUPER_ADMIN:
+        from app.modules.core.models import Organization
+        org = await Organization.get(PydanticObjectId(user.organization_id))
+        if org:
+            if org.subscription_status == "trialing":
+                if not org.trial_ends_at:
+                    # Initialize trial end date if not set (10 days from creation or now)
+                    from datetime import datetime, timezone, timedelta
+                    org.trial_ends_at = org.created_at + timedelta(days=10)
+                    await org.save()
+                
+                from datetime import datetime, timezone
+                if datetime.now(timezone.utc) > org.trial_ends_at:
+                    raise HTTPException(
+                        status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                        detail="Your 10-day trial has expired. Please subscribe to a plan to continue."
+                    )
+            elif org.subscription_status == "canceled" or org.subscription_status == "past_due":
+                raise HTTPException(
+                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                    detail="Your subscription is inactive. Please update your billing details."
+                )
+
     return user
 
 async def get_current_active_superuser(current_user: User = Depends(get_current_user)) -> User:
