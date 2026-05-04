@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [activeStatus, setActiveStatus] = useState<any>(null);
     const router = useRouter();
     const pathname = usePathname();
-    const [instanceId] = useState(() => Math.random().toString(36).substring(7));
+    const instanceId = useState(() => Math.random().toString(36).substring(7))[0];
 
     useEffect(() => {
         console.log(`[AUTH-${instanceId}] 🏗️ AuthProvider mounted`);

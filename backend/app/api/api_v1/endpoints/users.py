@@ -14,17 +14,12 @@ router = APIRouter()
 async def read_user_me(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
-    """
-    Get current user.
-    """
-    return UserSchema(
-        id=str(current_user.id),
-        email=current_user.email,
-        full_name=current_user.full_name,
-        role=current_user.role,
-        is_active=current_user.is_active,
-        organization_id=current_user.organization_id
-    )
+    # Explicitly convert to dict and handle ObjectIds to avoid serialization 500s
+    user_data = current_user.model_dump()
+    user_data["id"] = str(current_user.id)
+    if user_data.get("organization_id"):
+        user_data["organization_id"] = str(user_data["organization_id"])
+    return user_data
 
 @router.post("/", response_model=UserSchema)
 async def create_user(
