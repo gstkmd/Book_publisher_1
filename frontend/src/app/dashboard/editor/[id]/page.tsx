@@ -309,7 +309,7 @@ function EditorEditContent() {
             <div className="flex flex-1 overflow-hidden">
                 {/* Main Editor Area */}
                 <div className={`flex-1 overflow-y-auto transition-all duration-500 ${showComments ? 'w-1/2' : 'w-full'}`}>
-                    <div className="container mx-auto p-8 max-w-5xl">
+                    <div className="container mx-auto px-4 py-8 max-w-[98%]">
                         <div className="space-y-8">
                             {activeTab === 'info' && (
                                 <>
