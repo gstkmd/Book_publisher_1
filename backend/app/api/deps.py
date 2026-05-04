@@ -24,11 +24,19 @@ async def get_current_user(token: str = Depends(reusable_oauth2)) -> User:
             detail="Could not validate credentials",
         )
     
-    user = await User.get(token_data)
+    try:
+        user_id = PydanticObjectId(token_data)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Token subject is not a valid user ID",
+        )
+    
+    user = await User.get(user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail=f"User with ID {token_data} not found")
     if not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise HTTPException(status_code=400, detail="Inactive user account")
     return user
 
 async def get_current_active_superuser(current_user: User = Depends(get_current_user)) -> User:

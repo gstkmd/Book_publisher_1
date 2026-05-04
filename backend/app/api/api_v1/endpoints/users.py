@@ -11,7 +11,7 @@ from app.modules.core.schemas import UserCreate, User as UserSchema, UserUpdate
 router = APIRouter()
 
 @router.get("/me", response_model=UserSchema)
-def read_user_me(
+async def read_user_me(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
     """

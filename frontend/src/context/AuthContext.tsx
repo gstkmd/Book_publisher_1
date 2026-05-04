@@ -103,9 +103,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             
             console.log(`[AUTH-${instanceId}] ✅ Login complete, redirecting to dashboard`);
             router.push('/dashboard');
-        } catch (err) {
+        } catch (err: any) {
             console.error(`[AUTH-${instanceId}] ❌ Profile fetch failed during login:`, err);
-            toast.error("Failed to load user profile. Please try logging in again.");
+            
+            let errorMessage = "Failed to load user profile.";
+            if (err.message) {
+                // api.ts returns error message as "status: body"
+                errorMessage = `Login error: ${err.message}`;
+            }
+            
+            toast.error(errorMessage);
             logout();
         } finally {
             setIsLoading(false);
