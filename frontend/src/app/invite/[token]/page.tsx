@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { TeamService } from '@/lib/services/TeamService';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
+import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { CheckCircle2, XCircle, Loader2, AlertCircle } from 'lucide-react';
 
