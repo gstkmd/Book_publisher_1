@@ -41,22 +41,23 @@ export const Sidebar = () => {
     const displayName = org?.name || user?.full_name?.split(' ')[0] || 'My Org';
 
     const mainItems = [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Library', href: '/dashboard/library', icon: Library, featureId: 'library' },
-        { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare, featureId: 'tasks' },
-        { name: 'Workflow', href: '/dashboard/workflow', icon: GitBranch, featureId: 'workflow' },
-        { name: 'Standards', href: '/dashboard/standards', icon: ClipboardList, featureId: 'standards' },
-        { name: 'Lesson Plans', href: '/dashboard/lesson-plans', icon: FileEdit, featureId: 'lesson_plans' },
-        { name: 'Assessments', href: '/dashboard/assessments', icon: CheckSquare, featureId: 'assessments' },
-        { name: 'Rights', href: '/dashboard/rights', icon: Scale, featureId: 'rights' },
+        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, color: 'text-blue-500' },
+        { name: 'Library', href: '/dashboard/library', icon: Library, featureId: 'library', color: 'text-purple-500' },
+        { name: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare, featureId: 'tasks', color: 'text-orange-500' },
+        { name: 'Workflow', href: '/dashboard/workflow', icon: GitBranch, featureId: 'workflow', color: 'text-indigo-500' },
+        { name: 'Standards', href: '/dashboard/standards', icon: ClipboardList, featureId: 'standards', color: 'text-emerald-500' },
+        { name: 'Lesson Plans', href: '/dashboard/lesson-plans', icon: FileEdit, featureId: 'lesson_plans', color: 'text-rose-500' },
+        { name: 'Assessments', href: '/dashboard/assessments', icon: CheckSquare, featureId: 'assessments', color: 'text-cyan-500' },
+        { name: 'Rights', href: '/dashboard/rights', icon: Scale, featureId: 'rights', color: 'text-amber-500' },
         { 
             name: 'Monitoring', 
             href: '/dashboard/monitoring', 
             icon: Activity, 
             featureId: 'monitoring',
-            requiredRoles: ['admin', 'editor_in_chief', 'reviewer', 'super_admin'] 
+            requiredRoles: ['admin', 'editor_in_chief', 'reviewer', 'super_admin'],
+            color: 'text-fuchsia-500'
         },
-        { name: 'Help & FAQ', href: '/dashboard/help', icon: HelpCircle },
+        { name: 'Help & FAQ', href: '/dashboard/help', icon: HelpCircle, color: 'text-slate-500' },
     ];
 
     const systemItems = [
@@ -216,7 +217,7 @@ export const Sidebar = () => {
                                     onClick={() => setIsOpen(false)}
                                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group
                                     ${isActive
-                                            ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50'
+                                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
                                             : isLocked 
                                                 ? 'text-slate-300 hover:bg-slate-50/50'
                                                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
@@ -225,7 +226,7 @@ export const Sidebar = () => {
                                     title={isCollapsed ? item.name : ''}
                                 >
                                     <Icon className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 
-                                        ${isActive ? 'text-indigo-600' : isLocked ? 'text-slate-200' : 'text-slate-400'}`} 
+                                        ${isActive ? 'text-white' : isLocked ? 'text-slate-200' : item.color || 'text-slate-400'}`} 
                                     />
                                     <span className={`text-[13px] font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300
                                     ${isCollapsed ? 'lg:hidden opacity-0 w-0' : 'opacity-100 w-auto'}
@@ -237,7 +238,7 @@ export const Sidebar = () => {
                                         <Lock className="ml-auto w-3 h-3 text-slate-200" />
                                     )}
                                     {isActive && !isCollapsed && !isLocked && (
-                                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
+                                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse" />
                                     )}
                                 </Link>
                             );
@@ -279,12 +280,12 @@ export const Sidebar = () => {
                                             <Link key={item.href} href={item.href}
                                                 onClick={() => setIsOpen(false)}
                                                 className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all
-                                                    ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
+                                                    ${isActive ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
                                                 `}
                                             >
-                                                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                                                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                                                 {item.name}
-                                                {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-600" />}
+                                                {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/40" />}
                                             </Link>
                                         );
                                     })}
@@ -301,20 +302,20 @@ export const Sidebar = () => {
                                 onClick={() => setIsOpen(false)}
                                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group
                                 ${pathname === '/dashboard/superadmin'
-                                        ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50'
+                                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
                                         : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
                                 ${isCollapsed ? 'justify-center lg:px-0 lg:w-12 lg:mx-auto' : ''}
                             `}
                                 title={isCollapsed ? 'Super Admin' : ''}
                             >
-                                <Globe className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${pathname === '/dashboard/superadmin' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                                <Globe className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${pathname === '/dashboard/superadmin' ? 'text-white' : 'text-slate-400'}`} />
                                 <span className={`text-[13px] font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300
                                 ${isCollapsed ? 'lg:hidden opacity-0 w-0' : 'opacity-100 w-auto'}
                             `}>
                                     Super Admin
                                 </span>
                                 {pathname === '/dashboard/superadmin' && !isCollapsed && (
-                                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
+                                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse" />
                                 )}
                             </Link>
                         </div>
