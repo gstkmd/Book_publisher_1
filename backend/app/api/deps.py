@@ -29,7 +29,7 @@ async def get_current_user(token: str = Depends(reusable_oauth2)) -> User:
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Token subject is not a valid user ID",
+            detail=f"Token subject '{token_data}' is not a valid user ID",
         )
     
     user = await User.get(user_id)
