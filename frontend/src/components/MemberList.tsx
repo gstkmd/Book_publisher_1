@@ -23,7 +23,7 @@ export const MemberList = () => {
     // Invite modal state
     const [showInvite, setShowInvite] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
-    const [inviteRole, setInviteRole] = useState('user');
+    const [inviteRole, setInviteRole] = useState('admin');
     const [inviting, setInviting] = useState(false);
     const [generatedLink, setGeneratedLink] = useState('');
     const [availableRoles, setAvailableRoles] = useState<{ value: string, label: string }[]>(ROLES);
@@ -39,16 +39,21 @@ export const MemberList = () => {
     const fetchRoles = async () => {
         try {
             const orgData = await TeamService.getOrganization(token!);
-            if (orgData?.role_permissions) {
+            if (orgData?.role_permissions && Object.keys(orgData.role_permissions).length > 0) {
                 const roles = Object.keys(orgData.role_permissions).map(role => ({
                     value: role,
-                    label: role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                    label: role === 'user' ? 'Member' : role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
                 }));
                 // Ensure admin is always there if not in permissions
                 if (!roles.find(r => r.value === 'admin')) {
                     roles.push({ value: 'admin', label: 'Admin' });
                 }
                 setAvailableRoles(roles);
+                
+                // Ensure default selected role is valid
+                if (!roles.find(r => r.value === inviteRole)) {
+                    setInviteRole(roles[0].value);
+                }
             }
         } catch (err) {
             console.error('Failed to fetch roles:', err);

@@ -17,7 +17,7 @@ const AVAILABLE_MODULES = [
     { id: 'rights', label: 'Rights & Integrity' }
 ];
 
-const DEFAULT_ROLES = ['admin', 'editor_in_chief', 'section_editor', 'author', 'reviewer', 'illustrator', 'teacher'];
+const DEFAULT_ROLES = ['admin', 'editor_in_chief', 'section_editor', 'author', 'reviewer', 'illustrator', 'teacher', 'user'];
 
 export function RoleManager({ rolePermissions, onUpdate }: RoleManagerProps) {
     const [newRoleName, setNewRoleName] = useState('');

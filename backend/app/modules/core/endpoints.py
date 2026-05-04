@@ -46,7 +46,17 @@ async def create_organization(
     org = Organization(
         name=org_in.name,
         slug=org_in.slug,
-        plan="free"
+        plan="free",
+        role_permissions={
+            "admin": ["monitoring", "tasks", "workflow", "library", "standards", "lesson_plans", "assessments", "rights"],
+            "editor_in_chief": ["tasks"],
+            "section_editor": ["tasks"],
+            "author": ["tasks"],
+            "reviewer": ["tasks"],
+            "illustrator": ["tasks"],
+            "teacher": ["tasks"],
+            "user": ["tasks"]
+        }
     )
     await org.create()
     
