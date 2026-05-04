@@ -12,8 +12,8 @@ import { CheckCircle2, XCircle, Loader2, AlertCircle } from 'lucide-react';
 export default function InvitePage() {
     const params = useParams();
     const router = useRouter();
+    const { token: authToken, login, logout, user: currentUser } = useAuth();
     const token = params.token as string;
-    const { token: authToken, login, user: currentUser } = useAuth();
 
     const [loading, setLoading] = useState(true);
     const [inviteData, setInviteData] = useState<any>(null);
@@ -102,7 +102,7 @@ export default function InvitePage() {
             
             // Log in, which fetches the fresh backend state (with newly joined org_id) and redirects
             if (!authToken) {
-                login(activeToken!);
+                await login(activeToken!);
             } else {
                 // If they were already logged in, we should refresh their session manually or just redirect
                 // A quick hack is just window.location.href to force full context reload
