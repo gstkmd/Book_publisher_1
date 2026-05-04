@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Link2, Copy, Check, X, UserPlus, Activity, Camera } from 'lucide-react';
+import { Link2, Copy, Check, X, UserPlus, Activity, Camera, Trash2 } from 'lucide-react';
 import { TeamService, OrganizationMember } from '@/lib/services/TeamService';
 import toast from 'react-hot-toast';
 
@@ -180,6 +180,23 @@ export const MemberList = () => {
         }
     };
 
+    const handleDeleteMember = async (userId: string, email: string) => {
+        if (userId === user?.id) {
+            toast.error("You cannot remove yourself");
+            return;
+        }
+        if (window.confirm(`Are you sure you want to remove ${email} from the organization?`)) {
+            try {
+                const { api } = await import('@/lib/api');
+                await api.delete(`/organizations/members/${userId}`, token!);
+                fetchMembers();
+                toast.success("Member removed from organization");
+            } catch (err: any) {
+                toast.error('Failed to remove member: ' + (err.message || 'Unknown error'));
+            }
+        }
+    };
+
     return (
         <div className="bg-white p-6 rounded-lg shadow mb-6 relative">
             <div className="flex items-center justify-between mb-4">
@@ -237,6 +254,14 @@ export const MemberList = () => {
                                 className={`text-[10px] font-bold uppercase px-2 py-1 rounded transition ${m.is_active ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
                             >
                                 {m.is_active ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleDeleteMember(m._id, m.email)}
+                                className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                                title="Remove Member"
+                            >
+                                <Trash2 className="w-4 h-4" />
                             </button>
                         </div>
                     </div>

@@ -497,3 +497,37 @@ async def update_member_screenshots(
     await user.save()
     return {"message": f"Screenshots {'enabled' if enabled else 'disabled'} for user"}
 
+@router.delete("/members/{user_id}")
+async def delete_member(
+    user_id: PydanticObjectId,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can manage members")
+
+    # Prevent self-deletion
+    if str(user_id) == str(current_user.id):
+        raise HTTPException(status_code=400, detail="You cannot delete yourself")
+
+    user = await User.get(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Verify membership
+    member = await OrganizationMember.find_one(
+        OrganizationMember.organization_id == current_user.organization_id,
+        OrganizationMember.user_id == str(user_id)
+    )
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found in your organization")
+
+    # Remove from User context
+    user.organization_id = None
+    user.role = "user" # Reset to basic role
+    await user.save()
+
+    # Delete OrganizationMember record
+    await member.delete()
+
+    return {"message": "Member removed from organization successfully"}
+
