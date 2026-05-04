@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.modules.core.models import User
 from app.modules.core.schemas import UserCreate, User as UserSchema, UserUpdate
 from app.modules.core.utils import normalize_role
+from app.core.rate_limit import RateLimiter
 
 router = APIRouter()
 
