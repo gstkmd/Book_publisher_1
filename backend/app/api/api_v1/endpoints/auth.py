@@ -1,8 +1,9 @@
 from datetime import timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from app.core.rate_limit import RateLimiter
 
 from app.core import security
 from app.api import deps
@@ -63,7 +64,7 @@ async def reset_password(body: schemas.PasswordReset) -> Any:
     return {"msg": "Password updated successfully"}
 
 
-@router.post("/access-token", response_model=dict)
+@router.post("/access-token", response_model=dict, dependencies=[Depends(RateLimiter(requests=5, window=60))])
 async def login_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Any:

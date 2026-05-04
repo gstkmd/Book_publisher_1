@@ -158,15 +158,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                                     <p className="text-sm opacity-90">
                                         You don't have any in-progress tasks. Please start a task to track your activity.
                                     </p>
-                                    <button
-                                        onClick={() => {
-                                            router.push('/dashboard/tasks');
-                                            toast.dismiss(t.id);
-                                        }}
-                                        className="mt-2 px-3 py-1.5 bg-white text-red-600 rounded-md text-xs font-black shadow-sm hover:bg-gray-50 transition-colors self-start"
-                                    >
-                                        CHOOSE TASK
-                                    </button>
+                                    <div className="flex gap-2 mt-2">
+                                        <button
+                                            onClick={() => {
+                                                router.push('/dashboard/tasks');
+                                                toast.dismiss(t.id);
+                                            }}
+                                            className="px-3 py-1.5 bg-white text-red-600 rounded-md text-xs font-black shadow-sm hover:bg-gray-50 transition-colors"
+                                        >
+                                            CHOOSE TASK
+                                        </button>
+                                        <button
+                                            onClick={() => toast.dismiss(t.id)}
+                                            className="px-3 py-1.5 bg-transparent border border-white/40 text-white rounded-md text-xs font-black hover:bg-white/10 transition-colors"
+                                        >
+                                            DISMISS
+                                        </button>
+                                    </div>
                                 </div>
                             ),
                             {

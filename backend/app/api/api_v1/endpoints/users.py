@@ -11,7 +11,7 @@ from app.modules.core.utils import normalize_role
 
 router = APIRouter()
 
-@router.get("/me", response_model=UserSchema)
+@router.get("/me", response_model=UserSchema, dependencies=[Depends(RateLimiter(requests=60, window=60))])
 async def read_user_me(
     current_user: User = Depends(deps.get_current_user),
 ) -> Any:
