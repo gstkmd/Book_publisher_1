@@ -1,58 +1,76 @@
-# Dependencies
+
+# =====================
+# Node / Frontend
+# =====================
 node_modules/
 backend/node_modules/
 frontend/node_modules/
 
-# Next.js build
 .next/
 frontend/.next/
 out/
 
-# Environment Files (CRITICAL: DO NOT COMMIT REAL SECRETS)
+# =====================
+# Environment Files (NEVER COMMIT SECRETS)
+# =====================
 .env
-.env.save
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-backend/.env
-backend/.env.local
-frontend/.env
-frontend/.env.local
+.env.*
+backend/.env*
+frontend/.env*
 
+# =====================
 # Python
+# =====================
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
 *.py[cod]
 *$py.class
+
 venv/
 .venv/
 .pytest_cache/
 .coverage
 htmlcov/
 
-# OS Files
-.DS_Store
-Thumbs.db
-
-# Large DB Files
+# =====================
+# Database / Mongo
+# =====================
+mongo_data/
 *.db
 backend/*.db
 
-# Docker
-.dockerignore
-**/npm-debug.log*
-**/yarn-debug.log*
-**/yarn-error.log*
-**/pnpm-debug.log*
+# =====================
+# OS Files
+# =====================
+.DS_Store
+Thumbs.db
 
-# Vercel
+# =====================
+# Logs
+# =====================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =====================
+# Vercel / Deploy
+# =====================
 .vercel
 
+# =====================
 # Project Specific
+# =====================
 storage/
 scripts/*.log
 nginx/*.log
 
-__pycache__/
-*.pyc
-.env
+# =====================
+# Temporary Files
+# =====================
+*.save
+*.bak
+*.tmp
