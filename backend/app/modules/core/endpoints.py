@@ -154,6 +154,11 @@ async def invite_member(
     # Check if user is already a member
     existing_user = await User.find_one(User.email == email_lower)
     if existing_user:
+        # Re-activate user account if it was deactivated
+        existing_user.is_active = True
+        await existing_user.save()
+        
+        # User already exists in system
         existing_member = await OrganizationMember.find_one(
             OrganizationMember.organization_id == organization_id,
             OrganizationMember.user_id == str(existing_user.id)
@@ -318,6 +323,7 @@ async def get_organization_members(
         if m:
             u_dict["organization_role"] = m.role
             u_dict["membership_status"] = m.status
+            u_dict["is_active"] = (m.status == "active") # Local status for UI
             u_dict["joined_at"] = m.joined_at
             # Ensure monitoring flags are included
             u_dict["monitoring_enabled"] = u.monitoring_enabled
@@ -412,9 +418,9 @@ async def update_member_status(
     if not member:
         raise HTTPException(status_code=404, detail="Member not found in your organization")
 
-    user.is_active = is_active
-    await user.save()
-    return {"message": f"User status updated to {'active' if is_active else 'inactive'}"}
+    member.status = "active" if is_active else "inactive"
+    await member.save()
+    return {"message": f"Member status updated to {member.status}"}
 
 @router.patch("/members/{user_id}/role")
 async def update_member_role(
