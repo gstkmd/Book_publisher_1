@@ -47,21 +47,7 @@ export default function SignupPage() {
         try {
             await api.post('/users/', { email, password, full_name: fullName, role: 'admin' });
             
-            const params = new URLSearchParams();
-            params.append('username', email);
-            params.append('password', password);
-
-            const loginRes = await fetch(
-            	`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}/auth/access-token`,
-    		    {
-        		    method: 'POST',
-        		    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        		    body: params.toString(),
-    		    }
-            );
-
-    		if (!loginRes.ok) throw new Error('Auto-login failed');
-    		const { access_token } = await loginRes.json();
+            const { access_token } = await api.login(email, password);
 
             await api.post('/organizations/', { name: orgName, slug: orgSlug }, access_token);
             await login(access_token);

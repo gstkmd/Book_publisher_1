@@ -15,15 +15,17 @@ export default function LoginPage() {
         e.preventDefault();
         setError('');
 
-        const formData = new URLSearchParams();
-        formData.append('username', email);
-        formData.append('password', password);
-
         try {
-            const res = await api.post('/auth/access-token', formData, undefined, true);
+            const res = await api.login(email, password);
             await login(res.access_token);
         } catch (err: any) {
+            console.error('[LOGIN] ❌ Sign in failed:', err);
+            // Show actual error message if available
             let errorMessage = 'Invalid email or password';
+            if (err.message) {
+                // Remove the "400:" prefix if it exists from api.ts
+                errorMessage = err.message.replace(/^\d+:\s*/, '');
+            }
             setError(errorMessage);
         }
     };

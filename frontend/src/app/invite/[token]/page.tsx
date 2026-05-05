@@ -57,10 +57,7 @@ export default function InvitePage() {
             // If not logged in, we need to authenticate first
             if (!activeToken) {
                 if (isLoginMode) {
-                    const formData = new URLSearchParams();
-                    formData.append('username', inviteData.email);
-                    formData.append('password', password);
-                    const res = await api.post('/auth/access-token', formData, undefined, true);
+                    const res = await api.login(inviteData.email, password);
                     activeToken = res.access_token;
                 } else {
                     let userExisted = false;
@@ -83,10 +80,7 @@ export default function InvitePage() {
                     
                     // After signup (or if we fell back because they exist), login to get token
                     try {
-                        const formData = new URLSearchParams();
-                        formData.append('username', inviteData.email);
-                        formData.append('password', password);
-                        const authRes = await api.post('/auth/access-token', formData, undefined, true);
+                        const authRes = await api.login(inviteData.email, password);
                         activeToken = authRes.access_token;
                     } catch (loginErr: any) {
                         if (userExisted) {

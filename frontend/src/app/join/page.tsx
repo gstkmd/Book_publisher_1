@@ -70,10 +70,7 @@ function JoinPageContent() {
                 if (!err.message?.includes('already exists')) throw err;
             }
 
-            const authRes = await api.post('/auth/access-token', new URLSearchParams({
-                username: invite!.email,
-                password: password
-            }), undefined, true);
+            const authRes = await api.login(invite!.email, password);
             
             const activeToken = authRes.access_token;
             

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../lib/api';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { api, setUnauthorizedHandler } from '../lib/api';
 import { useRouter, usePathname } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { AlertCircle } from 'lucide-react';
@@ -49,6 +49,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const router = useRouter();
     const pathname = usePathname();
     const instanceId = useState(() => Math.random().toString(36).substring(7))[0];
+    const isLoggingOut = useRef(false);
+
+    // Register global unauthorized handler once
+    useEffect(() => {
+        setUnauthorizedHandler(() => {
+            if (!isLoggingOut.current) {
+                console.warn(`[AUTH-${instanceId}] 🛑 Global unauthorized trigger, logging out...`);
+                logout();
+            }
+        });
+    }, []);
 
     useEffect(() => {
         console.log(`[AUTH-${instanceId}] 🏗️ AuthProvider mounted`);
@@ -70,6 +81,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 })
                 .catch((err) => {
                     console.error(`[AUTH-${instanceId}] ❌ User profile fetch failed:`, err);
+                    // logout() will be called by handleResponse in api.ts if it's 401/403
+                    // but we call it here as well for other types of errors during init
                     logout();
                 })
                 .finally(() => {
@@ -120,11 +133,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const logout = () => {
+        if (isLoggingOut.current) return;
+        isLoggingOut.current = true;
+
+        console.log(`[AUTH-${instanceId}] 🚪 Logging out...`);
         localStorage.removeItem('token');
         setToken(null);
         setUser(null);
         setOrg(null);
         router.push('/login');
+        
+        // Reset the flag after a short delay to allow future logins
+        setTimeout(() => {
+            isLoggingOut.current = false;
+        }, 1000);
     };
 
     // Global Task Monitor - Checks every 1 hour if user has an active task
