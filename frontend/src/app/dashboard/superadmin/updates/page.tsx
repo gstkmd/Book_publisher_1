@@ -10,9 +10,10 @@ interface UpdateFile {
     size_formatted: string;
     modified: string;
 }
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export default function SoftwareUpdateManager() {
-    const { token, API_BASE } = useAuth();
+    const { token } = useAuth();
     const [files, setFiles] = useState<UpdateFile[]>([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
