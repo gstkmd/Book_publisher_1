@@ -10,6 +10,7 @@ class MonitoringAgent(Document):
     organization_id: str
     computer_name: Optional[str] = None
     os_version: Optional[str] = None
+    agent_version: Optional[str] = "1.0.0"
     last_seen: Optional[datetime] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

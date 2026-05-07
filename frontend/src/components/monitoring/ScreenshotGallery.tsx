@@ -69,8 +69,9 @@ export function ScreenshotGallery({ screenshots, apiUrl, onScreenshotClick }: Sc
                                 </p>
                             </div>
                         </div>
-                    </div>
-                ))}
+                        </div>
+                    );
+                })}
                 {screenshots.length === 0 && (
                     <div className="col-span-full py-12 text-center text-gray-500 bg-gray-50 rounded-lg">
                         No screenshots available.

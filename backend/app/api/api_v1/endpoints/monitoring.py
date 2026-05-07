@@ -155,12 +155,20 @@ async def health_check():
 async def register_agent(
     computer_name: str = Form(...),
     os_version: str = Form(...),
+    agent_version: str = Form("1.0.0"),
     platform: Optional[str] = Form(None),
     arch: Optional[str] = Form(None),
     nickname: Optional[str] = Form(None),
     current_user: User = Depends(deps.get_current_user)
 ):
     """Register a new monitoring agent"""
+    # Version Enforcement
+    if not agent_version.startswith("2."):
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Agent version {agent_version} is out of date. Please update to version 2.0.0 to enable privacy filtering."
+        )
+
     if not current_user.organization_id:
         # If user isn't in an org, we can't create the agent properly, but we can fallback for local testing
         agent_id = str(uuid.uuid4())
@@ -171,6 +179,7 @@ async def register_agent(
         organization_id=current_user.organization_id,
         computer_name=computer_name,
         os_version=os_version,
+        agent_version=agent_version,
         last_seen=datetime.now(timezone.utc)
     )
     await agent.create()
@@ -197,6 +206,19 @@ async def upload_screenshot(
         raise HTTPException(status_code=422, detail="agent_id or agentId is required")
     if not screenshot:
         raise HTTPException(status_code=422, detail="screenshot or files is required")
+
+    # Version check for ingestion
+    try:
+        agent_doc = await MonitoringAgent.find(MonitoringAgent.id == ObjectId(agent_id)).first_or_none()
+        if not agent_doc or not (agent_doc.agent_version or "1.0.0").startswith("2."):
+            raise HTTPException(
+                status_code=403, 
+                detail="Agent version incompatible. Please update to 2.0.0 to enable privacy filters."
+            )
+    except Exception as e:
+        print(f"DEBUG: [Upload] Version check failed: {e}")
+        # Allow if check itself fails for some technical reason, to avoid bricking perfectly valid agents
+        pass
 
     try:
 
@@ -244,6 +266,20 @@ async def track_app_usage(
         agent_id = data.get("agent_id") or data.get("agentId")
         app_data = data.get("app_data") or data.get("appData", {})
         
+        # Version check for ingestion
+        try:
+            agent_doc = await MonitoringAgent.find(MonitoringAgent.id == ObjectId(agent_id)).first_or_none()
+            if not agent_doc or not (agent_doc.agent_version or "1.0.0").startswith("2."):
+                raise HTTPException(
+                    status_code=403, 
+                    detail="Agent version incompatible. Please update to 2.0.0 to enable privacy filters."
+                )
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"DEBUG: [Activity] Version check failed: {e}")
+            pass
+
         # Calculate duration
         open_time_str = app_data.get("app_open_at") or app_data.get("appOpenAt")
         close_time_str = app_data.get("app_close_at") or app_data.get("appCloseAt")
