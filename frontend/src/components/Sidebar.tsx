@@ -18,6 +18,8 @@ import {
     Shield,
     History,
     LogOut,
+    Menu,
+    X,
     Activity,
     Scale,
     ChevronDown,
