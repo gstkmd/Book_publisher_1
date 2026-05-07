@@ -96,6 +96,7 @@ async def upload_screenshot(
     window_title: str = Form(...),
     timestamp: str = Form(...), # Change to str for flexible parsing
     file: UploadFile = File(...),
+    is_private: bool = Form(False),
     agent_id: Optional[str] = Form(None),
     agentId: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user)
@@ -156,7 +157,8 @@ async def upload_screenshot(
         timestamp=ts,
         file_url=file_url,
         app_name=app_name,
-        window_title=window_title
+        window_title=window_title,
+        is_private=is_private
     )
     await screenshot.create()
     print(f"DEBUG: [Screenshot] Created document for {current_user.email} (Org: {current_user.organization_id})")

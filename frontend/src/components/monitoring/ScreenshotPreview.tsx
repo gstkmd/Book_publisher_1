@@ -26,7 +26,8 @@ export function ScreenshotPreview({
     onNavigate,
     apiUrl 
 }: ScreenshotPreviewProps) {
-    const { token } = useAuth();
+    const { token, user } = useAuth();
+    const isSuperAdmin = user?.role === 'super_admin';
     
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -154,12 +155,23 @@ export function ScreenshotPreview({
                 </div>
 
                 <div className="w-full flex flex-col items-center gap-6">
-                    <div className="relative bg-white p-2 rounded-xl shadow-inner border border-gray-100">
+                    <div className="relative bg-white p-2 rounded-xl shadow-inner border border-gray-100 overflow-hidden">
                         <SecureImage 
                             src={`${apiUrl}/monitoring/dashboard/screenshot/${screenshot.id}`} 
                             alt="Full Size Screenshot"
-                            className="max-w-full max-h-[70vh] object-contain rounded-lg transition-opacity duration-300"
+                            className={`max-w-full max-h-[70vh] object-contain rounded-lg transition-all duration-300 ${screenshot.is_private && !isSuperAdmin ? 'blur-2xl grayscale scale-110' : ''}`}
                         />
+                        {screenshot.is_private && !isSuperAdmin && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/20 backdrop-blur-md text-white p-8 text-center">
+                                <div className="bg-black/60 p-6 rounded-2xl shadow-2xl border border-white/10 max-w-sm">
+                                    <span className="text-4xl mb-4 block">🔒</span>
+                                    <h4 className="text-xl font-bold mb-2">Private Content Redacted</h4>
+                                    <p className="text-sm text-gray-200">
+                                        This screenshot contains personal information (WhatsApp/Facebook) and is only visible to the Super Admin.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                     
                     <div className="flex flex-col items-center gap-4">
@@ -169,13 +181,15 @@ export function ScreenshotPreview({
                                 Captured at: {formatDateTimeIST(screenshot.timestamp)}
                             </div>
                             
-                            <button
-                                onClick={handleDownload}
-                                className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold text-sm transition-all shadow-md active:scale-95"
-                            >
-                                <Download size={18} />
-                                Download
-                            </button>
+                            {(!screenshot.is_private || isSuperAdmin) && (
+                                <button
+                                    onClick={handleDownload}
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold text-sm transition-all shadow-md active:scale-95"
+                                >
+                                    <Download size={18} />
+                                    Download
+                                </button>
+                            )}
                         </div>
                         <div className="text-xs text-gray-400 font-medium">
                             Use arrow keys to navigate

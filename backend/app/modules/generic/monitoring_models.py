@@ -58,6 +58,7 @@ class MonitoringScreenshot(Document):
     file_url: str # URL to stored image (e.g. S3/Wasabi)
     app_name: Optional[str] = None
     window_title: Optional[str] = None
+    is_private: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:

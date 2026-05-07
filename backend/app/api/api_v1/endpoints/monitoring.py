@@ -183,6 +183,7 @@ async def upload_screenshot(
     agentId: Optional[str] = Form(None),
     screenshot: Optional[UploadFile] = File(None),
     files: Optional[UploadFile] = File(None),
+    is_private: bool = Form(False),
     timestamp: Optional[str] = Form(None),
     current_user: User = Depends(deps.get_current_user)
 ):
@@ -221,7 +222,8 @@ async def upload_screenshot(
             timestamp=ts,
             file_url=filepath, # Store local path for internal use
             app_name="Agent Upload",
-            window_title="N/A"
+            window_title="N/A",
+            is_private=is_private
         )
         await screenshot_doc.create()
         
@@ -428,12 +430,13 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
     minutes_result = await MonitoringActivity.aggregate(pipeline).to_list()
     active_minutes = minutes_result[0]["total_minutes"] if minutes_result else 0
     
-    # 4. Total idle minutes today
-    idle_pipeline = [
+    # 4. Total threat minutes (unproductive)
+    threat_pipeline = [
         {
             "$match": {
                 "timestamp": {"$gte": start_date, "$lte": end_date},
-                "activity_type": "idle",
+                "activity_type": "active",
+                "web_category": "threat",
                 "user": {"$nin": sa_ids}
             }
         },
@@ -449,19 +452,62 @@ async def get_dashboard_summary(current_user: User = Depends(deps.get_current_us
         },
         {
             "$group": {
-                "_id": None,
-                "total_idle_seconds": {"$sum": "$idle_duration"}
+                "_id": {
+                    "user": "$user",
+                    "year": {"$year": "$timestamp"},
+                    "month": {"$month": "$timestamp"},
+                    "day": {"$dayOfMonth": "$timestamp"},
+                    "hour": {"$hour": "$timestamp"},
+                    "minute": {"$minute": "$timestamp"}
+                }
             }
+        },
+        {
+            "$count": "total_minutes"
         }
     ]
-    idle_result = await MonitoringActivity.aggregate(idle_pipeline).to_list()
-    idle_seconds = idle_result[0]["total_idle_seconds"] if idle_result else 0
-    idle_minutes = idle_seconds / 60
+    threat_res = await MonitoringActivity.aggregate(threat_pipeline).to_list()
+    threat_minutes = threat_res[0]["total_minutes"] if threat_res else 0
+
+    # 5. Total potential minutes (60m baseline per active user-hour)
+    hours_pipeline = [
+        {
+            "$match": {
+                "timestamp": {"$gte": start_date, "$lte": end_date},
+                "activity_type": "active",
+                "user": {"$nin": sa_ids}
+            }
+        },
+        {
+            "$addFields": {
+                "org_id_str": {"$toString": "$organization_id"}
+            }
+        },
+        {
+            "$match": {
+                "org_id_str": str(current_user.organization_id)
+            }
+        },
+        {
+            "$group": {
+                "_id": {
+                    "user": "$user",
+                    "year": {"$year": { "date": "$timestamp", "timezone": "Asia/Kolkata" }},
+                    "month": {"$month": { "date": "$timestamp", "timezone": "Asia/Kolkata" }},
+                    "day": {"$dayOfMonth": { "date": "$timestamp", "timezone": "Asia/Kolkata" }},
+                    "hour": {"$hour": { "date": "$timestamp", "timezone": "Asia/Kolkata" }}
+                }
+            }
+        },
+        {"$count": "total_hours"}
+    ]
+    hours_res = await MonitoringActivity.aggregate(hours_pipeline).to_list()
+    total_active_user_hours = hours_res[0]["total_hours"] if hours_res else 0
+    total_potential_minutes = total_active_user_hours * 60
     
-    total_tracked = active_minutes + idle_minutes
-    
-    if total_tracked > 0:
-        productive_score = min(100, round((active_minutes / total_tracked) * 100))
+    if total_potential_minutes > 0:
+        productive_minutes_val = max(0, active_minutes - threat_minutes)
+        productive_score = min(100, round((productive_minutes_val / total_potential_minutes) * 100))
     else:
         productive_score = 0
     
@@ -622,6 +668,7 @@ async def get_screenshots(
             "filename": os.path.basename(s.file_url) if s.file_url else "unknown.png",
             "filepath": s.file_url,
             "timestamp": s.timestamp,
+            "is_private": getattr(s, "is_private", False),
             "computer_name": s.user.full_name if (s.user and hasattr(s.user, 'full_name')) else "Unknown"
         })
         
@@ -726,7 +773,42 @@ async def get_agent_activity(
         total_active_minutes = round(total_active_seconds / 60, 1)
         print(f"DEBUG: [AgentDetail-5] Active mins: {total_active_minutes}")
 
-        print(f"DEBUG: [AgentDetail-5] Active mins: {total_active_minutes}")
+        # Threat seconds (unproductive)
+        total_threat_seconds = 0
+        try:
+            threat_pipeline = [
+                {
+                    "$match": {
+                        "timestamp": {"$gte": start_date, "$lte": end_date},
+                        "activity_type": "active",
+                        "web_category": "threat"
+                    }
+                },
+                {
+                    "$addFields": {
+                        "org_id_str": {"$toString": "$organization_id"},
+                        "duration_val": {"$convert": {"input": "$duration", "to": "double", "onError": 0, "onNull": 0}}
+                    }
+                },
+                {
+                    "$match": {
+                        "org_id_str": str(current_user.organization_id),
+                        "$or": user_match_or
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": None,
+                        "total_seconds": {"$sum": "$duration_val"}
+                    }
+                }
+            ]
+            threat_res = await MonitoringActivity.aggregate(threat_pipeline).to_list()
+            total_threat_seconds = threat_res[0]["total_seconds"] if threat_res else 0
+        except Exception as threat_err:
+            print(f"ERROR: [AgentDetail-ThreatPipe] {threat_err}")
+        
+        print(f"DEBUG: [AgentDetail-Threat] Threat seconds: {total_threat_seconds}")
 
         # Idle minutes
         total_idle_seconds = 0
@@ -766,9 +848,51 @@ async def get_agent_activity(
         total_idle_minutes = round(total_idle_seconds / 60, 1)
         print(f"DEBUG: [AgentDetail-6] Idle mins: {total_idle_minutes}")
 
-        # Productivity Score
-        total_tracked = total_active_minutes + total_idle_minutes
-        productivity_score = min(100, round((total_active_minutes / total_tracked) * 100)) if total_tracked > 0 else 0
+        # Active Hours Calculation (for 60m baseline)
+        active_hours_count = 0
+        try:
+            hours_pipeline = [
+                {
+                    "$match": {
+                        "timestamp": {"$gte": start_date, "$lte": end_date},
+                        "activity_type": "active"
+                    }
+                },
+                {
+                    "$addFields": {
+                        "org_id_str": {"$toString": "$organization_id"},
+                        "ts_date": {"$toDate": "$timestamp"}
+                    }
+                },
+                {
+                    "$match": {
+                        "org_id_str": str(current_user.organization_id),
+                        "$or": user_match_or
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": {"$hour": { "date": "$timestamp", "timezone": "Asia/Kolkata" }}
+                    }
+                },
+                {"$count": "count"}
+            ]
+            hours_res = await MonitoringActivity.aggregate(hours_pipeline).to_list()
+            active_hours_count = hours_res[0]["count"] if hours_res else 0
+        except Exception as hours_err:
+            print(f"ERROR: [AgentDetail-HoursPipe] {hours_err}")
+
+        # Productivity Score - NEW FORMULA using 60m baseline per active hour
+        # score = (active_seconds - threat_seconds) / (active_hours * 3600)
+        total_potential_seconds = active_hours_count * 3600
+        
+        if total_potential_seconds > 0:
+            productive_seconds = max(0, total_active_seconds - total_threat_seconds)
+            # We also factor in idle time if it was actually recorded within those hours
+            # But the baseline 3600 already accounts for "untracked" gaps.
+            productivity_score = min(100, round((productive_seconds / total_potential_seconds) * 100))
+        else:
+            productivity_score = 0
 
         # Screenshot count
         # Use aggregation for consistency with active minutes and SA exclusion
@@ -898,7 +1022,7 @@ async def get_agent_activity(
                 },
                 {
                     "$group": {
-                        "_id": {"$hour": "$ts_date"},
+                        "_id": {"$hour": { "date": "$timestamp", "timezone": "Asia/Kolkata" }},
                         "active_seconds": {"$sum": "$duration_val"}
                     }
                 },
