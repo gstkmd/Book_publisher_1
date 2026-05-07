@@ -1,7 +1,7 @@
 import os
 import shutil
 from typing import List, Optional, Any, Dict
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from app.modules.core.models import User, Organization, UserRole, WebhookSubscription, InviteToken, OrganizationMember, GlobalSettings
 from app.api.deps import get_current_super_admin
 from pydantic import BaseModel
@@ -375,3 +375,81 @@ async def delete_organization(
     await org.delete()
     
     return {"message": f"Organization {org.name} and all data have been purged."}
+    
+# --- Software Update Management (Agent) ---
+
+@router.get("/updates")
+async def list_update_files(
+    current_user: User = Depends(get_current_super_admin)
+):
+    """List all files in the agent updates directory."""
+    updates_dir = "/app/storage/updates"
+    if not os.path.exists(updates_dir):
+        os.makedirs(updates_dir, exist_ok=True)
+        return []
+    
+    files = []
+    for filename in os.listdir(updates_dir):
+        file_path = os.path.join(updates_dir, filename)
+        if os.path.isfile(file_path):
+            stats = os.stat(file_path)
+            files.append({
+                "filename": filename,
+                "size": stats.st_size,
+                "size_formatted": format_size(stats.st_size),
+                "modified": datetime.fromtimestamp(stats.st_mtime, tz=timezone.utc)
+            })
+    
+    return sorted(files, key=lambda x: x["modified"], reverse=True)
+
+@router.post("/updates/upload")
+async def upload_update_file(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_super_admin)
+):
+    """Upload a new file to the agent updates directory (e.g. latest.yml, .exe)."""
+    updates_dir = "/app/storage/updates"
+    if not os.path.exists(updates_dir):
+        os.makedirs(updates_dir, exist_ok=True)
+    
+    # Security: Only allow certain extensions
+    allowed_extensions = {".exe", ".yml", ".blockmap", ".json", ".zip"}
+    _, ext = os.path.splitext(file.filename)
+    if ext.lower() not in allowed_extensions:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"File type {ext} not allowed. Only .exe, .yml, .blockmap are supported."
+        )
+
+    file_path = os.path.join(updates_dir, file.filename)
+    
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
+    
+    return {"filename": file.filename, "message": "File uploaded successfully"}
+
+@router.delete("/updates/{filename}")
+async def delete_update_file(
+    filename: str,
+    current_user: User = Depends(get_current_super_admin)
+):
+    """Delete a file from the agent updates directory."""
+    updates_dir = "/app/storage/updates"
+    file_path = os.path.join(updates_dir, filename)
+    
+    # Basic path traversal protection
+    if ".." in filename or filename.startswith("/"):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+        
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    try:
+        os.remove(file_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete file: {str(e)}")
+    
+    return {"message": f"File {filename} deleted successfully"}

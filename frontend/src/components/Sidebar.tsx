@@ -18,15 +18,14 @@ import {
     Shield,
     History,
     LogOut,
-    Menu,
-    X,
     Activity,
     Scale,
     ChevronDown,
     Globe,
     Lock,
     XCircle,
-    HelpCircle
+    HelpCircle,
+    RefreshCw
 } from 'lucide-react';
 import { UserAvatar } from './UserAvatar';
 
@@ -314,7 +313,29 @@ export const Sidebar = () => {
                             `}>
                                     Super Admin
                                 </span>
-                                {pathname === '/dashboard/superadmin' && !isCollapsed && (
+                                 {pathname === '/dashboard/superadmin' && !isCollapsed && (
+                                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse" />
+                                )}
+                            </Link>
+
+                            <Link
+                                href="/dashboard/superadmin/updates"
+                                onClick={() => setIsOpen(false)}
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group mt-1
+                                ${pathname === '/dashboard/superadmin/updates'
+                                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
+                                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
+                                ${isCollapsed ? 'justify-center lg:px-0 lg:w-12 lg:mx-auto' : ''}
+                            `}
+                                title={isCollapsed ? 'Software Updates' : ''}
+                            >
+                                <RefreshCw className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${pathname === '/dashboard/superadmin/updates' ? 'text-white' : 'text-slate-400'}`} />
+                                <span className={`text-[13px] font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-300
+                                ${isCollapsed ? 'lg:hidden opacity-0 w-0' : 'opacity-100 w-auto'}
+                            `}>
+                                    Updates
+                                </span>
+                                {pathname === '/dashboard/superadmin/updates' && !isCollapsed && (
                                     <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse" />
                                 )}
                             </Link>

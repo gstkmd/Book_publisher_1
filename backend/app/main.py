@@ -57,6 +57,12 @@ storage_path = "/app/storage"
 if os.path.isdir(storage_path):
     app.mount("/storage", StaticFiles(directory=storage_path), name="storage")
 
+# Mount updates directory for agent auto-updates
+updates_path = "/app/storage/updates"
+if not os.path.exists(updates_path):
+    os.makedirs(updates_path, exist_ok=True)
+app.mount("/updates", StaticFiles(directory=updates_path), name="updates")
+
 
 # -----------------------------
 # CORS CONFIG
