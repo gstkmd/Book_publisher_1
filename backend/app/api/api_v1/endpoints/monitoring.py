@@ -708,6 +708,8 @@ async def get_screenshots(
             "filepath": s.file_url,
             "timestamp": s.timestamp,
             "is_private": getattr(s, "is_private", False),
+            "app_name": getattr(s, "app_name", "Unknown"),
+            "window_title": getattr(s, "window_title", "N/A"),
             "computer_name": s.user.full_name if (s.user and hasattr(s.user, 'full_name')) else "Unknown"
         })
         

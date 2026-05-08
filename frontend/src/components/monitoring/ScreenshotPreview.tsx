@@ -159,15 +159,17 @@ export function ScreenshotPreview({
                         <SecureImage 
                             src={`${apiUrl}/monitoring/dashboard/screenshot/${screenshot.id}`} 
                             alt="Full Size Screenshot"
-                            className={`max-w-full max-h-[70vh] object-contain rounded-lg transition-all duration-300 ${screenshot.is_private && !isSuperAdmin ? 'blur-2xl grayscale scale-110' : ''}`}
+                            className={`max-w-full max-h-[70vh] object-contain rounded-lg transition-all duration-300 ${screenshot.is_private && !isSuperAdmin ? 'blur-lg grayscale scale-110' : ''}`}
                         />
                         {screenshot.is_private && !isSuperAdmin && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/20 backdrop-blur-md text-white p-8 text-center">
-                                <div className="bg-black/60 p-6 rounded-2xl shadow-2xl border border-white/10 max-w-sm">
-                                    <span className="text-4xl mb-4 block">🔒</span>
-                                    <h4 className="text-xl font-bold mb-2">Private Content Redacted</h4>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/10 backdrop-blur-sm text-white p-8 text-center">
+                                <div className="bg-black/70 p-6 rounded-2xl shadow-2xl border border-white/20 max-w-sm backdrop-blur-md">
+                                    <span className="text-4xl mb-4 block">🛡️</span>
+                                    <h4 className="text-xl font-bold mb-2">{screenshot.app_name || 'Personal'} App Detected</h4>
                                     <p className="text-sm text-gray-200">
-                                        This screenshot contains personal information (WhatsApp/Facebook) and is only visible to the Super Admin.
+                                        This screenshot contains content from <strong>{screenshot.app_name}</strong>.
+                                        <br />
+                                        <span className="text-xs opacity-80 mt-2 block italic">({screenshot.window_title || 'Private Window'})</span>
                                     </p>
                                 </div>
                             </div>
