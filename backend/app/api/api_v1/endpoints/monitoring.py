@@ -166,7 +166,7 @@ async def register_agent(
     if not agent_version.startswith("2."):
         raise HTTPException(
             status_code=403, 
-            detail=f"Agent version {agent_version} is out of date. Please update to version 2.0.0 to enable privacy filtering."
+            detail=f"App version {agent_version} is out of date. Please restart your system to apply the update."
         )
 
     if not current_user.organization_id:
@@ -213,12 +213,14 @@ async def upload_screenshot(
         if not agent_doc or not (agent_doc.agent_version or "1.0.0").startswith("2."):
             raise HTTPException(
                 status_code=403, 
-                detail="Agent version incompatible. Please update to 2.0.0 to enable privacy filters."
+                detail="App version incompatible. Please restart your system to apply the update."
             )
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"DEBUG: [Upload] Version check failed: {e}")
-        # Allow if check itself fails for some technical reason, to avoid bricking perfectly valid agents
-        pass
+        # In case of technical error, default to blocking for security
+        raise HTTPException(status_code=403, detail="Version verification failed.")
 
     try:
 
@@ -272,13 +274,13 @@ async def track_app_usage(
             if not agent_doc or not (agent_doc.agent_version or "1.0.0").startswith("2."):
                 raise HTTPException(
                     status_code=403, 
-                    detail="Agent version incompatible. Please update to 2.0.0 to enable privacy filters."
+                    detail="App version incompatible. Please restart your system to apply the update."
                 )
         except HTTPException:
             raise
         except Exception as e:
             print(f"DEBUG: [Activity] Version check failed: {e}")
-            pass
+            raise HTTPException(status_code=403, detail="Version verification failed.")
 
         # Calculate duration
         open_time_str = app_data.get("app_open_at") or app_data.get("appOpenAt")
@@ -631,6 +633,7 @@ async def get_agents(current_user: User = Depends(deps.get_current_user)):
             "full_name": member.full_name,
             "email": member.email,
             "computer_name": agent_doc.computer_name if agent_doc else "Remote Device",
+            "agent_version": agent_doc.agent_version if agent_doc else "1.0.0",
             "last_seen": latest_activity.timestamp if latest_activity else None,
             "screenshot_count": screenshot_count
         })

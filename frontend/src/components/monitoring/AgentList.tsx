@@ -5,6 +5,7 @@ interface Agent {
     id: string;
     computer_name: string;
     email: string;
+    agent_version?: string;
     last_seen: string;
     screenshot_count: number;
 }
@@ -49,6 +50,7 @@ export function AgentList({ agents }: AgentListProps) {
                         <tr>
                             <th className="px-6 py-3">Computer Name</th>
                             <th className="px-6 py-3">User</th>
+                            <th className="px-6 py-3">Version</th>
                             <th className="px-6 py-3">Last Seen</th>
                             <th className="px-6 py-3">Screenshots</th>
                             <th className="px-6 py-3">Action</th>
@@ -64,6 +66,16 @@ export function AgentList({ agents }: AgentListProps) {
                                 <td className="px-6 py-4 font-medium text-gray-900">{agent.computer_name}</td>
                                 <td className="px-6 py-4 text-gray-600 text-sm">
                                     {(agent as any).full_name || agent.email}
+                                </td>
+                                <td className="px-6 py-4 text-gray-600 text-sm">
+                                    <div className="flex flex-col gap-1">
+                                        <span className="font-mono">{agent.agent_version || '1.0.0'}</span>
+                                        {(!agent.agent_version || !agent.agent_version.startsWith('2.')) && (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 uppercase tracking-tight w-fit">
+                                                Update Required
+                                            </span>
+                                        )}
+                                    </div>
                                 </td>
                                 <td className="px-6 py-4 text-gray-600 text-sm">
                                     {agent.last_seen ? formatDateTimeIST(agent.last_seen) : 'Never'}

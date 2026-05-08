@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Header
 from app.modules.core.models import User, Organization
 from beanie import PydanticObjectId
 from app.api.deps import get_current_user
@@ -36,11 +36,64 @@ class ActivitySubmitRequest(BaseModel):
     logs: List[ActivityLog]
     agent_id: Optional[str] = None
 
+async def verify_agent_version(agent_id: Optional[str], x_agent_version: Optional[str] = None):
+    """
+    Strictly verify that the agent is running version 2.0.0 or higher.
+    Prioritizes X-Agent-Version header, then falls back to DB lookup.
+    """
+    # 1. Check Header (fastest)
+    if x_agent_version:
+        if not x_agent_version.startswith("2."):
+            raise HTTPException(
+                status_code=403, 
+                detail=f"App version {x_agent_version} is out of date. Please restart your system to apply the update."
+            )
+        return True
+
+    # 2. Check Database if agent_id is provided
+    if agent_id:
+        from app.modules.generic.monitoring_models import MonitoringAgent
+        try:
+            # Handle both string and ObjectId formats
+            query_id = agent_id
+            if len(agent_id) == 24: # Likely ObjectId
+                try:
+                    from bson import ObjectId
+                    query_id = ObjectId(agent_id)
+                except:
+                    pass
+            
+            agent = await MonitoringAgent.find_one({"_id": query_id})
+            if not agent:
+                # If agent not found, we can't verify, but we shouldn't necessarily block 
+                # if it's a new registration flow. However, activity/upload should have an agent.
+                print(f"DEBUG: [VersionCheck] Agent {agent_id} not found in DB")
+                raise HTTPException(status_code=403, detail="App not registered. Please restart the App.")
+                
+            if not (agent.agent_version or "1.0.0").startswith("2."):
+                raise HTTPException(
+                    status_code=403, 
+                    detail=f"App version {agent.agent_version} is out of date. Please restart your system to apply the update."
+                )
+            return True
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"DEBUG: [VersionCheck] Error during DB lookup: {e}")
+            raise HTTPException(status_code=403, detail="Version verification failed.")
+    
+    # 3. No version info and no agent ID -> Block
+    raise HTTPException(status_code=403, detail="App version information missing. Please restart your system to apply the update.")
+
 @router.post("/activity")
 async def submit_activity(
     req: ActivitySubmitRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    x_agent_version: Optional[str] = Header(None)
 ):
+    # Enforce Version 2.0.0
+    await verify_agent_version(req.agent_id, x_agent_version)
+
     if not current_user.organization_id:
         raise HTTPException(status_code=400, detail="User not part of an organization")
 
@@ -99,8 +152,13 @@ async def upload_screenshot(
     is_private: bool = Form(False),
     agent_id: Optional[str] = Form(None),
     agentId: Optional[str] = Form(None),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    x_agent_version: Optional[str] = Header(None)
 ):
+    # Enforce Version 2.0.0
+    target_agent_id = agent_id or agentId
+    await verify_agent_version(target_agent_id, x_agent_version)
+
     if not current_user.organization_id:
         raise HTTPException(status_code=400, detail="User not part of an organization")
 
