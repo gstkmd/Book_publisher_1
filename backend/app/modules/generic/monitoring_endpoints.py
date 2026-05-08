@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, H
 from app.modules.core.models import User, Organization
 from beanie import PydanticObjectId
 from app.api.deps import get_current_user
-from app.modules.generic.monitoring_models import MonitoringActivity, MonitoringScreenshot
+from app.modules.generic.monitoring_models import MonitoringActivity, MonitoringScreenshot, MonitoringAgent
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime, timezone
@@ -36,54 +36,34 @@ class ActivitySubmitRequest(BaseModel):
     logs: List[ActivityLog]
     agent_id: Optional[str] = None
 
-async def verify_agent_version(agent_id: Optional[str], x_agent_version: Optional[str] = None):
+async def verify_agent_version(agent_id: Optional[str], x_agent_version: Optional[str] = Header(None)):
     """
-    Strictly verify that the agent is running version 2.0.0 or higher.
-    Prioritizes X-Agent-Version header, then falls back to DB lookup.
+    Updates the agent version in the database if X-Agent-Version header is present.
+    Now non-blocking for heartbeat/sync endpoints as per user requirement.
     """
-    # 1. Check Header (fastest)
-    if x_agent_version:
-        if not x_agent_version.startswith("2."):
-            raise HTTPException(
-                status_code=403, 
-                detail=f"App version {x_agent_version} is out of date. Please restart your system to apply the update."
-            )
+    if not agent_id:
         return True
 
-    # 2. Check Database if agent_id is provided
-    if agent_id:
-        from app.modules.generic.monitoring_models import MonitoringAgent
+    # Update version in DB if header is present
+    if x_agent_version:
         try:
             # Handle both string and ObjectId formats
             query_id = agent_id
-            if len(agent_id) == 24: # Likely ObjectId
+            if isinstance(agent_id, str) and len(agent_id) == 24:
                 try:
-                    from bson import ObjectId
                     query_id = ObjectId(agent_id)
                 except:
                     pass
             
             agent = await MonitoringAgent.find_one({"_id": query_id})
-            if not agent:
-                # If agent not found, we can't verify, but we shouldn't necessarily block 
-                # if it's a new registration flow. However, activity/upload should have an agent.
-                print(f"DEBUG: [VersionCheck] Agent {agent_id} not found in DB")
-                raise HTTPException(status_code=403, detail="App not registered. Please restart the App.")
-                
-            if not (agent.agent_version or "1.0.0").startswith("2."):
-                raise HTTPException(
-                    status_code=403, 
-                    detail=f"App version {agent.agent_version} is out of date. Please restart your system to apply the update."
-                )
-            return True
-        except HTTPException:
-            raise
+            if agent and agent.agent_version != x_agent_version:
+                print(f"DEBUG: [VersionUpdate] Updating Agent {agent_id} version: {agent.agent_version} -> {x_agent_version}")
+                agent.agent_version = x_agent_version
+                await agent.save()
         except Exception as e:
-            print(f"DEBUG: [VersionCheck] Error during DB lookup: {e}")
-            raise HTTPException(status_code=403, detail="Version verification failed.")
-    
-    # 3. No version info and no agent ID -> Block
-    raise HTTPException(status_code=403, detail="App version information missing. Please restart your system to apply the update.")
+            print(f"DEBUG: [VersionUpdate] Error updating version: {e}")
+            
+    return True
 
 @router.post("/activity")
 async def submit_activity(

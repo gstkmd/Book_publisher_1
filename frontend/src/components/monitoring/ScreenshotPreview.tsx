@@ -159,7 +159,7 @@ export function ScreenshotPreview({
                         <SecureImage 
                             src={`${apiUrl}/monitoring/dashboard/screenshot/${screenshot.id}`} 
                             alt="Full Size Screenshot"
-                            className={`max-w-full max-h-[70vh] object-contain rounded-lg transition-all duration-300 ${screenshot.is_private && !isSuperAdmin ? 'blur-lg grayscale scale-110' : ''}`}
+                            className={`max-w-full max-h-[70vh] object-contain rounded-lg transition-all duration-300 ${screenshot.is_private && !isSuperAdmin ? 'blur-md grayscale scale-110' : ''}`}
                         />
                         {screenshot.is_private && !isSuperAdmin && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/10 backdrop-blur-sm text-white p-8 text-center">

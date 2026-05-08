@@ -1,5 +1,5 @@
-from typing import Any, List
-from fastapi import APIRouter, Body, Depends, HTTPException
+from typing import Any, List, Optional
+from fastapi import APIRouter, Body, Depends, HTTPException, Header
 from fastapi.encoders import jsonable_encoder
 from pydantic.networks import EmailStr
 from app.api import deps
@@ -15,7 +15,15 @@ router = APIRouter()
 @router.get("/me", response_model=UserSchema, dependencies=[Depends(RateLimiter(requests=60, window=60))])
 async def read_user_me(
     current_user: User = Depends(deps.get_current_user),
+    x_agent_version: Optional[str] = Header(None)
 ) -> Any:
+    # Agent Version Enforcement (Check once at handshake/login)
+    if x_agent_version and not x_agent_version.startswith("2."):
+        raise HTTPException(
+            status_code=403, 
+            detail=f"App version {x_agent_version} is out of date. Please restart your system to apply the update."
+        )
+
     # Normalize role to prevent validation errors with dynamic roles
     user_data = current_user.model_dump()
     user_data["id"] = str(current_user.id)
