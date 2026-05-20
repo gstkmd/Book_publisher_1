@@ -44,24 +44,32 @@ async def get_current_user(token: str = Depends(reusable_oauth2)) -> User:
         from app.modules.core.models import Organization
         org = await Organization.get(PydanticObjectId(user.organization_id))
         if org:
-            if org.subscription_status == "trialing":
-                if not org.trial_ends_at:
-                    # Initialize trial end date if not set (10 days from creation or now)
-                    from datetime import datetime, timezone, timedelta
-                    org.trial_ends_at = org.created_at + timedelta(days=10)
-                    await org.save()
-                
-                from datetime import datetime, timezone
-                trial_end = org.trial_ends_at
-                if trial_end.tzinfo is None:
-                    trial_end = trial_end.replace(tzinfo=timezone.utc)
-                
-                if datetime.now(timezone.utc) > trial_end:
-                    raise HTTPException(
-                        status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                        detail="Your 10-day trial has expired. Please subscribe to a plan to continue."
-                    )
-            elif org.subscription_status == "canceled" or org.subscription_status == "past_due":
+            # A paid plan always grants access, regardless of subscription_status.
+            # The "trialing" status check only applies when the org is still on the
+            # default "trial" plan — not when an admin has assigned a real plan.
+            PAID_PLANS = {"basic_10k", "pro_18k", "enterprise", "custom"}
+            is_on_paid_plan = org.plan in PAID_PLANS
+
+            if not is_on_paid_plan:
+                if org.subscription_status == "trialing":
+                    if not org.trial_ends_at:
+                        # Initialize trial end date if not set (10 days from org creation)
+                        from datetime import datetime, timezone, timedelta
+                        org.trial_ends_at = org.created_at + timedelta(days=10)
+                        await org.save()
+
+                    from datetime import datetime, timezone
+                    trial_end = org.trial_ends_at
+                    if trial_end.tzinfo is None:
+                        trial_end = trial_end.replace(tzinfo=timezone.utc)
+
+                    if datetime.now(timezone.utc) > trial_end:
+                        raise HTTPException(
+                            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                            detail="Your 10-day trial has expired. Please subscribe to a plan to continue."
+                        )
+
+            if org.subscription_status in ("canceled", "past_due") and not is_on_paid_plan:
                 raise HTTPException(
                     status_code=status.HTTP_402_PAYMENT_REQUIRED,
                     detail="Your subscription is inactive. Please update your billing details."

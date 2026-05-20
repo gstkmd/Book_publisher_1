@@ -236,7 +236,13 @@ async def update_organization(
     update_data = update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(org, field, value)
-    
+
+    # When a paid plan is assigned, automatically activate the subscription so
+    # members are no longer blocked by the trial expiry check in deps.py.
+    PAID_PLANS = {"basic_10k", "pro_18k", "enterprise", "custom"}
+    if "plan" in update_data and update_data["plan"] in PAID_PLANS:
+        org.subscription_status = "active"
+
     await org.save()
     return org
 
